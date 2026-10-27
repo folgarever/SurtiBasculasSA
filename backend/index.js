@@ -30,6 +30,10 @@ app.use((error, req, res, next) => {
 });
 
 const port = Number(process.env.PORT || 3000);
-app.listen(port, () => {
-  console.log(`SURTIBASCULAS API escuchando en el puerto ${port}`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`SURTIBASCULAS API escuchando en el puerto ${port}`);
+  });
+}
+
+module.exports = app;
