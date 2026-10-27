@@ -1,6 +1,6 @@
 <main class="login-page">
   <section class="login-visual" aria-label="SURTIBASCULAS S.A., control de asistencia">
-    <div class="visual-topline"><span class="brand-mark">S</span><span>SURTIBASCULAS S.A. <b>/ PERSONAL</b></span></div>
+    <div class="visual-topline"><span class="brand-logo-frame"><img class="brand-logo brand-logo-login" src="/surtibasculas-logo.png" alt="SURTIBASCULAS S.A."></span><span>CONTROL DE ASISTENCIA <b>/ PERSONAL</b></span></div>
     <div class="visual-copy">
       <p class="eyebrow">GESTIÓN DE ASISTENCIA</p>
       <h1>El tiempo<br>de tu trabajo,<br><em>bien registrado.</em></h1>
@@ -11,12 +11,14 @@
 
   <section class="login-form-side">
     <div class="login-form-wrap">
-      <div class="mobile-brand"><span class="brand-mark">S</span><span>SURTIBASCULAS S.A.</span></div>
-      <p class="eyebrow">PORTAL DEL PERSONAL</p>
-      <h2>Bienvenido</h2>
-      <p class="form-intro">Ingresa con tus credenciales de empleado.</p>
+      <div class="mobile-brand"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBASCULAS S.A."></span></div>
+      <div class="login-copy">
+        <p class="eyebrow">PORTAL DEL PERSONAL</p>
+        <h2>Bienvenido</h2>
+        <p class="form-intro">Ingresa con tus credenciales de empleado.</p>
+      </div>
 
-      <form [formGroup]="formulario" (ngSubmit)="ingresar()" novalidate>
+      <form class="login-form" [formGroup]="formulario" (ngSubmit)="ingresar()" novalidate>
         <label for="codigo">Código de empleado</label>
         <input id="codigo" type="text" formControlName="codigo_empleado" autocomplete="username" placeholder="Ej. SUR-GG-001" required>
         @if (formulario.controls.codigo_empleado.touched && formulario.controls.codigo_empleado.invalid) {

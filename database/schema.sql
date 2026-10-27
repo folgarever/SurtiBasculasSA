@@ -55,18 +55,18 @@ CREATE TABLE empleados (
 ) ENGINE=InnoDB;
 
 -- Empleados SURTIBASCULAS S.A.
--- Contraseña por defecto: cambiar123 (hash bcrypt)
+-- Contraseña inicial: 123456 (cambiar después del primer inicio de sesión)
 INSERT INTO empleados (codigo_empleado, nombre, password_hash, rol_id, puesto_id, horario_id, activo) VALUES
-    ('SUR-GG-001', 'Héctor Ortiz', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Jefe Autorizado'), (SELECT id FROM puestos WHERE codigo_abreviatura='GG'), 1, 1),
-    ('SUR-AC-002', 'Mafer García', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Recursos Humanos'), (SELECT id FROM puestos WHERE codigo_abreviatura='AC'), 1, 1),
-    ('SUR-VEN-003', 'Sebastián Farfán', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='VEN'), 1, 1),
-    ('SUR-AUXC-004', 'Jefferson López', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXC'), 1, 1),
-    ('SUR-JM-005', 'Por confirmar', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='JM'), 1, 1),
-    ('SUR-TEC-006', 'Erick', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='TEC'), 1, 1),
-    ('SUR-TEC-007', 'Ostman', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='TEC'), 1, 1),
-    ('SUR-AUXTEC-008', 'Josué', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXTEC'), 1, 1),
-    ('SUR-AUXTEC-009', 'Marvin', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXTEC'), 1, 1),
-    ('SUR-AUXTEC-010', 'Eddy', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXTEC'), 1, 1);
+    ('SUR-GG-001', 'Héctor Ortiz', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Jefe Autorizado'), (SELECT id FROM puestos WHERE codigo_abreviatura='GG'), 1, 1),
+    ('SUR-AC-002', 'Mafer García', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Recursos Humanos'), (SELECT id FROM puestos WHERE codigo_abreviatura='AC'), 1, 1),
+    ('SUR-VEN-003', 'Sebastián Farfán', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='VEN'), 1, 1),
+    ('SUR-AUXC-004', 'Jefferson López', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXC'), 1, 1),
+    ('SUR-JM-005', 'Por confirmar', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='JM'), 1, 1),
+    ('SUR-TEC-006', 'Erick', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='TEC'), 1, 1),
+    ('SUR-TEC-007', 'Ostman', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='TEC'), 1, 1),
+    ('SUR-AUXTEC-008', 'Josué', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXTEC'), 1, 1),
+    ('SUR-AUXTEC-009', 'Marvin', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='TEC'), 1, 1),
+    ('SUR-AUXTEC-010', 'Eddy', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXTEC'), 1, 1);
 
 CREATE TABLE marcaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,

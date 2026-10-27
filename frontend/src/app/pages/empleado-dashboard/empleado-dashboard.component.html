@@ -1,6 +1,6 @@
 <div class="app-shell">
   <header class="topbar">
-    <a class="brand" routerLink="/dashboard"><span class="brand-mark">S</span><span>SURTIBASCULAS S.A. <small>ASISTENCIA</small></span></a>
+    <a class="brand" routerLink="/dashboard"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt=""></span><span>SURTIBASCULAS S.A. <small>ASISTENCIA</small></span></a>
     <div class="topbar-actions">
       @if (usuario && (usuario.rol_id === 2 || usuario.rol_id === 3)) {
         <button class="button button-quiet" type="button" (click)="abrirRrhh()">Panel RRHH <span aria-hidden="true">↗</span></button>
@@ -17,7 +17,7 @@
     </div>
 
     <section class="attendance-band">
-      <div class="clock-block"><p class="eyebrow">HORA DE GUATEMALA <span class="live-indicator">EN VIVO</span></p><div class="digital-clock">{{ horaActual() }}</div><p class="clock-caption">America / Guatemala · UTC−6</p></div>
+      <div class="clock-block"><p class="eyebrow">HORA DE GUATEMALA <span class="live-indicator">EN VIVO</span></p><time class="digital-clock">{{ horaActual() }}</time><p class="clock-caption">America / Guatemala · UTC−6</p></div>
       <div class="attendance-action"><p>¿Listo para registrar?</p><span>Tu marcación se guardará con la hora oficial del servidor.</span><button class="button button-light" type="button" (click)="registrar()" [disabled]="marcando()">{{ marcando() ? 'Registrando…' : 'Registrar marcación' }} <ng-icon name="lucideArrowRight" size="17" /></button></div>
     </section>
 
