@@ -1,1 +1,2 @@
-window.API_URL = 'https://simet-asistencia.onrender.com/api';
+window.API_URL = "http://localhost:3000/api";
+window.SIMET_API_URL = "http://localhost:3000/api";
