@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SURTIBASCULAS S.A. · Control de asistencia
 
 Aplicación web para registrar la jornada del personal y apoyar la gestión de asistencia de Recursos Humanos. Incluye una interfaz responsiva con la identidad visual de SURTIBASCULAS S.A.
@@ -115,3 +116,6 @@ backend/    API Express, controladores, rutas y configuración MySQL
 database/   Esquema y datos iniciales
 frontend/   Aplicación Angular
 ```
+=======
+# SurtiBasculasSA
+>>>>>>> bd5a7cdce1f0e8396ac8131af257f0453c5fcf6f
