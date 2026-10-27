@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.json({ estado: 'ok', servicio: 'SIMET API' });
+  res.json({ estado: 'ok', servicio: 'SURTIBASCULAS API' });
 });
 
 app.use('/api/auth', authRoutes);
@@ -31,5 +31,5 @@ app.use((error, req, res, next) => {
 
 const port = Number(process.env.PORT || 3000);
 app.listen(port, () => {
-  console.log(`SIMET API escuchando en el puerto ${port}`);
+  console.log(`SURTIBASCULAS API escuchando en el puerto ${port}`);
 });

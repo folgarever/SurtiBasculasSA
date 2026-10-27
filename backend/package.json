@@ -1,7 +1,7 @@
 {
-  "name": "simet-backend",
+  "name": "surtibasculas-backend",
   "version": "1.0.0",
-  "description": "API REST para Control de Asistencia - SIMET",
+  "description": "API REST para Control de Asistencia - SURTIBASCULAS S.A.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

@@ -1,6 +1,6 @@
 <main class="login-page">
-  <section class="login-visual" aria-label="SIMET, control de asistencia">
-    <div class="visual-topline"><span class="brand-mark">S</span><span>SIMET <b>/ PERSONAS</b></span></div>
+  <section class="login-visual" aria-label="SURTIBASCULAS S.A., control de asistencia">
+    <div class="visual-topline"><span class="brand-mark">S</span><span>SURTIBASCULAS S.A. <b>/ PERSONAL</b></span></div>
     <div class="visual-copy">
       <p class="eyebrow">GESTIÓN DE ASISTENCIA</p>
       <h1>El tiempo<br>de tu trabajo,<br><em>bien registrado.</em></h1>
@@ -11,14 +11,14 @@
 
   <section class="login-form-side">
     <div class="login-form-wrap">
-      <div class="mobile-brand"><span class="brand-mark">S</span><span>SIMET</span></div>
+      <div class="mobile-brand"><span class="brand-mark">S</span><span>SURTIBASCULAS S.A.</span></div>
       <p class="eyebrow">PORTAL DEL PERSONAL</p>
       <h2>Bienvenido</h2>
       <p class="form-intro">Ingresa con tus credenciales de empleado.</p>
 
       <form [formGroup]="formulario" (ngSubmit)="ingresar()" novalidate>
         <label for="codigo">Código de empleado</label>
-        <input id="codigo" type="text" formControlName="codigo_empleado" autocomplete="username" placeholder="Ej. SIM-024" required>
+        <input id="codigo" type="text" formControlName="codigo_empleado" autocomplete="username" placeholder="Ej. SUR-GG-001" required>
         @if (formulario.controls.codigo_empleado.touched && formulario.controls.codigo_empleado.invalid) {
           <span class="field-error">Ingresa tu código de empleado.</span>
         }
@@ -41,6 +41,6 @@
 
       <p class="login-footnote">Acceso exclusivo para personal autorizado.</p>
     </div>
-    <footer>SIMET · SISTEMA DE ASISTENCIA <span>VERSIÓN 1.0</span></footer>
+    <footer>SURTIBASCULAS S.A. · SISTEMA DE ASISTENCIA <span>VERSIÓN 1.0</span></footer>
   </section>
 </main>

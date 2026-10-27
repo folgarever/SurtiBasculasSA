@@ -1,8 +1,8 @@
-CREATE DATABASE IF NOT EXISTS simet_asistencia
+CREATE DATABASE IF NOT EXISTS surtibasculas_asistencia
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-USE simet_asistencia;
+USE surtibasculas_asistencia;
 
 CREATE TABLE roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -41,7 +41,7 @@ CREATE TABLE horarios (
 ) ENGINE=InnoDB;
 
 INSERT INTO horarios (nombre_horario, hora_entrada, hora_salida, dias_laborales)
-VALUES ('Estándar SIMET', '08:00:00', '17:00:00', 'Lunes,Martes,Miércoles,Jueves,Viernes');
+VALUES ('Estándar SURTIBASCULAS', '08:00:00', '17:00:00', 'Lunes,Martes,Miércoles,Jueves,Viernes');
 
 CREATE TABLE empleados (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -57,6 +57,20 @@ CREATE TABLE empleados (
     FOREIGN KEY (puesto_id) REFERENCES puestos(id),
     FOREIGN KEY (horario_id) REFERENCES horarios(id)
 ) ENGINE=InnoDB;
+
+-- Empleados SURTIBASCULAS S.A.
+-- Contraseña por defecto: cambiar123 (hash bcrypt)
+INSERT INTO empleados (codigo_empleado, nombre, password_hash, rol_id, puesto_id, horario_id, activo) VALUES
+    ('SUR-GG-001', 'Héctor Ortiz', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Jefe Autorizado'), (SELECT id FROM puestos WHERE codigo_abreviatura='GG'), 1, 1),
+    ('SUR-AC-002', 'Mafer García', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Recursos Humanos'), (SELECT id FROM puestos WHERE codigo_abreviatura='AC'), 1, 1),
+    ('SUR-VEN-003', 'Sebastián Farfán', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='VEN'), 1, 1),
+    ('SUR-AUXC-004', 'Jefferson López', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXC'), 1, 1),
+    ('SUR-JM-005', 'Por confirmar', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='JM'), 1, 1),
+    ('SUR-TEC-006', 'Erick', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='TEC'), 1, 1),
+    ('SUR-TEC-007', 'Ostman', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='TEC'), 1, 1),
+    ('SUR-AUXTEC-008', 'Josué', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXTEC'), 1, 1),
+    ('SUR-AUXTEC-009', 'Marvin', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXTEC'), 1, 1),
+    ('SUR-AUXTEC-010', 'Eddy', '\\\.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXTEC'), 1, 1);
 
 CREATE TABLE marcaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
