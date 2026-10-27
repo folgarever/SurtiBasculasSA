@@ -1,8 +1,4 @@
-CREATE DATABASE IF NOT EXISTS surtibasculas_asistencia
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-
-USE surtibasculas_asistencia;
+USE defaultdb;
 
 CREATE TABLE roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
