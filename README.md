@@ -1,17 +1,16 @@
-<<<<<<< HEAD
-# SURTIBASCULAS S.A. · Control de asistencia
+# SURTIBASCULAS S.A. · Control de asistencia y evaluación de personal
 
-Aplicación web para registrar la jornada del personal y apoyar la gestión de asistencia de Recursos Humanos. Incluye una interfaz responsiva con la identidad visual de SURTIBASCULAS S.A.
+Aplicación para registrar la jornada del personal y apoyar la gestión de asistencia y evaluación de desempeño.
 
 ## Funciones
 
 - Inicio de sesión por código de empleado y contraseña.
-- Registro de entrada y salida, con historial personal de marcaciones.
-- Panel de Recursos Humanos para consultar y filtrar asistencias.
-- Corrección de marcaciones con motivo y registro de auditoría.
-- Registro de permisos e incidencias de personal.
+- Registro de entrada y salida e historial personal de marcaciones.
+- Panel de Recursos Humanos para consultar asistencias, corregir marcaciones y registrar incidencias.
 - Exportación de reportes de asistencia e incidencias a Excel.
-- Acceso a funciones según rol: Empleado, Recursos Humanos y Jefe Autorizado.
+- Evaluación periódica del personal, con cinco competencias generales y escala de 1 a 5.
+- Evaluación técnica y psicométrica adicional para el Jefe de Mantenimiento.
+- Acceso a evaluaciones limitado a Héctor Ortiz (`SUR-GG-001`) y Mafer García (`SUR-AC-002`).
 
 ## Tecnologías
 
@@ -20,89 +19,64 @@ Aplicación web para registrar la jornada del personal y apoyar la gestión de a
 - Base de datos: MySQL.
 - Contraseñas almacenadas con bcrypt.
 
-## Requisitos
+## Configuración
 
-- Node.js y npm.
-- MySQL compatible con InnoDB.
-- MySQL Workbench u otro cliente para ejecutar el esquema.
+1. Crea la base de datos `defaultdb` en MySQL y ejecuta [`database/schema.sql`](database/schema.sql) para una instalación nueva.
+2. Para una base existente, ejecuta una sola vez [`database/migrations/2026-11-01-evaluaciones-personal.sql`](database/migrations/2026-11-01-evaluaciones-personal.sql). No vuelvas a ejecutar `schema.sql` sobre una base ya creada. Después, ambos administradores deben iniciar sesión nuevamente para recibir el rol actualizado en su JWT.
+3. Copia `backend/.env.example` como `backend/.env` y configura la conexión a MySQL y un secreto JWT largo y aleatorio. El nombre de base de datos debe coincidir con `defaultdb`.
+4. Instala dependencias e inicia el backend:
 
-## Configuración local
+   ```powershell
+   cd backend
+   npm install
+   npm run dev
+   ```
 
-1. Crea la base de datos `defaultdb` en MySQL.
-2. Ejecuta [`database/schema.sql`](database/schema.sql) una sola vez para crear las tablas y las cuentas iniciales. El archivo selecciona la base `defaultdb`.
-3. Copia `backend/.env.example` como `backend/.env` y configura la conexión a MySQL y el secreto JWT. El nombre de base de datos debe coincidir con `defaultdb`, salvo que también cambies la sentencia `USE` del esquema.
+5. En otra terminal, instala dependencias e inicia Angular:
 
-	Variables requeridas:
+   ```powershell
+   cd frontend
+   npm install
+   npm start
+   ```
 
-	```env
-	PORT=3000
-	DB_HOST=localhost
-	DB_PORT=3306
-	DB_USER=root
-	DB_PASSWORD=tu_password
-	DB_NAME=defaultdb
-	TZ=America/Guatemala
-	JWT_SECRET=un_secreto_largo_y_aleatorio
-	```
+6. Abre `http://localhost:4200`. El proxy de desarrollo envía `/api` al backend en `http://localhost:3000`.
 
-4. Instala las dependencias e inicia el backend:
+## Nómina inicial
 
-	```powershell
-	cd backend
-	npm install
-	npm run dev
-	```
+| Código | Nombre | Cargo | Acceso |
+|---|---|---|---|
+| `SUR-GG-001` | Héctor Ortiz | Gerente General | ADMIN |
+| `SUR-AC-002` | Mafer García | Asistente Comercial y RR. HH. | ADMIN |
+| `SUR-VEN-003` | Sebastián Farfán | Vendedor | Empleado |
+| `SUR-AUXC-004` | Jefferson López | Auxiliar Contable | Empleado |
+| `SUR-JM-005` | Por confirmar | Jefe de Mantenimiento | Empleado |
+| `SUR-TEC-006` | Erick | Técnico | Empleado |
+| `SUR-TEC-007` | Ostman | Técnico | Empleado |
+| `SUR-AUXTEC-008` | Josué | Auxiliar Técnico | Empleado |
+| `SUR-AUXTEC-009` | Marvin | Auxiliar Técnico | Empleado |
+| `SUR-AUXTEC-010` | Eddy | Auxiliar Técnico | Empleado |
 
-5. En otra terminal, instala las dependencias e inicia Angular:
+El esquema de ejemplo asigna la contraseña inicial `123456` a estas cuentas. Es solo para pruebas: antes de usar datos reales, configura contraseñas individuales y largas.
 
-	```powershell
-	cd frontend
-	npm install
-	npm start
-	```
+## Evaluaciones y acceso
 
-6. Abre `http://localhost:4200`. El proxy de desarrollo envía las peticiones `/api` al backend en `http://localhost:3000`.
+El enlace y la ruta Angular `/evaluaciones` solo están disponibles para las dos cuentas ADMIN indicadas. El backend verifica la firma y expiración del JWT y vuelve a comprobar el rol y el código permitido; las demás cuentas reciben `403 Forbidden`, aunque invoquen los endpoints directamente.
 
-Si el puerto `3000` o `4200` ya está ocupado, detén la instancia anterior o inicia el servidor en otro puerto.
+La puntualidad incluye un resumen de días registrados y atrasos de los últimos 30 días de Control de Asistencia. Para `SUR-JM-005` se solicitan además nueve calificaciones de supervisión técnica, liderazgo y competencias psicométricas.
 
-## Cuentas iniciales
-
-El esquema crea estas cuentas de ejemplo:
-
-| Código | Nombre | Rol |
+| Método | Endpoint | Función |
 |---|---|---|
-| `SUR-GG-001` | Héctor Ortiz | Jefe Autorizado |
-| `SUR-AC-002` | Mafer García | Recursos Humanos |
-| `SUR-VEN-003` | Sebastián Farfán | Empleado |
-| `SUR-AUXC-004` | Jefferson López | Empleado |
-| `SUR-JM-005` | Por confirmar | Empleado |
-| `SUR-TEC-006` | Erick | Empleado |
-| `SUR-TEC-007` | Ostman | Empleado |
-| `SUR-AUXTEC-008` | Josué | Empleado |
-| `SUR-AUXTEC-009` | Marvin | Empleado |
-| `SUR-AUXTEC-010` | Eddy | Empleado |
+| `GET` | `/api/evaluaciones/empleados` | Nómina activa y resumen de asistencia |
+| `GET` | `/api/evaluaciones?empleado_id=<id>` | Listar evaluaciones; filtro por empleado opcional |
+| `GET` | `/api/evaluaciones/<id>` | Consultar el detalle de una evaluación |
+| `POST` | `/api/evaluaciones` | Crear evaluación general y, para `SUR-JM-005`, especializada |
 
-La contraseña inicial compartida es `123456`. **Es solo para pruebas y no es segura para producción.** Antes de usar el sistema con datos reales, define contraseñas individuales y largas. La aplicación no incluye todavía una pantalla para cambiar contraseña.
-
-Si la base ya existía antes de ejecutar el esquema actualizado, no vuelvas a ejecutar todo `schema.sql`: podrías duplicar o volver a crear tablas. Cambia las contraseñas con un proceso administrativo que genere hashes bcrypt.
-
-## API principal
-
-- `GET /`: estado de la API.
-- `POST /api/auth/login`: autenticación.
-- `POST /api/asistencia/marcar`: registra entrada o salida del usuario autenticado.
-- `GET /api/asistencia/mi-historial`: consulta su historial personal.
-- `GET /api/rrhh/asistencias`: consulta asistencias con filtros.
-- `GET /api/rrhh/empleados`: lista empleados activos.
-- `PUT /api/rrhh/corregir`: corrige una marcación y registra el motivo.
-- `POST /api/rrhh/incidencias`: registra una incidencia o permiso.
-- `GET /api/rrhh/exportar-excel`: descarga el reporte Excel.
-
-Las rutas de asistencia requieren un token. Las rutas de Recursos Humanos requieren un token y rol autorizado.
+El cuerpo de `POST` contiene `empleado_id`, `fecha_evaluacion` (`YYYY-MM-DD`), `periodo`, `calificaciones` (las cinco competencias generales del 1 al 5), `comentarios` opcional y `especializada` (las nueve competencias del jefe de mantenimiento). Las tablas y restricciones están incluidas en `schema.sql` y en la migración.
 
 ## Validación
 
-Desde la raíz del repositorio:
+Desde la raíz:
 
 ```powershell
 npm --prefix frontend run build
@@ -113,9 +87,6 @@ npm --prefix frontend test -- --watch=false
 
 ```text
 backend/    API Express, controladores, rutas y configuración MySQL
-database/   Esquema y datos iniciales
+database/   Esquema, datos iniciales y migraciones
 frontend/   Aplicación Angular
 ```
-=======
-# SurtiBasculasSA
->>>>>>> bd5a7cdce1f0e8396ac8131af257f0453c5fcf6f

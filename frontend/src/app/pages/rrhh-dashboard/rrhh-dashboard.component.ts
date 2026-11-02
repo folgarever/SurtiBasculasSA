@@ -27,6 +27,7 @@ export class RrhhDashboardComponent implements OnInit {
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
+  protected readonly puedeEvaluar = this.auth.hasEvaluationRole();
   protected readonly asistencias = signal<Marcacion[]>([]);
   protected readonly empleados = signal<EmpleadoRrhh[]>([]);
   protected readonly cargando = signal(false);

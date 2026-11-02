@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
+const { CODIGOS_ADMINISTRADORES } = require('../config/authorization');
 
 async function login(req, res, next) {
   const { codigo_empleado: codigoEmpleado, password } = req.body || {};
@@ -32,13 +33,15 @@ async function login(req, res, next) {
       return res.status(500).json({ mensaje: 'La autenticación no está configurada en el servidor.' });
     }
 
+    const codigoAdministrador = CODIGOS_ADMINISTRADORES.includes(empleado.codigo_empleado);
     const perfil = {
       id: empleado.id,
       codigo_empleado: empleado.codigo_empleado,
       nombre: empleado.nombre,
       puesto: empleado.nombre_puesto,
       rol: empleado.nombre_rol,
-      rol_id: empleado.rol_id
+      rol_id: empleado.rol_id,
+      role: codigoAdministrador && empleado.nombre_rol === 'ADMIN' ? 'ADMIN' : 'EMPLOYEE'
     };
     const token = jwt.sign(perfil, process.env.JWT_SECRET, { expiresIn: '8h' });
 

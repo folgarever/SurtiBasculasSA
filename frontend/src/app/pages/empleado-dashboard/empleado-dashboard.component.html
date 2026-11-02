@@ -2,7 +2,7 @@
   <header class="topbar">
     <a class="brand" routerLink="/dashboard"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt=""></span><span>SURTIBASCULAS S.A. <small>ASISTENCIA</small></span></a>
     <div class="topbar-actions">
-      @if (usuario && (usuario.rol_id === 2 || usuario.rol_id === 3)) {
+      @if (usuario && (usuario.role === 'ADMIN' || usuario.rol_id === 2 || usuario.rol_id === 3)) {
         <button class="button button-quiet" type="button" (click)="abrirRrhh()">Panel RRHH <span aria-hidden="true">↗</span></button>
       }
       <span class="user-chip"><span class="avatar">{{ usuario?.nombre?.slice(0, 1) || 'U' }}</span><span>{{ usuario?.nombre }}</span></span>

@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { CODIGOS_ADMINISTRADORES } = require('../config/authorization');
 
 function verificarToken(req, res, next) {
   const authorization = req.headers.authorization;
@@ -18,9 +19,13 @@ function verificarToken(req, res, next) {
 
 function permitirRoles(...rolesPermitidos) {
   return (req, res, next) => {
-    const rolId = Number(req.usuario?.rol_id);
+    const tienePermiso = rolesPermitidos.some((rol) => (
+      typeof rol === 'number'
+        ? Number(req.usuario?.rol_id) === rol
+        : req.usuario?.role === rol
+    ));
 
-    if (!rolesPermitidos.map(Number).includes(rolId)) {
+    if (!tienePermiso) {
       return res.status(403).json({ mensaje: 'No tienes permiso para realizar esta acción.' });
     }
 
@@ -28,4 +33,15 @@ function permitirRoles(...rolesPermitidos) {
   };
 }
 
-module.exports = { verificarToken, permitirRoles };
+function permitirEvaluaciones(req, res, next) {
+  if (
+    req.usuario?.role !== 'ADMIN'
+    || !CODIGOS_ADMINISTRADORES.includes(req.usuario?.codigo_empleado)
+  ) {
+    return res.status(403).json({ mensaje: 'No tienes permiso para acceder a las evaluaciones.' });
+  }
+
+  return next();
+}
+
+module.exports = { verificarToken, permitirRoles, permitirEvaluaciones };

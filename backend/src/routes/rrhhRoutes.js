@@ -10,7 +10,7 @@ const {
 
 const router = express.Router();
 
-router.use(verificarToken, permitirRoles(2, 3));
+router.use(verificarToken, permitirRoles(2, 3, 'ADMIN'));
 router.get('/asistencias', obtenerTodasAsistencias);
 router.get('/empleados', obtenerEmpleadosActivos);
 router.put('/corregir', corregirMarcacion);

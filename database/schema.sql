@@ -8,7 +8,8 @@ CREATE TABLE roles (
 INSERT INTO roles (nombre) VALUES
     ('Empleado'),
     ('Recursos Humanos'),
-    ('Jefe Autorizado');
+    ('Jefe Autorizado'),
+    ('ADMIN');
 
 CREATE TABLE puestos (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -18,7 +19,7 @@ CREATE TABLE puestos (
 
 INSERT INTO puestos (codigo_abreviatura, nombre_puesto) VALUES
     ('GG', 'Gerente General'),
-    ('AC', 'Asistente Comercial'),
+    ('AC', 'Asistente Comercial y RR. HH.'),
     ('VEN', 'Vendedor'),
     ('AUXC', 'Auxiliar Contable'),
     ('JM', 'Jefe de Mantenimiento'),
@@ -57,15 +58,15 @@ CREATE TABLE empleados (
 -- Empleados SURTIBASCULAS S.A.
 -- Contraseña inicial: 123456 (cambiar después del primer inicio de sesión)
 INSERT INTO empleados (codigo_empleado, nombre, password_hash, rol_id, puesto_id, horario_id, activo) VALUES
-    ('SUR-GG-001', 'Héctor Ortiz', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Jefe Autorizado'), (SELECT id FROM puestos WHERE codigo_abreviatura='GG'), 1, 1),
-    ('SUR-AC-002', 'Mafer García', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Recursos Humanos'), (SELECT id FROM puestos WHERE codigo_abreviatura='AC'), 1, 1),
+    ('SUR-GG-001', 'Héctor Ortiz', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='ADMIN'), (SELECT id FROM puestos WHERE codigo_abreviatura='GG'), 1, 1),
+    ('SUR-AC-002', 'Mafer García', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='ADMIN'), (SELECT id FROM puestos WHERE codigo_abreviatura='AC'), 1, 1),
     ('SUR-VEN-003', 'Sebastián Farfán', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='VEN'), 1, 1),
     ('SUR-AUXC-004', 'Jefferson López', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXC'), 1, 1),
     ('SUR-JM-005', 'Por confirmar', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='JM'), 1, 1),
     ('SUR-TEC-006', 'Erick', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='TEC'), 1, 1),
     ('SUR-TEC-007', 'Ostman', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='TEC'), 1, 1),
     ('SUR-AUXTEC-008', 'Josué', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXTEC'), 1, 1),
-    ('SUR-AUXTEC-009', 'Marvin', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='TEC'), 1, 1),
+    ('SUR-AUXTEC-009', 'Marvin', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXTEC'), 1, 1),
     ('SUR-AUXTEC-010', 'Eddy', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXTEC'), 1, 1);
 
 CREATE TABLE marcaciones (
@@ -106,4 +107,50 @@ CREATE TABLE historial_correcciones (
     fecha_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (marcacion_id) REFERENCES marcaciones(id),
     FOREIGN KEY (modificado_por) REFERENCES empleados(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE evaluaciones (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    empleado_id INT NOT NULL,
+    evaluador_id INT NOT NULL,
+    fecha_evaluacion DATE NOT NULL,
+    periodo VARCHAR(100) NOT NULL,
+    presentacion TINYINT UNSIGNED NOT NULL,
+    desempeno TINYINT UNSIGNED NOT NULL,
+    atencion_cliente TINYINT UNSIGNED NOT NULL,
+    puntualidad TINYINT UNSIGNED NOT NULL,
+    conocimientos TINYINT UNSIGNED NOT NULL,
+    comentarios TEXT NULL,
+    creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_evaluaciones_presentacion CHECK (presentacion BETWEEN 1 AND 5),
+    CONSTRAINT chk_evaluaciones_desempeno CHECK (desempeno BETWEEN 1 AND 5),
+    CONSTRAINT chk_evaluaciones_atencion CHECK (atencion_cliente BETWEEN 1 AND 5),
+    CONSTRAINT chk_evaluaciones_puntualidad CHECK (puntualidad BETWEEN 1 AND 5),
+    CONSTRAINT chk_evaluaciones_conocimientos CHECK (conocimientos BETWEEN 1 AND 5),
+    FOREIGN KEY (empleado_id) REFERENCES empleados(id),
+    FOREIGN KEY (evaluador_id) REFERENCES empleados(id),
+    INDEX idx_evaluaciones_empleado_fecha (empleado_id, fecha_evaluacion)
+) ENGINE=InnoDB;
+
+CREATE TABLE evaluaciones_jefatura (
+    evaluacion_id INT PRIMARY KEY,
+    supervision_operaciones TINYINT UNSIGNED NOT NULL,
+    gestion_liderazgo_campo TINYINT UNSIGNED NOT NULL,
+    control_calidad_calibracion TINYINT UNSIGNED NOT NULL,
+    gestion_recursos_inventario TINYINT UNSIGNED NOT NULL,
+    atencion_tecnica_cliente TINYINT UNSIGNED NOT NULL,
+    liderazgo_personal TINYINT UNSIGNED NOT NULL,
+    toma_decisiones_presion TINYINT UNSIGNED NOT NULL,
+    pensamiento_analitico TINYINT UNSIGNED NOT NULL,
+    organizacion_planificacion TINYINT UNSIGNED NOT NULL,
+    CONSTRAINT chk_jefatura_supervision CHECK (supervision_operaciones BETWEEN 1 AND 5),
+    CONSTRAINT chk_jefatura_liderazgo_campo CHECK (gestion_liderazgo_campo BETWEEN 1 AND 5),
+    CONSTRAINT chk_jefatura_calidad CHECK (control_calidad_calibracion BETWEEN 1 AND 5),
+    CONSTRAINT chk_jefatura_recursos CHECK (gestion_recursos_inventario BETWEEN 1 AND 5),
+    CONSTRAINT chk_jefatura_atencion CHECK (atencion_tecnica_cliente BETWEEN 1 AND 5),
+    CONSTRAINT chk_jefatura_liderazgo CHECK (liderazgo_personal BETWEEN 1 AND 5),
+    CONSTRAINT chk_jefatura_decisiones CHECK (toma_decisiones_presion BETWEEN 1 AND 5),
+    CONSTRAINT chk_jefatura_analitico CHECK (pensamiento_analitico BETWEEN 1 AND 5),
+    CONSTRAINT chk_jefatura_organizacion CHECK (organizacion_planificacion BETWEEN 1 AND 5),
+    FOREIGN KEY (evaluacion_id) REFERENCES evaluaciones(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

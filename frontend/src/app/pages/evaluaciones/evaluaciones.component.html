@@ -1,0 +1,174 @@
+<div class="app-shell">
+  <header class="topbar">
+    <a class="brand" routerLink="/rrhh">
+      <span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt=""></span>
+      <span>SURTIBASCULAS S.A. <small>GESTIÓN DE PERSONAL</small></span>
+    </a>
+    <div class="topbar-actions">
+      <span class="admin-label">ADMINISTRACIÓN</span>
+      <span class="user-chip"><span class="avatar avatar-admin">{{ usuario?.nombre?.slice(0, 1) || 'A' }}</span><span>{{ usuario?.nombre }}</span></span>
+      <button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()">×</button>
+    </div>
+  </header>
+
+  <main class="workspace evaluation-workspace">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">ADMINISTRACIÓN / DESARROLLO</p>
+        <h1>Evaluación de personal</h1>
+        <p class="subheading">Evaluaciones periódicas de desempeño y competencias por puesto.</p>
+      </div>
+      <a class="button button-outline" routerLink="/rrhh">Volver a RR. HH.</a>
+    </div>
+
+    @if (aviso(); as mensaje) {
+      <div class="alert" [class.alert-success]="mensaje.tipo === 'success'" [class.alert-error]="mensaje.tipo === 'error'" role="status">
+        {{ mensaje.texto }}
+        <button type="button" aria-label="Cerrar aviso" (click)="aviso.set(null)">×</button>
+      </div>
+    }
+
+    <section class="evaluation-panel">
+      <div class="section-heading">
+        <div><p class="eyebrow">NUEVA EVALUACIÓN</p><h2>Desempeño general</h2></div>
+        <span class="scale-note">Escala: 1 bajo · 5 sobresaliente</span>
+      </div>
+
+      <form [formGroup]="formulario" (ngSubmit)="guardar()">
+        <div class="evaluation-meta">
+          <div class="evaluation-field">
+            <label for="empleado-evaluacion">Empleado</label>
+            <select id="empleado-evaluacion" formControlName="empleado_id" (change)="cambiarEmpleado()" required>
+              <option value="">Selecciona un empleado</option>
+              @for (empleado of empleados(); track empleado.id) {
+                <option [value]="empleado.id">{{ empleado.codigo_empleado }} · {{ empleado.nombre }} — {{ empleado.nombre_puesto }}</option>
+              }
+            </select>
+            @if (cargandoEmpleados()) { <span class="evaluation-help">Cargando nómina…</span> }
+          </div>
+          <div class="evaluation-field">
+            <label for="fecha-evaluacion">Fecha de evaluación</label>
+            <input id="fecha-evaluacion" type="date" formControlName="fecha_evaluacion" required>
+          </div>
+          <div class="evaluation-field">
+            <label for="periodo-evaluacion">Periodo evaluado</label>
+            <input id="periodo-evaluacion" type="text" formControlName="periodo" maxlength="100" placeholder="Ej. Enero - Junio 2026" required>
+          </div>
+        </div>
+
+        @if (empleadoSeleccionado(); as empleado) {
+          <div class="attendance-reference">
+            <div><span class="reference-label">ASISTENCIA · ÚLTIMOS 30 DÍAS</span><strong>{{ empleado.puntualidad_30d }}%</strong></div>
+            <p>{{ empleado.dias_registrados_30d }} días registrados · {{ empleado.atrasos_30d }} atrasos. Este indicador sirve como referencia para calificar puntualidad.</p>
+          </div>
+        }
+
+        <div class="criteria-list" formGroupName="calificaciones">
+          @for (criterio of criteriosGenerales; track criterio.clave) {
+            <div class="criterion-row">
+              <div class="criterion-copy">
+                <label [for]="'general-' + criterio.clave">{{ criterio.nombre }}</label>
+                <p>{{ criterio.descripcion }}</p>
+              </div>
+              <select [id]="'general-' + criterio.clave" [formControlName]="criterio.clave" aria-label="Calificación de {{ criterio.nombre }}">
+                <option [ngValue]="0" disabled>Calificar</option>
+                @for (valor of escala; track valor) { <option [ngValue]="valor">{{ valor }} / 5</option> }
+              </select>
+            </div>
+          }
+        </div>
+
+        @if (empleadoSeleccionado()?.codigo_empleado === 'SUR-JM-005') {
+          <section class="specialized-section" formGroupName="especializada">
+            <div class="specialized-heading">
+              <p class="eyebrow">MÓDULO ESPECIALIZADO</p>
+              <h3>Jefatura de mantenimiento · perfil técnico y psicométrico</h3>
+              <p>Completa las competencias técnicas, de supervisión y liderazgo para SUR-JM-005.</p>
+            </div>
+            <div class="criteria-list">
+              @for (criterio of criteriosJefatura; track criterio.clave) {
+                <div class="criterion-row">
+                  <div class="criterion-copy">
+                    <label [for]="'jefatura-' + criterio.clave">{{ criterio.nombre }}</label>
+                    <p>{{ criterio.descripcion }}</p>
+                  </div>
+                  <select [id]="'jefatura-' + criterio.clave" [formControlName]="criterio.clave" aria-label="Calificación de {{ criterio.nombre }}">
+                    <option [ngValue]="0" disabled>Calificar</option>
+                    @for (valor of escala; track valor) { <option [ngValue]="valor">{{ valor }} / 5</option> }
+                  </select>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        <div class="evaluation-field comments-field">
+          <label for="comentarios-evaluacion">Comentarios y plan de mejora <span>OPCIONAL</span></label>
+          <textarea id="comentarios-evaluacion" formControlName="comentarios" rows="4" maxlength="5000" placeholder="Fortalezas, oportunidades y acuerdos de seguimiento"></textarea>
+        </div>
+        <div class="evaluation-submit">
+          <span>Las calificaciones y el evaluador quedan registrados para consulta posterior.</span>
+          <button class="button button-accent" type="submit" [disabled]="guardando() || cargandoEmpleados()">
+            {{ guardando() ? 'Guardando…' : 'Guardar evaluación' }}
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="history-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">CONSULTA HISTÓRICA</p><h2>Evaluaciones registradas</h2></div>
+        <span class="record-count">{{ evaluaciones().length }} registros</span>
+      </div>
+      <div class="table-frame">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Empleado</th><th>Puesto</th><th>Periodo</th><th>Fecha</th><th>Promedio</th><th></th></tr></thead>
+            <tbody>
+              @if (cargandoEvaluaciones()) {
+                <tr><td colspan="6" class="table-empty">Cargando evaluaciones…</td></tr>
+              } @else if (evaluaciones().length === 0) {
+                <tr><td colspan="6" class="table-empty">No hay evaluaciones para mostrar.</td></tr>
+              } @else {
+                @for (evaluacion of evaluaciones(); track evaluacion.id) {
+                  <tr>
+                    <td><strong>{{ evaluacion.empleado }}</strong><small class="employee-code">{{ evaluacion.codigo_empleado }}</small></td>
+                    <td>{{ evaluacion.nombre_puesto }}</td>
+                    <td>{{ evaluacion.periodo }}</td>
+                    <td>{{ formatoFecha(evaluacion.fecha_evaluacion) }}</td>
+                    <td><span class="average-pill">{{ evaluacion.promedio_general }} / 5</span></td>
+                    <td><button class="details-button" type="button" (click)="verDetalle(evaluacion.id)">Ver detalle</button></td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      @if (evaluacionDetalle(); as detalle) {
+        <article class="evaluation-detail">
+          <div class="section-heading">
+            <div><p class="eyebrow">DETALLE DE EVALUACIÓN</p><h2>{{ detalle.empleado }} · {{ detalle.periodo }}</h2></div>
+            <button class="details-button" type="button" (click)="evaluacionDetalle.set(null)">Cerrar</button>
+          </div>
+          <div class="detail-grid">
+            @for (criterio of criteriosGenerales; track criterio.clave) {
+              <div><span>{{ criterio.nombre }}</span><strong>{{ calificacionGeneral(detalle, criterio.clave) }} / 5</strong></div>
+            }
+          </div>
+          @if (detalle.codigo_empleado === 'SUR-JM-005') {
+            <h3 class="detail-subtitle">Competencias especializadas</h3>
+            <div class="detail-grid">
+              @for (criterio of criteriosJefatura; track criterio.clave) {
+                <div><span>{{ criterio.nombre }}</span><strong>{{ calificacionJefatura(detalle, criterio.clave) ?? '—' }} / 5</strong></div>
+              }
+            </div>
+          }
+          @if (detalle.comentarios) { <p class="detail-comments"><strong>Comentarios:</strong> {{ detalle.comentarios }}</p> }
+        </article>
+      }
+    </section>
+    <footer class="workspace-footer"><span>SURTIBASCULAS S.A. · EVALUACIÓN DE PERSONAL</span><span>Acceso restringido a administradores autorizados</span></footer>
+  </main>
+</div>

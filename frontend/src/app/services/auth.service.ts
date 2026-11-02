@@ -11,6 +11,7 @@ export interface Usuario {
   puesto: string;
   rol: string;
   rol_id: number;
+  role: 'ADMIN' | 'EMPLOYEE';
 }
 
 interface LoginResponse {
@@ -85,7 +86,14 @@ export class AuthService {
   }
 
   hasRrhhRole(): boolean {
+    if (this.getPayload()?.role === 'ADMIN' || this.getUsuario()?.role === 'ADMIN') return true;
     const roleId = Number(this.getPayload()?.rol_id ?? this.getUsuario()?.rol_id);
     return roleId === 2 || roleId === 3;
+  }
+
+  hasEvaluationRole(): boolean {
+    const usuario = this.getPayload() ?? this.getUsuario();
+    return usuario?.role === 'ADMIN'
+      && ['SUR-GG-001', 'SUR-AC-002'].includes(usuario.codigo_empleado);
   }
 }
