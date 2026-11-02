@@ -29,9 +29,9 @@
     }
 
     <section class="evaluation-panel">
-      <div class="section-heading">
-        <div><p class="eyebrow">NUEVA EVALUACIÓN</p><h2>Desempeño general</h2></div>
-        <span class="scale-note">Escala: 1 bajo · 5 sobresaliente</span>
+      <div class="evaluation-section-heading">
+        <div><p class="eyebrow">01 / EVALUACIÓN</p><h2>Datos del periodo</h2></div>
+        <span class="scale-note">Completa la evaluación del puesto seleccionado</span>
       </div>
 
       <form [formGroup]="formulario" (ngSubmit)="guardar()">
@@ -63,48 +63,77 @@
           </div>
         }
 
-        <div class="criteria-list" formGroupName="calificaciones">
-          @for (criterio of criteriosGenerales; track criterio.clave) {
-            <div class="criterion-row">
-              <div class="criterion-copy">
-                <label [for]="'general-' + criterio.clave">{{ criterio.nombre }}</label>
-                <p>{{ criterio.descripcion }}</p>
-              </div>
-              <select [id]="'general-' + criterio.clave" [formControlName]="criterio.clave" aria-label="Calificación de {{ criterio.nombre }}">
-                <option [ngValue]="0" disabled>Calificar</option>
-                @for (valor of escala; track valor) { <option [ngValue]="valor">{{ valor }} / 5</option> }
-              </select>
-            </div>
-          }
-        </div>
+        <section class="criteria-section">
+          <div class="evaluation-section-heading">
+            <div><p class="eyebrow">02 / DESEMPEÑO</p><h2>Criterios del puesto</h2></div>
+            <span class="scale-note">1 Bajo · 5 Destacado</span>
+          </div>
+          <div class="criteria-list">
+            @for (criterio of criteriosGenerales; track criterio.clave; let index = $index) {
+              <article class="criterion-card">
+                <div class="criterion-topline">
+                  <div class="criterion-copy">
+                    <span class="criterion-number">{{ index + 1 < 10 ? '0' + (index + 1) : index + 1 }}</span>
+                    <div><h3>{{ criterio.nombre }}</h3><p>{{ criterio.descripcion }}</p></div>
+                  </div>
+                  <div formGroupName="calificaciones">
+                    <div class="score-options" role="group" [attr.aria-label]="'Calificación de ' + criterio.nombre">
+                      @for (valor of escala; track valor) {
+                        <label class="score-option">
+                          <input type="radio" [name]="'general-' + criterio.clave" [formControlName]="criterio.clave" [value]="valor">
+                          <span>{{ valor }}</span>
+                        </label>
+                      }
+                    </div>
+                  </div>
+                </div>
+                <div class="observation-row" formGroupName="observaciones">
+                  <label [for]="'observacion-general-' + criterio.clave">Observaciones</label>
+                  <textarea [id]="'observacion-general-' + criterio.clave" [formControlName]="criterio.clave" rows="2" maxlength="1000" placeholder="Opcional"></textarea>
+                </div>
+              </article>
+            }
+          </div>
+        </section>
 
         @if (empleadoSeleccionado()?.codigo_empleado === 'SUR-JM-005') {
-          <section class="specialized-section" formGroupName="especializada">
-            <div class="specialized-heading">
-              <p class="eyebrow">MÓDULO ESPECIALIZADO</p>
-              <h3>Jefatura de mantenimiento · perfil técnico y psicométrico</h3>
-              <p>Completa las competencias técnicas, de supervisión y liderazgo para SUR-JM-005.</p>
+          <section class="specialized-section">
+            <div class="evaluation-section-heading">
+              <div><p class="eyebrow">03 / JEFATURA DE MANTENIMIENTO</p><h2>Criterios técnicos y de liderazgo</h2></div>
+              <span class="scale-note">1 Bajo · 5 Destacado</span>
             </div>
             <div class="criteria-list">
-              @for (criterio of criteriosJefatura; track criterio.clave) {
-                <div class="criterion-row">
+              @for (criterio of criteriosJefatura; track criterio.clave; let index = $index) {
+                <article class="criterion-card">
+                  <div class="criterion-topline">
                   <div class="criterion-copy">
-                    <label [for]="'jefatura-' + criterio.clave">{{ criterio.nombre }}</label>
-                    <p>{{ criterio.descripcion }}</p>
+                    <span class="criterion-number">{{ index + 1 < 10 ? '0' + (index + 1) : index + 1 }}</span>
+                    <div><h3>{{ criterio.nombre }}</h3><p>{{ criterio.descripcion }}</p></div>
                   </div>
-                  <select [id]="'jefatura-' + criterio.clave" [formControlName]="criterio.clave" aria-label="Calificación de {{ criterio.nombre }}">
-                    <option [ngValue]="0" disabled>Calificar</option>
-                    @for (valor of escala; track valor) { <option [ngValue]="valor">{{ valor }} / 5</option> }
-                  </select>
-                </div>
+                  <div formGroupName="especializada">
+                    <div class="score-options" role="group" [attr.aria-label]="'Calificación de ' + criterio.nombre">
+                      @for (valor of escala; track valor) {
+                        <label class="score-option">
+                          <input type="radio" [name]="'jefatura-' + criterio.clave" [formControlName]="criterio.clave" [value]="valor">
+                          <span>{{ valor }}</span>
+                        </label>
+                      }
+                    </div>
+                  </div>
+                  </div>
+                  <div class="observation-row" formGroupName="observaciones">
+                    <label [for]="'observacion-jefatura-' + criterio.clave">Observaciones</label>
+                    <textarea [id]="'observacion-jefatura-' + criterio.clave" [formControlName]="criterio.clave" rows="2" maxlength="1000" placeholder="Opcional"></textarea>
+                  </div>
+                </article>
               }
             </div>
           </section>
         }
 
         <div class="evaluation-field comments-field">
-          <label for="comentarios-evaluacion">Comentarios y plan de mejora <span>OPCIONAL</span></label>
-          <textarea id="comentarios-evaluacion" formControlName="comentarios" rows="4" maxlength="5000" placeholder="Fortalezas, oportunidades y acuerdos de seguimiento"></textarea>
+          <label for="comentarios-evaluacion">Comentarios generales <span>OPCIONAL</span></label>
+          <textarea id="comentarios-evaluacion" formControlName="comentarios" rows="3" maxlength="5000" placeholder="Fortalezas, oportunidades y acuerdos de seguimiento"></textarea>
         </div>
         <div class="evaluation-submit">
           <span>Las calificaciones y el evaluador quedan registrados para consulta posterior.</span>
@@ -154,14 +183,20 @@
           </div>
           <div class="detail-grid">
             @for (criterio of criteriosGenerales; track criterio.clave) {
-              <div><span>{{ criterio.nombre }}</span><strong>{{ calificacionGeneral(detalle, criterio.clave) }} / 5</strong></div>
+              <div class="detail-criterion">
+                <span>{{ criterio.nombre }}</span><strong>{{ calificacionGeneral(detalle, criterio.clave) }} / 5</strong>
+                @if (observacion(detalle, criterio.clave); as texto) { <p>{{ texto }}</p> }
+              </div>
             }
           </div>
           @if (detalle.codigo_empleado === 'SUR-JM-005') {
             <h3 class="detail-subtitle">Competencias especializadas</h3>
             <div class="detail-grid">
               @for (criterio of criteriosJefatura; track criterio.clave) {
-                <div><span>{{ criterio.nombre }}</span><strong>{{ calificacionJefatura(detalle, criterio.clave) ?? '—' }} / 5</strong></div>
+                <div class="detail-criterion">
+                  <span>{{ criterio.nombre }}</span><strong>{{ calificacionJefatura(detalle, criterio.clave) ?? '—' }} / 5</strong>
+                  @if (observacion(detalle, criterio.clave); as texto) { <p>{{ texto }}</p> }
+                </div>
               }
             </div>
           }

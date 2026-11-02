@@ -24,6 +24,9 @@ type CriterioJefatura = {
   descripcion: string;
 };
 
+type ClaveObservacion = keyof CalificacionesGenerales | keyof CalificacionesJefatura;
+type Observaciones = Record<ClaveObservacion, string>;
+
 const CRITERIOS_GENERALES: CriterioGeneral[] = [
   { clave: 'presentacion', nombre: 'Presentación', descripcion: 'Apariencia personal, orden e higiene profesional.' },
   { clave: 'desempeno', nombre: 'Desempeño del trabajo', descripcion: 'Eficiencia, efectividad y cumplimiento de tareas asignadas.' },
@@ -49,7 +52,6 @@ const CRITERIOS_JEFATURA: CriterioJefatura[] = [
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './evaluaciones.component.html',
-  styleUrl: './evaluaciones.component.css',
 })
 export class EvaluacionesComponent implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
@@ -91,6 +93,22 @@ export class EvaluacionesComponent implements OnInit {
       pensamiento_analitico: [0, [Validators.min(1), Validators.max(5)]],
       organizacion_planificacion: [0, [Validators.min(1), Validators.max(5)]],
     }),
+    observaciones: this.formBuilder.nonNullable.group({
+      presentacion: ['', Validators.maxLength(1000)],
+      desempeno: ['', Validators.maxLength(1000)],
+      atencion_cliente: ['', Validators.maxLength(1000)],
+      puntualidad: ['', Validators.maxLength(1000)],
+      conocimientos: ['', Validators.maxLength(1000)],
+      supervision_operaciones: ['', Validators.maxLength(1000)],
+      gestion_liderazgo_campo: ['', Validators.maxLength(1000)],
+      control_calidad_calibracion: ['', Validators.maxLength(1000)],
+      gestion_recursos_inventario: ['', Validators.maxLength(1000)],
+      atencion_tecnica_cliente: ['', Validators.maxLength(1000)],
+      liderazgo_personal: ['', Validators.maxLength(1000)],
+      toma_decisiones_presion: ['', Validators.maxLength(1000)],
+      pensamiento_analitico: ['', Validators.maxLength(1000)],
+      organizacion_planificacion: ['', Validators.maxLength(1000)],
+    }),
     comentarios: ['', Validators.maxLength(5000)],
   });
 
@@ -108,6 +126,13 @@ export class EvaluacionesComponent implements OnInit {
       (opcion) => String(opcion.id) === this.formulario.controls.empleado_id.value,
     ) ?? null;
     this.empleadoSeleccionado.set(empleado);
+    this.formulario.controls.calificaciones.reset({
+      presentacion: 0,
+      desempeno: 0,
+      atencion_cliente: 0,
+      puntualidad: 0,
+      conocimientos: 0,
+    });
     this.formulario.controls.especializada.reset({
       supervision_operaciones: 0,
       gestion_liderazgo_campo: 0,
@@ -119,6 +144,7 @@ export class EvaluacionesComponent implements OnInit {
       pensamiento_analitico: 0,
       organizacion_planificacion: 0,
     });
+    this.formulario.controls.observaciones.reset(this.observacionesVacias());
 
     if (empleado?.codigo_empleado === 'SUR-JM-005') {
       this.formulario.controls.especializada.enable();
@@ -142,6 +168,7 @@ export class EvaluacionesComponent implements OnInit {
       periodo: value.periodo.trim(),
       calificaciones: value.calificaciones,
       comentarios: value.comentarios.trim(),
+      observaciones: this.obtenerObservaciones(value.observaciones, empleado?.codigo_empleado === 'SUR-JM-005'),
     };
     if (empleado?.codigo_empleado === 'SUR-JM-005') {
       datos.especializada = value.especializada;
@@ -174,6 +201,7 @@ export class EvaluacionesComponent implements OnInit {
             pensamiento_analitico: 0,
             organizacion_planificacion: 0,
           },
+          observaciones: this.observacionesVacias(),
           comentarios: '',
         });
         this.formulario.controls.especializada.disable();
@@ -204,6 +232,10 @@ export class EvaluacionesComponent implements OnInit {
 
   protected calificacionJefatura(evaluacion: Evaluacion, campo: keyof CalificacionesJefatura): number | null {
     return evaluacion[campo] ?? null;
+  }
+
+  protected observacion(evaluacion: Evaluacion, campo: ClaveObservacion): string {
+    return evaluacion.observaciones?.[campo] ?? '';
   }
 
   protected formatoFecha(fecha: string): string {
@@ -254,5 +286,35 @@ export class EvaluacionesComponent implements OnInit {
 
   private periodoActual(): string {
     return new Date().toLocaleDateString('es-GT', { month: 'long', year: 'numeric' });
+  }
+
+  private obtenerObservaciones(observaciones: Observaciones, incluirEspecializadas: boolean): Partial<Observaciones> {
+    const campos: ClaveObservacion[] = incluirEspecializadas
+      ? [...CRITERIOS_GENERALES, ...CRITERIOS_JEFATURA].map((criterio) => criterio.clave)
+      : CRITERIOS_GENERALES.map((criterio) => criterio.clave);
+    return Object.fromEntries(
+      campos
+        .map((campo) => [campo, observaciones[campo].trim()] as const)
+        .filter(([, observacion]) => observacion.length > 0),
+    );
+  }
+
+  private observacionesVacias(): Observaciones {
+    return {
+      presentacion: '',
+      desempeno: '',
+      atencion_cliente: '',
+      puntualidad: '',
+      conocimientos: '',
+      supervision_operaciones: '',
+      gestion_liderazgo_campo: '',
+      control_calidad_calibracion: '',
+      gestion_recursos_inventario: '',
+      atencion_tecnica_cliente: '',
+      liderazgo_personal: '',
+      toma_decisiones_presion: '',
+      pensamiento_analitico: '',
+      organizacion_planificacion: '',
+    };
   }
 }

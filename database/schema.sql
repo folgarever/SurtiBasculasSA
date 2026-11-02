@@ -121,6 +121,7 @@ CREATE TABLE evaluaciones (
     puntualidad TINYINT UNSIGNED NOT NULL,
     conocimientos TINYINT UNSIGNED NOT NULL,
     comentarios TEXT NULL,
+    observaciones JSON NULL,
     creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_evaluaciones_presentacion CHECK (presentacion BETWEEN 1 AND 5),
     CONSTRAINT chk_evaluaciones_desempeno CHECK (desempeno BETWEEN 1 AND 5),

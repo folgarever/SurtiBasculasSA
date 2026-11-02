@@ -41,6 +41,17 @@ function calificacionesValidas(calificaciones, campos) {
     ));
 }
 
+function observacionesValidas(observaciones, camposPermitidos) {
+  return observaciones
+    && typeof observaciones === 'object'
+    && !Array.isArray(observaciones)
+    && Object.entries(observaciones).every(([campo, texto]) => (
+      camposPermitidos.includes(campo)
+      && typeof texto === 'string'
+      && texto.length <= 1000
+    ));
+}
+
 async function obtenerEmpleados(req, res, next) {
   try {
     const [empleados] = await pool.execute(
@@ -82,7 +93,7 @@ async function listarEvaluaciones(req, res, next) {
       `SELECT ev.id, ev.empleado_id, e.codigo_empleado, e.nombre AS empleado,
               p.nombre_puesto, ev.evaluador_id, ev.fecha_evaluacion, ev.periodo,
               ev.presentacion, ev.desempeno, ev.atencion_cliente, ev.puntualidad,
-              ev.conocimientos,
+              ev.conocimientos, ev.observaciones,
               ROUND((ev.presentacion + ev.desempeno + ev.atencion_cliente
                 + ev.puntualidad + ev.conocimientos) / 5, 2) AS promedio_general,
               ev.creado_en,
@@ -115,7 +126,7 @@ async function obtenerEvaluacion(req, res, next) {
       `SELECT ev.id, ev.empleado_id, e.codigo_empleado, e.nombre AS empleado,
               p.nombre_puesto, ev.evaluador_id, ev.fecha_evaluacion, ev.periodo,
               ev.presentacion, ev.desempeno, ev.atencion_cliente, ev.puntualidad,
-              ev.conocimientos, ev.comentarios, ev.creado_en,
+              ev.conocimientos, ev.comentarios, ev.observaciones, ev.creado_en,
               ej.supervision_operaciones, ej.gestion_liderazgo_campo,
               ej.control_calidad_calibracion, ej.gestion_recursos_inventario,
               ej.atencion_tecnica_cliente, ej.liderazgo_personal,
@@ -146,8 +157,10 @@ async function crearEvaluacion(req, res, next) {
     periodo,
     calificaciones,
     especializada,
-    comentarios
+    comentarios,
+    observaciones
   } = req.body || {};
+  const notasPorCriterio = observaciones === undefined ? {} : observaciones;
 
   if (
     !identificadorValido(empleadoId)
@@ -158,6 +171,9 @@ async function crearEvaluacion(req, res, next) {
     || !calificacionesValidas(calificaciones, CALIFICACIONES_GENERALES)
     || (comentarios !== undefined && comentarios !== null
       && (typeof comentarios !== 'string' || comentarios.length > 5000))
+    || !notasPorCriterio
+    || typeof notasPorCriterio !== 'object'
+    || Array.isArray(notasPorCriterio)
   ) {
     return res.status(400).json({ mensaje: 'Los datos de la evaluación general son inválidos o incompletos.' });
   }
@@ -174,9 +190,13 @@ async function crearEvaluacion(req, res, next) {
     }
 
     const esJefeMantenimiento = empleado.codigo_empleado === CODIGO_JEFE_MANTENIMIENTO;
+    const camposObservacionPermitidos = esJefeMantenimiento
+      ? [...CALIFICACIONES_GENERALES, ...CALIFICACIONES_JEFATURA]
+      : CALIFICACIONES_GENERALES;
     if (
       (esJefeMantenimiento && !calificacionesValidas(especializada, CALIFICACIONES_JEFATURA))
       || (!esJefeMantenimiento && especializada !== undefined && especializada !== null)
+      || !observacionesValidas(notasPorCriterio, camposObservacionPermitidos)
     ) {
       return res.status(400).json({
         mensaje: esJefeMantenimiento
@@ -190,15 +210,16 @@ async function crearEvaluacion(req, res, next) {
     const [resultado] = await connection.execute(
       `INSERT INTO evaluaciones
        (empleado_id, evaluador_id, fecha_evaluacion, periodo, presentacion, desempeno,
-        atencion_cliente, puntualidad, conocimientos, comentarios)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        atencion_cliente, puntualidad, conocimientos, comentarios, observaciones)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         Number(empleadoId),
         req.usuario.id,
         fechaEvaluacion,
         periodo.trim(),
         ...CALIFICACIONES_GENERALES.map((campo) => calificaciones[campo]),
-        comentarios?.trim() || null
+        comentarios?.trim() || null,
+        Object.keys(notasPorCriterio).length > 0 ? JSON.stringify(notasPorCriterio) : null
       ]
     );
 

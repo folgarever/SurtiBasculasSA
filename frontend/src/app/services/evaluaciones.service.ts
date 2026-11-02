@@ -33,6 +33,11 @@ export interface CalificacionesJefatura {
   organizacion_planificacion: number;
 }
 
+export type ObservacionesEvaluacion = Partial<Record<
+  keyof CalificacionesGenerales | keyof CalificacionesJefatura,
+  string
+>>;
+
 export interface DatosEvaluacion {
   empleado_id: number;
   fecha_evaluacion: string;
@@ -40,6 +45,7 @@ export interface DatosEvaluacion {
   calificaciones: CalificacionesGenerales;
   especializada?: CalificacionesJefatura;
   comentarios: string;
+  observaciones: ObservacionesEvaluacion;
 }
 
 export interface Evaluacion {
@@ -58,6 +64,7 @@ export interface Evaluacion {
   conocimientos: number;
   promedio_general: number;
   comentarios?: string | null;
+  observaciones?: ObservacionesEvaluacion | null;
   supervision_operaciones?: number | null;
   gestion_liderazgo_campo?: number | null;
   control_calidad_calibracion?: number | null;
