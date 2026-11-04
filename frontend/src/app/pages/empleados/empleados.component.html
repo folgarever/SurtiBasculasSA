@@ -56,8 +56,10 @@
                     <td class="employee-actions">
                       @if (puedeEditar(empleado)) {
                         <button class="small-action" type="button" title="Editar empleado" [attr.aria-label]="'Editar ' + empleado.nombre" (click)="editarEmpleado(empleado)"><ng-icon name="lucidePencil" size="16" /></button>
-                        @if (empleado.activo) {
+                        @if (puedeDarBaja(empleado) && empleado.activo) {
                           <button class="small-action small-action-danger" type="button" title="Dar de baja" [attr.aria-label]="'Dar de baja a ' + empleado.nombre" (click)="confirmarBaja(empleado)"><ng-icon name="lucideTrash2" size="16" /></button>
+                        } @else if (empleado.rol === 'ADMIN') {
+                          <span class="protected-account">Solo edición de perfil</span>
                         }
                       } @else {
                         <span class="protected-account">Cuenta protegida</span>
@@ -91,6 +93,7 @@
           <option value="">Selecciona un puesto</option>
           @for (puesto of puestos(); track puesto.id) { <option [value]="puesto.id">{{ puesto.nombre_puesto }}</option> }
         </select>
+        @if (puestoProtegido()) { <p class="helper-text">El puesto de una cuenta administradora se conserva para mantener su código y permisos.</p> }
         @if (puestos().length === 0) { <p class="helper-text">No hay puestos disponibles para registrar.</p> }
 
         @if (modal() === 'crear' || cambioDePuesto()) {

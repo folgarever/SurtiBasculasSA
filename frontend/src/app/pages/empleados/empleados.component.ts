@@ -89,6 +89,7 @@ export class EmpleadosComponent implements OnInit {
   protected abrirFormulario(): void {
     this.empleadoSeleccionado.set(null);
     this.errorModal.set('');
+    this.formulario.controls.puesto_id.enable();
     this.formulario.controls.password.setValidators([
       Validators.required,
       Validators.minLength(6),
@@ -109,6 +110,11 @@ export class EmpleadosComponent implements OnInit {
     if (!this.puedeEditar(empleado)) return;
     this.empleadoSeleccionado.set(empleado);
     this.errorModal.set('');
+    if (empleado.rol === 'ADMIN') {
+      this.formulario.controls.puesto_id.disable();
+    } else {
+      this.formulario.controls.puesto_id.enable();
+    }
     this.formulario.controls.password.setValidators([Validators.minLength(6), Validators.maxLength(72)]);
     this.formulario.reset({
       nombre: empleado.nombre,
@@ -130,6 +136,13 @@ export class EmpleadosComponent implements OnInit {
   }
 
   protected puedeEditar(empleado: EmpleadoAdministracion): boolean {
+    if (empleado.id === this.usuario?.id) return false;
+    if (empleado.rol !== 'ADMIN') return true;
+    return this.usuario?.codigo_empleado === 'SUR-GG-001'
+      && empleado.codigo_empleado === 'SUR-AC-002';
+  }
+
+  protected puedeDarBaja(empleado: EmpleadoAdministracion): boolean {
     return empleado.rol !== 'ADMIN' && empleado.id !== this.usuario?.id;
   }
 
@@ -145,6 +158,10 @@ export class EmpleadosComponent implements OnInit {
   protected cambioDePuesto(): boolean {
     const empleado = this.empleadoSeleccionado();
     return Boolean(empleado && Number(this.formulario.controls.puesto_id.value) !== empleado.puesto_id);
+  }
+
+  protected puestoProtegido(): boolean {
+    return this.empleadoSeleccionado()?.rol === 'ADMIN';
   }
 
   protected guardarEmpleado(): void {

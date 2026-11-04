@@ -1,6 +1,7 @@
 const ExcelJS = require('exceljs');
 const bcrypt = require('bcrypt');
 const pool = require('../config/db');
+const { CODIGO_ADMIN_RRHH, CODIGO_GERENTE_GENERAL } = require('../config/authorization');
 
 function filtrosReporte(query) {
   const condiciones = [];
@@ -209,7 +210,13 @@ async function actualizarEmpleado(req, res, next) {
       [empleadoId]
     );
     const empleado = empleados[0];
-    if (!empleado || empleado.rol === 'ADMIN' || empleadoId === Number(req.usuario?.id)) {
+    const puedeEditarAdminSubordinado = req.usuario?.codigo_empleado === CODIGO_GERENTE_GENERAL
+      && empleado?.codigo_empleado === CODIGO_ADMIN_RRHH;
+    if (
+      !empleado
+      || empleadoId === Number(req.usuario?.id)
+      || (empleado.rol === 'ADMIN' && !puedeEditarAdminSubordinado)
+    ) {
       await connection.rollback();
       transaccionIniciada = false;
       return res.status(404).json({ mensaje: 'Empleado no encontrado o no disponible para edición.' });
@@ -217,6 +224,14 @@ async function actualizarEmpleado(req, res, next) {
 
     let codigoEmpleado = empleado.codigo_empleado;
     if (Number(empleado.puesto_id) !== idPuesto) {
+      if (empleado.rol === 'ADMIN') {
+        await connection.rollback();
+        transaccionIniciada = false;
+        return res.status(400).json({
+          mensaje: 'No se puede cambiar el puesto de una cuenta administradora porque modificaría su código y sus permisos.'
+        });
+      }
+
       const [puestos] = await connection.execute(
         'SELECT codigo_abreviatura FROM puestos WHERE id = ? FOR UPDATE',
         [idPuesto]
