@@ -1,10 +1,18 @@
 <div class="app-shell">
+  <aside class="app-sidebar">
+    <a class="sidebar-brand" routerLink="/dashboard"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBASCULAS S.A."></span><span>Portal del personal<small>SURTIBASCULAS S.A.</small></span></a>
+    <span class="sidebar-caption">ESPACIO DE TRABAJO</span>
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+      <a class="sidebar-link is-active" routerLink="/dashboard" aria-current="page"><ng-icon name="lucideClipboardCheck" size="18" /> Mi jornada</a>
+      @if (puedeAccederRrhh) { <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideUsers" size="18" /> Gestión de personal</a> }
+      @if (esAdmin) { <a class="sidebar-link" routerLink="/admin"><ng-icon name="lucideLayoutDashboard" size="18" /> Administración</a> }
+      @if (puedeEvaluar) { <a class="sidebar-link" routerLink="/evaluaciones"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluaciones</a> }
+    </nav>
+    <div class="sidebar-footer"><span class="status-dot"></span><span>Portal activo<small>Registro de asistencia</small></span></div>
+  </aside>
   <header class="topbar">
-    <a class="brand" routerLink="/dashboard"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt=""></span><span>SURTIBASCULAS S.A. <small>ASISTENCIA</small></span></a>
+    <div class="topbar-title"><span class="admin-label">PORTAL DEL PERSONAL</span><strong>Mi jornada</strong></div>
     <div class="topbar-actions">
-      @if (usuario && (usuario.role === 'ADMIN' || usuario.rol_id === 2 || usuario.rol_id === 3)) {
-        <button class="button button-quiet" type="button" (click)="abrirRrhh()">Panel RRHH <span aria-hidden="true">↗</span></button>
-      }
       <span class="user-chip"><span class="avatar">{{ usuario?.nombre?.slice(0, 1) || 'U' }}</span><span>{{ usuario?.nombre }}</span></span>
       <button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button>
     </div>

@@ -1,0 +1,150 @@
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a class="sidebar-brand" routerLink="/admin"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBASCULAS S.A."></span><span>Gestión de personal<small>SURTIBASCULAS S.A.</small></span></a>
+    <span class="sidebar-caption">MÓDULOS</span>
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+      <a class="sidebar-link" routerLink="/admin"><ng-icon name="lucideLayoutDashboard" size="18" /> Dashboard</a>
+      <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideClipboardCheck" size="18" /> Control de asistencia</a>
+      <a class="sidebar-link" routerLink="/evaluaciones"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluación de personal</a>
+      <a class="sidebar-link is-active" routerLink="/admin/empleados" aria-current="page"><ng-icon name="lucideUsers" size="18" /> Empleados</a>
+    </nav>
+    <div class="sidebar-footer"><span class="status-dot"></span><span>Sistema activo<small>Gestión de personal</small></span></div>
+  </aside>
+  <header class="topbar">
+    <div class="topbar-title"><span class="admin-label">PERSONAL / DIRECTORIO</span><strong>Gestión de empleados</strong></div>
+    <div class="topbar-actions"><span class="user-chip"><span class="avatar avatar-admin">{{ usuario?.nombre?.slice(0, 1) || 'A' }}</span><span>{{ usuario?.nombre }}</span></span><button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
+  </header>
+
+  <main class="workspace employee-workspace">
+    <div class="page-heading employee-heading">
+      <div><p class="eyebrow">ADMINISTRACIÓN / PERSONAL</p><h1>Gestión de empleados</h1><p class="subheading">Consulta el directorio y administra las altas de personal.</p></div>
+      <div class="heading-actions"><button class="button button-accent" type="button" (click)="abrirFormulario()"><ng-icon name="lucidePlus" size="16" /> Agregar empleado</button></div>
+    </div>
+
+    @if (aviso(); as mensaje) {
+      <div class="alert" [class.alert-success]="mensaje.tipo === 'success'" [class.alert-error]="mensaje.tipo === 'error'" [attr.role]="mensaje.tipo === 'error' ? 'alert' : 'status'">{{ mensaje.texto }} <button type="button" aria-label="Cerrar aviso" (click)="aviso.set(null)">×</button></div>
+    }
+
+    <section class="summary-strip employee-summary">
+      <div class="summary-metric"><span class="summary-number">{{ empleados().length }}</span><span class="summary-label">EMPLEADOS REGISTRADOS</span></div>
+      <div class="summary-metric"><span class="summary-number">{{ empleadosActivos() }}</span><span class="summary-label">EMPLEADOS ACTIVOS</span></div>
+      <div class="summary-note"><span class="status-dot"></span><span>Directorio actualizado al consultar</span></div>
+    </section>
+
+    <section class="records-section">
+      <div class="section-heading employee-list-heading">
+        <div><p class="eyebrow">EQUIPO SURTIBASCULAS</p><h2>Directorio de empleados</h2></div>
+        <label class="employee-search"><ng-icon name="lucideSearch" size="17" /><input type="search" [value]="busqueda()" (input)="actualizarBusqueda($event)" placeholder="Buscar nombre, código o puesto" aria-label="Buscar empleados"></label>
+      </div>
+
+      <section class="table-frame employee-table-frame">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Empleado</th><th>Puesto</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+              @if (cargando()) {
+                <tr><td colspan="5" class="table-empty">Cargando empleados…</td></tr>
+              } @else if (empleadosFiltrados().length === 0) {
+                <tr><td colspan="5" class="table-empty">{{ busqueda() ? 'No hay empleados que coincidan con la búsqueda.' : 'Aún no hay empleados registrados.' }}</td></tr>
+              } @else {
+                @for (empleado of empleadosFiltrados(); track empleado.id) {
+                  <tr>
+                    <td><strong class="employee-name">{{ empleado.nombre }}</strong><small class="employee-code">{{ empleado.codigo_empleado }}</small></td>
+                    <td>{{ empleado.nombre_puesto }}</td>
+                    <td>{{ empleado.rol }}</td>
+                    <td><span class="state-pill" [class.state-good]="empleado.activo" [class.state-warn]="!empleado.activo">{{ empleado.activo ? 'Activo' : 'Inactivo' }}</span></td>
+                    <td class="employee-actions">
+                      @if (puedeEditar(empleado)) {
+                        <button class="small-action" type="button" title="Editar empleado" [attr.aria-label]="'Editar ' + empleado.nombre" (click)="editarEmpleado(empleado)"><ng-icon name="lucidePencil" size="16" /></button>
+                        @if (empleado.activo) {
+                          <button class="small-action small-action-danger" type="button" title="Dar de baja" [attr.aria-label]="'Dar de baja a ' + empleado.nombre" (click)="confirmarBaja(empleado)"><ng-icon name="lucideTrash2" size="16" /></button>
+                        }
+                      } @else {
+                        <span class="protected-account">Cuenta protegida</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer class="table-footer">{{ empleadosFiltrados().length }} de {{ empleados().length }} empleados</footer>
+      </section>
+    </section>
+    <footer class="workspace-footer"><span>SURTIBASCULAS S.A. · RECURSOS HUMANOS</span><a routerLink="/admin">Volver al panel de administración</a></footer>
+  </main>
+</div>
+
+@if (modal() === 'crear' || modal() === 'editar') {
+  <div class="modal-backdrop" (click)="cerrarFormulario()" (keydown.escape)="cerrarFormulario()">
+    <section class="modal-panel employee-modal" role="dialog" aria-modal="true" aria-labelledby="employee-form-title" (click)="$event.stopPropagation()">
+      <div class="modal-header"><div><p class="eyebrow">{{ modal() === 'crear' ? 'ALTA DE PERSONAL' : 'ACTUALIZACIÓN DE PERSONAL' }}</p><h2 id="employee-form-title">{{ modal() === 'crear' ? 'Agregar empleado' : 'Editar empleado' }}</h2></div><button class="icon-button" type="button" aria-label="Cerrar" (click)="cerrarFormulario()"><ng-icon name="lucideX" size="17" /></button></div>
+      <p class="employee-form-intro">{{ modal() === 'crear' ? 'Completa los datos para registrar a una persona en el directorio.' : 'Actualiza los datos del empleado. La contraseña del administrador confirma este cambio.' }}</p>
+      <form [formGroup]="formulario" (ngSubmit)="guardarEmpleado()">
+        <label for="empleado-nombre">Nombre completo</label>
+        <input id="empleado-nombre" type="text" formControlName="nombre" autocomplete="name" maxlength="100" placeholder="Nombre y apellidos" required>
+        @if (formulario.controls.nombre.touched && formulario.controls.nombre.invalid) { <span class="field-error">Ingresa un nombre de al menos 2 caracteres.</span> }
+
+        <label for="empleado-puesto">Puesto</label>
+        <select id="empleado-puesto" formControlName="puesto_id" required>
+          <option value="">Selecciona un puesto</option>
+          @for (puesto of puestos(); track puesto.id) { <option [value]="puesto.id">{{ puesto.nombre_puesto }}</option> }
+        </select>
+        @if (puestos().length === 0) { <p class="helper-text">No hay puestos disponibles para registrar.</p> }
+
+        @if (modal() === 'crear' || cambioDePuesto()) {
+          <div class="generated-code"><span>{{ modal() === 'crear' ? 'CÓDIGO AUTOMÁTICO' : 'NUEVO CÓDIGO AL CAMBIAR PUESTO' }}</span><strong>{{ codigoPrevisto() }}</strong><small>{{ modal() === 'editar' ? 'Al cambiar de puesto, también cambiará el código que usa para iniciar sesión.' : 'El número consecutivo se asignará al guardar.' }}</small></div>
+        }
+
+        @if (modal() === 'crear') {
+          <label for="empleado-password">Contraseña inicial del empleado</label>
+          <input id="empleado-password" type="password" formControlName="password" autocomplete="new-password" minlength="6" maxlength="72" placeholder="Mínimo 6 caracteres" required>
+          @if (formulario.controls.password.touched && formulario.controls.password.invalid) { <span class="field-error">La contraseña debe tener entre 6 y 72 caracteres.</span> }
+        } @else {
+          <label for="empleado-password">Nueva contraseña del empleado <span class="optional-mark">OPCIONAL</span></label>
+          <input id="empleado-password" type="password" formControlName="password" autocomplete="new-password" minlength="6" maxlength="72" placeholder="Dejar vacío para conservarla">
+          @if (formulario.controls.password.touched && formulario.controls.password.invalid) { <span class="field-error">La nueva contraseña debe tener entre 6 y 72 caracteres.</span> }
+        }
+
+        @if (modal() === 'editar') {
+          <label class="employee-toggle" for="empleado-activo">
+            <input id="empleado-activo" type="checkbox" formControlName="activo">
+            <span><strong>Acceso activo</strong><small>El empleado puede iniciar sesión en el sistema.</small></span>
+          </label>
+        }
+
+        <div class="admin-confirmation">
+          <label for="contrasena-admin"><ng-icon name="lucideShieldCheck" size="16" /> Confirma tu contraseña de administrador</label>
+          <input id="contrasena-admin" type="password" formControlName="contrasena_admin" autocomplete="current-password" placeholder="Contraseña de tu cuenta" required>
+          @if (formulario.controls.contrasena_admin.touched && formulario.controls.contrasena_admin.invalid) { <span class="field-error">La contraseña del administrador es obligatoria.</span> }
+          <p class="helper-text">Se solicitará en cada alta o edición para autorizar el cambio.</p>
+        </div>
+
+        @if (errorModal()) { <div class="alert alert-error modal-error" role="alert">{{ errorModal() }}</div> }
+
+        <div class="modal-actions"><button class="button button-text" type="button" (click)="cerrarFormulario()">Cancelar</button><button class="button button-accent" type="submit" [disabled]="guardando() || puestos().length === 0"><ng-icon [name]="modal() === 'crear' ? 'lucidePlus' : 'lucidePencil'" size="16" /> {{ guardando() ? 'Guardando…' : modal() === 'crear' ? 'Registrar empleado' : 'Guardar cambios' }}</button></div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (modal() === 'eliminar') {
+  <div class="modal-backdrop" (click)="cerrarFormulario()" (keydown.escape)="cerrarFormulario()">
+    <section class="modal-panel employee-modal" role="dialog" aria-modal="true" aria-labelledby="employee-delete-title" (click)="$event.stopPropagation()">
+      <div class="modal-header"><div><p class="eyebrow">BAJA DE PERSONAL</p><h2 id="employee-delete-title">Dar de baja al empleado</h2></div><button class="icon-button" type="button" aria-label="Cerrar" (click)="cerrarFormulario()"><ng-icon name="lucideX" size="17" /></button></div>
+      @if (empleadoSeleccionado(); as empleado) {
+        <p class="modal-context">Se desactivará el acceso de <strong>{{ empleado.nombre }}</strong> ({{ empleado.codigo_empleado }}). Su historial de asistencia y evaluaciones se conservará.</p>
+      }
+      <form [formGroup]="confirmacionForm" (ngSubmit)="darDeBaja()">
+        <div class="admin-confirmation">
+          <label for="contrasena-admin-baja"><ng-icon name="lucideShieldCheck" size="16" /> Confirma tu contraseña de administrador</label>
+          <input id="contrasena-admin-baja" type="password" formControlName="contrasena_admin" autocomplete="current-password" placeholder="Contraseña de tu cuenta" required>
+          @if (confirmacionForm.controls.contrasena_admin.touched && confirmacionForm.controls.contrasena_admin.invalid) { <span class="field-error">La contraseña del administrador es obligatoria.</span> }
+        </div>
+        @if (errorModal()) { <div class="alert alert-error modal-error" role="alert">{{ errorModal() }}</div> }
+        <div class="modal-actions"><button class="button button-text" type="button" (click)="cerrarFormulario()">Cancelar</button><button class="button button-danger" type="submit" [disabled]="guardando()"><ng-icon name="lucideTrash2" size="16" /> {{ guardando() ? 'Procesando…' : 'Confirmar baja' }}</button></div>
+      </form>
+    </section>
+  </div>
+}

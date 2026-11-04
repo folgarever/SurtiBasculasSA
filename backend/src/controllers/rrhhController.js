@@ -1,4 +1,5 @@
 const ExcelJS = require('exceljs');
+const bcrypt = require('bcrypt');
 const pool = require('../config/db');
 
 function filtrosReporte(query) {
@@ -54,6 +55,234 @@ async function obtenerEmpleadosActivos(req, res, next) {
        ORDER BY nombre ASC`
     );
     return res.json({ empleados });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function obtenerEmpleadosAdministracion(req, res, next) {
+  try {
+    const [empleados] = await pool.execute(
+      `SELECT e.id, e.codigo_empleado, e.nombre, e.puesto_id, e.activo, p.nombre_puesto, r.nombre AS rol
+       FROM empleados e
+       INNER JOIN puestos p ON p.id = e.puesto_id
+       INNER JOIN roles r ON r.id = e.rol_id
+       ORDER BY e.nombre ASC`
+    );
+    return res.json({ empleados });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function obtenerPuestos(req, res, next) {
+  try {
+    const [puestos] = await pool.execute(
+      'SELECT id, codigo_abreviatura, nombre_puesto FROM puestos ORDER BY nombre_puesto ASC'
+    );
+    return res.json({ puestos });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function registrarEmpleado(req, res, next) {
+  const { nombre, puesto_id: puestoId, password } = req.body || {};
+  const nombreEmpleado = typeof nombre === 'string' ? nombre.trim() : '';
+  const idPuesto = Number(puestoId);
+
+  if (
+    nombreEmpleado.length < 2
+    || nombreEmpleado.length > 100
+    || !Number.isInteger(idPuesto)
+    || idPuesto < 1
+    || typeof password !== 'string'
+    || password.length < 6
+    || Buffer.byteLength(password, 'utf8') > 72
+  ) {
+    return res.status(400).json({
+      mensaje: 'Indica un nombre válido, un puesto y una contraseña de entre 6 y 72 bytes.'
+    });
+  }
+
+  let connection;
+  let transaccionIniciada = false;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    transaccionIniciada = true;
+
+    const [puestos] = await connection.execute(
+      'SELECT codigo_abreviatura FROM puestos WHERE id = ? FOR UPDATE',
+      [idPuesto]
+    );
+    if (!puestos[0]) {
+      await connection.rollback();
+      transaccionIniciada = false;
+      return res.status(400).json({ mensaje: 'El puesto seleccionado no existe.' });
+    }
+
+    const [roles] = await connection.execute(
+      "SELECT id FROM roles WHERE nombre = 'Empleado' LIMIT 1"
+    );
+    const [horarios] = await connection.execute(
+      'SELECT id FROM horarios ORDER BY id ASC LIMIT 1'
+    );
+    if (!roles[0] || !horarios[0]) {
+      throw new Error('No hay un rol de empleado o un horario configurado.');
+    }
+
+    const prefijo = `SUR-${puestos[0].codigo_abreviatura}-`;
+    const [secuencias] = await connection.execute(
+      `SELECT MAX(CAST(SUBSTRING(codigo_empleado, CHAR_LENGTH(?) + 1) AS UNSIGNED)) AS ultimo
+       FROM empleados
+       WHERE codigo_empleado LIKE ?`,
+      [prefijo, `${prefijo}%`]
+    );
+    const codigoEmpleado = `${prefijo}${String(Number(secuencias[0].ultimo || 0) + 1).padStart(3, '0')}`;
+    const passwordHash = await bcrypt.hash(password, 10);
+    const [resultado] = await connection.execute(
+      `INSERT INTO empleados
+         (codigo_empleado, nombre, password_hash, rol_id, puesto_id, horario_id, activo)
+       VALUES (?, ?, ?, ?, ?, ?, 1)`,
+      [codigoEmpleado, nombreEmpleado, passwordHash, roles[0].id, idPuesto, horarios[0].id]
+    );
+
+    await connection.commit();
+    transaccionIniciada = false;
+    return res.status(201).json({
+      mensaje: 'Empleado registrado correctamente.',
+      empleado: { id: resultado.insertId, codigo_empleado: codigoEmpleado }
+    });
+  } catch (error) {
+    if (connection && transaccionIniciada) await connection.rollback();
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ mensaje: 'No se pudo asignar un código único. Intenta nuevamente.' });
+    }
+    return next(error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function actualizarEmpleado(req, res, next) {
+  const empleadoId = Number(req.params.id);
+  const { nombre, puesto_id: puestoId, activo, password } = req.body || {};
+  const nombreEmpleado = typeof nombre === 'string' ? nombre.trim() : '';
+  const idPuesto = Number(puestoId);
+  const estadoActivo = activo === true || activo === 1 ? 1 : activo === false || activo === 0 ? 0 : null;
+  const actualizarPassword = typeof password === 'string' && password.length > 0;
+  const passwordValida = password === undefined
+    || password === ''
+    || (
+      typeof password === 'string'
+      && password.length >= 6
+      && Buffer.byteLength(password, 'utf8') <= 72
+    );
+
+  if (
+    !Number.isInteger(empleadoId)
+    || empleadoId < 1
+    || nombreEmpleado.length < 2
+    || nombreEmpleado.length > 100
+    || !Number.isInteger(idPuesto)
+    || idPuesto < 1
+    || estadoActivo === null
+    || !passwordValida
+  ) {
+    return res.status(400).json({ mensaje: 'Revisa el nombre, puesto, estado y contraseña del empleado.' });
+  }
+
+  let connection;
+  let transaccionIniciada = false;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    transaccionIniciada = true;
+
+    const [empleados] = await connection.execute(
+      `SELECT e.codigo_empleado, e.puesto_id, r.nombre AS rol
+       FROM empleados e
+       INNER JOIN roles r ON r.id = e.rol_id
+       WHERE e.id = ?
+       FOR UPDATE`,
+      [empleadoId]
+    );
+    const empleado = empleados[0];
+    if (!empleado || empleado.rol === 'ADMIN' || empleadoId === Number(req.usuario?.id)) {
+      await connection.rollback();
+      transaccionIniciada = false;
+      return res.status(404).json({ mensaje: 'Empleado no encontrado o no disponible para edición.' });
+    }
+
+    let codigoEmpleado = empleado.codigo_empleado;
+    if (Number(empleado.puesto_id) !== idPuesto) {
+      const [puestos] = await connection.execute(
+        'SELECT codigo_abreviatura FROM puestos WHERE id = ? FOR UPDATE',
+        [idPuesto]
+      );
+      if (!puestos[0]) {
+        await connection.rollback();
+        transaccionIniciada = false;
+        return res.status(400).json({ mensaje: 'El puesto seleccionado no existe.' });
+      }
+
+      const prefijo = `SUR-${puestos[0].codigo_abreviatura}-`;
+      const [secuencias] = await connection.execute(
+        `SELECT MAX(CAST(SUBSTRING(codigo_empleado, CHAR_LENGTH(?) + 1) AS UNSIGNED)) AS ultimo
+         FROM empleados
+         WHERE codigo_empleado LIKE ?`,
+        [prefijo, `${prefijo}%`]
+      );
+      codigoEmpleado = `${prefijo}${String(Number(secuencias[0].ultimo || 0) + 1).padStart(3, '0')}`;
+    }
+
+    const asignaciones = ['codigo_empleado = ?', 'nombre = ?', 'puesto_id = ?', 'activo = ?'];
+    const valores = [codigoEmpleado, nombreEmpleado, idPuesto, estadoActivo];
+    if (actualizarPassword) {
+      asignaciones.push('password_hash = ?');
+      valores.push(await bcrypt.hash(password, 10));
+    }
+
+    await connection.execute(
+      `UPDATE empleados SET ${asignaciones.join(', ')} WHERE id = ?`,
+      [...valores, empleadoId]
+    );
+    await connection.commit();
+    transaccionIniciada = false;
+    return res.json({
+      mensaje: 'Empleado actualizado correctamente.',
+      empleado: { id: empleadoId, codigo_empleado: codigoEmpleado }
+    });
+  } catch (error) {
+    if (connection && transaccionIniciada) await connection.rollback();
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ mensaje: 'No se pudo asignar un código único. Intenta nuevamente.' });
+    }
+    return next(error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function eliminarEmpleado(req, res, next) {
+  const empleadoId = Number(req.params.id);
+  if (!Number.isInteger(empleadoId) || empleadoId < 1) {
+    return res.status(400).json({ mensaje: 'El empleado indicado no es válido.' });
+  }
+
+  try {
+    const [resultado] = await pool.execute(
+      `UPDATE empleados e
+       INNER JOIN roles r ON r.id = e.rol_id
+       SET e.activo = 0
+       WHERE e.id = ? AND r.nombre <> 'ADMIN' AND e.id <> ?`,
+      [empleadoId, req.usuario?.id]
+    );
+    if (resultado.affectedRows === 0) {
+      return res.status(404).json({ mensaje: 'Empleado no encontrado o no disponible para dar de baja.' });
+    }
+    return res.json({ mensaje: 'Empleado dado de baja. Se conservó su historial.' });
   } catch (error) {
     return next(error);
   }
@@ -222,6 +451,11 @@ async function exportarReporteExcel(req, res, next) {
 module.exports = {
   obtenerTodasAsistencias,
   obtenerEmpleadosActivos,
+  obtenerEmpleadosAdministracion,
+  obtenerPuestos,
+  registrarEmpleado,
+  actualizarEmpleado,
+  eliminarEmpleado,
   corregirMarcacion,
   registrarIncidencia,
   exportarReporteExcel

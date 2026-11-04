@@ -25,11 +25,39 @@ export interface DatosIncidencia {
   motivo: string;
 }
 
-  export interface EmpleadoRrhh {
-    id: number;
-    codigo_empleado: string;
-    nombre: string;
-  }
+export interface EmpleadoRrhh {
+  id: number;
+  codigo_empleado: string;
+  nombre: string;
+}
+
+export interface EmpleadoAdministracion extends EmpleadoRrhh {
+  activo: number | boolean;
+  nombre_puesto: string;
+  puesto_id: number;
+  rol: string;
+}
+
+export interface Puesto {
+  id: number;
+  codigo_abreviatura: string;
+  nombre_puesto: string;
+}
+
+export interface DatosEmpleado {
+  nombre: string;
+  puesto_id: number;
+  password: string;
+  contrasena_admin: string;
+}
+
+export interface DatosEdicionEmpleado {
+  nombre: string;
+  puesto_id: number;
+  activo: boolean;
+  password?: string;
+  contrasena_admin: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class RrhhService {
@@ -44,9 +72,43 @@ export class RrhhService {
     return this.http.get<{ asistencias: Marcacion[] }>(`${this.baseUrl}/asistencias`, { params });
   }
 
-      obtenerEmpleados(): Observable<{ empleados: EmpleadoRrhh[] }> {
-        return this.http.get<{ empleados: EmpleadoRrhh[] }>(`${this.baseUrl}/empleados`);
-      }
+  obtenerEmpleados(): Observable<{ empleados: EmpleadoRrhh[] }> {
+    return this.http.get<{ empleados: EmpleadoRrhh[] }>(`${this.baseUrl}/empleados`);
+  }
+
+  obtenerEmpleadosAdministracion(): Observable<{ empleados: EmpleadoAdministracion[] }> {
+    return this.http.get<{ empleados: EmpleadoAdministracion[] }>(`${this.baseUrl}/administracion/empleados`);
+  }
+
+  obtenerPuestos(): Observable<{ puestos: Puesto[] }> {
+    return this.http.get<{ puestos: Puesto[] }>(`${this.baseUrl}/administracion/puestos`);
+  }
+
+  registrarEmpleado(datos: DatosEmpleado): Observable<{
+    mensaje: string;
+    empleado: { id: number; codigo_empleado: string };
+  }> {
+    return this.http.post<{
+      mensaje: string;
+      empleado: { id: number; codigo_empleado: string };
+    }>(`${this.baseUrl}/administracion/empleados`, datos);
+  }
+
+  actualizarEmpleado(id: number, datos: DatosEdicionEmpleado): Observable<{
+    mensaje: string;
+    empleado: { id: number; codigo_empleado: string };
+  }> {
+    return this.http.put<{
+      mensaje: string;
+      empleado: { id: number; codigo_empleado: string };
+    }>(`${this.baseUrl}/administracion/empleados/${id}`, datos);
+  }
+
+  eliminarEmpleado(id: number, contrasena_admin: string): Observable<{ mensaje: string }> {
+    return this.http.delete<{ mensaje: string }>(`${this.baseUrl}/administracion/empleados/${id}`, {
+      body: { contrasena_admin },
+    });
+  }
 
   corregirMarcacion(datos: DatosCorreccion): Observable<{ mensaje: string }> {
     return this.http.put<{ mensaje: string }>(`${this.baseUrl}/corregir`, datos);

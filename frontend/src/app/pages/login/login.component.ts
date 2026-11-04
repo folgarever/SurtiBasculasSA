@@ -48,6 +48,11 @@ export class LoginComponent {
   }
 
   private irAlPanel(): void {
-    void this.router.navigate([this.auth.hasRrhhRole() ? '/rrhh' : '/dashboard']);
+    const ruta = this.auth.hasAdminRole()
+      ? '/admin'
+      : this.auth.hasRrhhRole()
+        ? '/rrhh'
+        : '/dashboard';
+    void this.router.navigate([ruta]);
   }
 }

@@ -91,6 +91,10 @@ export class AuthService {
     return roleId === 2 || roleId === 3;
   }
 
+  hasAdminRole(): boolean {
+    return (this.getPayload() ?? this.getUsuario())?.role === 'ADMIN';
+  }
+
   hasEvaluationRole(): boolean {
     const usuario = this.getPayload() ?? this.getUsuario();
     return usuario?.role === 'ADMIN'

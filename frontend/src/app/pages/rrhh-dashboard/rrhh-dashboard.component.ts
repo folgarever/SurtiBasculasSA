@@ -3,7 +3,18 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideArrowDownToLine, lucideArrowRight, lucideLogOut, lucidePencil, lucidePlus, lucideX } from '@ng-icons/lucide';
+import {
+  lucideArrowDownToLine,
+  lucideArrowRight,
+  lucideClipboardCheck,
+  lucideLayoutDashboard,
+  lucideLogOut,
+  lucidePencil,
+  lucidePlus,
+  lucideUsers,
+  lucideUserRoundCog,
+  lucideX,
+} from '@ng-icons/lucide';
 import { Marcacion } from '../../services/asistencia.service';
 import { AuthService } from '../../services/auth.service';
 import { DatosCorreccion, DatosIncidencia, EmpleadoRrhh, FiltrosAsistencia, RrhhService } from '../../services/rrhh.service';
@@ -18,7 +29,18 @@ interface EmpleadoOpcion {
   selector: 'app-rrhh-dashboard',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, NgIcon],
-  providers: [provideIcons({ lucideArrowDownToLine, lucideArrowRight, lucideLogOut, lucidePencil, lucidePlus, lucideX })],
+  providers: [provideIcons({
+    lucideArrowDownToLine,
+    lucideArrowRight,
+    lucideClipboardCheck,
+    lucideLayoutDashboard,
+    lucideLogOut,
+    lucidePencil,
+    lucidePlus,
+    lucideUsers,
+    lucideUserRoundCog,
+    lucideX,
+  })],
   templateUrl: './rrhh-dashboard.component.html',
 })
 export class RrhhDashboardComponent implements OnInit {
@@ -27,6 +49,7 @@ export class RrhhDashboardComponent implements OnInit {
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
+  protected readonly esAdmin = this.auth.hasAdminRole();
   protected readonly puedeEvaluar = this.auth.hasEvaluationRole();
   protected readonly asistencias = signal<Marcacion[]>([]);
   protected readonly empleados = signal<EmpleadoRrhh[]>([]);

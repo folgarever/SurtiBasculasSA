@@ -1,0 +1,51 @@
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a class="sidebar-brand" routerLink="/admin"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBASCULAS S.A."></span><span>Gestión de personal<small>SURTIBASCULAS S.A.</small></span></a>
+    <span class="sidebar-caption">MÓDULOS</span>
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+      <a class="sidebar-link is-active" routerLink="/admin" aria-current="page"><ng-icon name="lucideLayoutDashboard" size="18" /> Dashboard</a>
+      <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideClipboardCheck" size="18" /> Control de asistencia</a>
+      <a class="sidebar-link" routerLink="/evaluaciones"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluación de personal</a>
+      <a class="sidebar-link" routerLink="/admin/empleados"><ng-icon name="lucideUsers" size="18" /> Empleados</a>
+    </nav>
+    <div class="sidebar-footer"><span class="status-dot"></span><span>Sistema activo<small>Gestión de personal</small></span></div>
+  </aside>
+  <header class="topbar">
+    <div class="topbar-title"><span class="admin-label">INICIO</span><strong>Dashboard</strong></div>
+    <div class="topbar-actions"><span class="user-chip"><span class="avatar avatar-admin">{{ usuario?.nombre?.slice(0, 1) || 'A' }}</span><span>{{ usuario?.nombre }}</span></span><button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
+  </header>
+
+  <main class="workspace admin-workspace">
+    <section class="admin-welcome">
+      <p class="eyebrow">SURTIBASCULAS S.A. / ADMINISTRACIÓN</p>
+      <h1>Panel de administración</h1>
+      <p>Bienvenido, {{ usuario?.nombre }}. Selecciona el área que deseas gestionar.</p>
+    </section>
+
+    <section class="module-grid" aria-label="Módulos de administración">
+      <a class="module-card module-attendance" routerLink="/rrhh">
+        <span class="module-icon"><ng-icon name="lucideClipboardCheck" size="22" /></span>
+        <span class="module-eyebrow">OPERACIÓN DIARIA</span>
+        <strong>Control de asistencia</strong>
+        <span class="module-description">Consulta las marcaciones, gestiona incidencias y exporta reportes.</span>
+        <span class="module-link">Ingresar al módulo <span aria-hidden="true">→</span></span>
+      </a>
+      <a class="module-card module-evaluation" routerLink="/evaluaciones">
+        <span class="module-icon"><ng-icon name="lucideUserRoundCog" size="22" /></span>
+        <span class="module-eyebrow">DESARROLLO DEL EQUIPO</span>
+        <strong>Evaluación de personal</strong>
+        <span class="module-description">Registra y consulta evaluaciones de desempeño por puesto.</span>
+        <span class="module-link">Ingresar al módulo <span aria-hidden="true">→</span></span>
+      </a>
+      <a class="module-card module-employees" routerLink="/admin/empleados">
+        <span class="module-icon"><ng-icon name="lucideUsers" size="22" /></span>
+        <span class="module-eyebrow">DIRECTORIO</span>
+        <strong>Gestión de empleados</strong>
+        <span class="module-description">Consulta el personal registrado y agrega nuevos empleados.</span>
+        <span class="module-link">Ver empleados <span aria-hidden="true">→</span></span>
+      </a>
+    </section>
+
+    <footer class="workspace-footer"><span>SURTIBASCULAS S.A. · ADMINISTRACIÓN</span><span>Acceso centralizado a los módulos de gestión</span></footer>
+  </main>
+</div>
