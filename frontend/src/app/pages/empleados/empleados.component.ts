@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideClipboardCheck,
+  lucideEye,
+  lucideEyeClosed,
   lucideLayoutDashboard,
   lucideLogOut,
   lucidePencil,
@@ -25,6 +27,8 @@ import { EmpleadoAdministracion, RrhhService, Puesto } from '../../services/rrhh
   imports: [ReactiveFormsModule, RouterLink, NgIcon],
   providers: [provideIcons({
     lucideClipboardCheck,
+    lucideEye,
+    lucideEyeClosed,
     lucideLayoutDashboard,
     lucideLogOut,
     lucidePencil,
@@ -49,6 +53,9 @@ export class EmpleadosComponent implements OnInit {
   protected readonly busqueda = signal('');
   protected readonly cargando = signal(true);
   protected readonly guardando = signal(false);
+  protected readonly mostrarContrasenaEmpleado = signal(false);
+  protected readonly mostrarContrasenaAdmin = signal(false);
+  protected readonly mostrarContrasenaBaja = signal(false);
   protected readonly modal = signal<'crear' | 'editar' | 'eliminar' | null>(null);
   protected readonly empleadoSeleccionado = signal<EmpleadoAdministracion | null>(null);
   protected readonly errorModal = signal('');
@@ -87,6 +94,7 @@ export class EmpleadosComponent implements OnInit {
   }
 
   protected abrirFormulario(): void {
+    this.ocultarContrasenas();
     this.empleadoSeleccionado.set(null);
     this.errorModal.set('');
     this.formulario.controls.puesto_id.enable();
@@ -108,6 +116,7 @@ export class EmpleadosComponent implements OnInit {
 
   protected editarEmpleado(empleado: EmpleadoAdministracion): void {
     if (!this.puedeEditar(empleado)) return;
+    this.ocultarContrasenas();
     this.empleadoSeleccionado.set(empleado);
     this.errorModal.set('');
     if (empleado.rol === 'ADMIN') {
@@ -129,6 +138,7 @@ export class EmpleadosComponent implements OnInit {
 
   protected confirmarBaja(empleado: EmpleadoAdministracion): void {
     if (!this.puedeEditar(empleado)) return;
+    this.ocultarContrasenas();
     this.empleadoSeleccionado.set(empleado);
     this.errorModal.set('');
     this.confirmacionForm.reset({ contrasena_admin: '' });
@@ -147,7 +157,16 @@ export class EmpleadosComponent implements OnInit {
   }
 
   protected cerrarFormulario(): void {
-    if (!this.guardando()) this.modal.set(null);
+    if (!this.guardando()) {
+      this.modal.set(null);
+      this.ocultarContrasenas();
+    }
+  }
+
+  private ocultarContrasenas(): void {
+    this.mostrarContrasenaEmpleado.set(false);
+    this.mostrarContrasenaAdmin.set(false);
+    this.mostrarContrasenaBaja.set(false);
   }
 
   protected codigoPrevisto(): string {
@@ -162,6 +181,18 @@ export class EmpleadosComponent implements OnInit {
 
   protected puestoProtegido(): boolean {
     return this.empleadoSeleccionado()?.rol === 'ADMIN';
+  }
+
+  protected alternarVisibilidadContrasenaEmpleado(): void {
+    this.mostrarContrasenaEmpleado.update((visible) => !visible);
+  }
+
+  protected alternarVisibilidadContrasenaAdmin(): void {
+    this.mostrarContrasenaAdmin.update((visible) => !visible);
+  }
+
+  protected alternarVisibilidadContrasenaBaja(): void {
+    this.mostrarContrasenaBaja.update((visible) => !visible);
   }
 
   protected guardarEmpleado(): void {

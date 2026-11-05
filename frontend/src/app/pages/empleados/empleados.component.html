@@ -102,11 +102,21 @@
 
         @if (modal() === 'crear') {
           <label for="empleado-password">Contraseña inicial del empleado</label>
-          <input id="empleado-password" type="password" formControlName="password" autocomplete="new-password" minlength="6" maxlength="72" placeholder="Mínimo 6 caracteres" required>
+          <div class="password-field">
+            <input id="empleado-password" [type]="mostrarContrasenaEmpleado() ? 'text' : 'password'" formControlName="password" autocomplete="new-password" minlength="6" maxlength="72" placeholder="Mínimo 6 caracteres" required>
+            <button class="password-toggle" type="button" [attr.aria-label]="mostrarContrasenaEmpleado() ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="mostrarContrasenaEmpleado()" [attr.title]="mostrarContrasenaEmpleado() ? 'Ocultar contraseña' : 'Mostrar contraseña'" (click)="alternarVisibilidadContrasenaEmpleado()">
+              <ng-icon [name]="mostrarContrasenaEmpleado() ? 'lucideEyeClosed' : 'lucideEye'" size="18" aria-hidden="true" />
+            </button>
+          </div>
           @if (formulario.controls.password.touched && formulario.controls.password.invalid) { <span class="field-error">La contraseña debe tener entre 6 y 72 caracteres.</span> }
         } @else {
           <label for="empleado-password">Nueva contraseña del empleado <span class="optional-mark">OPCIONAL</span></label>
-          <input id="empleado-password" type="password" formControlName="password" autocomplete="new-password" minlength="6" maxlength="72" placeholder="Dejar vacío para conservarla">
+          <div class="password-field">
+            <input id="empleado-password" [type]="mostrarContrasenaEmpleado() ? 'text' : 'password'" formControlName="password" autocomplete="new-password" minlength="6" maxlength="72" placeholder="Dejar vacío para conservarla">
+            <button class="password-toggle" type="button" [attr.aria-label]="mostrarContrasenaEmpleado() ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="mostrarContrasenaEmpleado()" [attr.title]="mostrarContrasenaEmpleado() ? 'Ocultar contraseña' : 'Mostrar contraseña'" (click)="alternarVisibilidadContrasenaEmpleado()">
+              <ng-icon [name]="mostrarContrasenaEmpleado() ? 'lucideEyeClosed' : 'lucideEye'" size="18" aria-hidden="true" />
+            </button>
+          </div>
           @if (formulario.controls.password.touched && formulario.controls.password.invalid) { <span class="field-error">La nueva contraseña debe tener entre 6 y 72 caracteres.</span> }
         }
 
@@ -119,7 +129,12 @@
 
         <div class="admin-confirmation">
           <label for="contrasena-admin"><ng-icon name="lucideShieldCheck" size="16" /> Confirma tu contraseña de administrador</label>
-          <input id="contrasena-admin" type="password" formControlName="contrasena_admin" autocomplete="current-password" placeholder="Contraseña de tu cuenta" required>
+          <div class="password-field">
+            <input id="contrasena-admin" [type]="mostrarContrasenaAdmin() ? 'text' : 'password'" formControlName="contrasena_admin" autocomplete="current-password" placeholder="Contraseña de tu cuenta" required>
+            <button class="password-toggle" type="button" [attr.aria-label]="mostrarContrasenaAdmin() ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="mostrarContrasenaAdmin()" [attr.title]="mostrarContrasenaAdmin() ? 'Ocultar contraseña' : 'Mostrar contraseña'" (click)="alternarVisibilidadContrasenaAdmin()">
+              <ng-icon [name]="mostrarContrasenaAdmin() ? 'lucideEyeClosed' : 'lucideEye'" size="18" aria-hidden="true" />
+            </button>
+          </div>
           @if (formulario.controls.contrasena_admin.touched && formulario.controls.contrasena_admin.invalid) { <span class="field-error">La contraseña del administrador es obligatoria.</span> }
           <p class="helper-text">Se solicitará en cada alta o edición para autorizar el cambio.</p>
         </div>
@@ -142,7 +157,12 @@
       <form [formGroup]="confirmacionForm" (ngSubmit)="darDeBaja()">
         <div class="admin-confirmation">
           <label for="contrasena-admin-baja"><ng-icon name="lucideShieldCheck" size="16" /> Confirma tu contraseña de administrador</label>
-          <input id="contrasena-admin-baja" type="password" formControlName="contrasena_admin" autocomplete="current-password" placeholder="Contraseña de tu cuenta" required>
+          <div class="password-field">
+            <input id="contrasena-admin-baja" [type]="mostrarContrasenaBaja() ? 'text' : 'password'" formControlName="contrasena_admin" autocomplete="current-password" placeholder="Contraseña de tu cuenta" required>
+            <button class="password-toggle" type="button" [attr.aria-label]="mostrarContrasenaBaja() ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="mostrarContrasenaBaja()" [attr.title]="mostrarContrasenaBaja() ? 'Ocultar contraseña' : 'Mostrar contraseña'" (click)="alternarVisibilidadContrasenaBaja()">
+              <ng-icon [name]="mostrarContrasenaBaja() ? 'lucideEyeClosed' : 'lucideEye'" size="18" aria-hidden="true" />
+            </button>
+          </div>
           @if (confirmacionForm.controls.contrasena_admin.touched && confirmacionForm.controls.contrasena_admin.invalid) { <span class="field-error">La contraseña del administrador es obligatoria.</span> }
         </div>
         @if (errorModal()) { <div class="alert alert-error modal-error" role="alert">{{ errorModal() }}</div> }

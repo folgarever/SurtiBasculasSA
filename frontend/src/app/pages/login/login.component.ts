@@ -3,14 +3,14 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideArrowRight } from '@ng-icons/lucide';
+import { lucideArrowRight, lucideEye, lucideEyeClosed } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [ReactiveFormsModule, NgIcon],
-  providers: [provideIcons({ lucideArrowRight })],
+  providers: [provideIcons({ lucideArrowRight, lucideEye, lucideEyeClosed })],
   templateUrl: './login.component.html',
 })
 export class LoginComponent {
@@ -20,6 +20,7 @@ export class LoginComponent {
 
   protected readonly enviando = signal(false);
   protected readonly error = signal('');
+  protected readonly mostrarContrasena = signal(false);
   protected readonly formulario = this.formBuilder.nonNullable.group({
     codigo_empleado: ['', Validators.required],
     password: ['', Validators.required],
@@ -27,6 +28,10 @@ export class LoginComponent {
 
   constructor() {
     if (this.auth.isAuthenticated()) this.irAlPanel();
+  }
+
+  protected alternarVisibilidadContrasena(): void {
+    this.mostrarContrasena.update((visible) => !visible);
   }
 
   protected ingresar(): void {
