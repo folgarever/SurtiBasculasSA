@@ -1,13 +1,15 @@
-# SURTIBASCULAS S.A. · Control de asistencia y evaluación de personal
+# SURTIBÁSCULAS S.A. · Plataforma de gestión
 
-Aplicación para registrar la jornada del personal y apoyar la gestión de asistencia y evaluación de desempeño.
+Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., incluyendo la jornada del personal, recursos humanos, administración de empleados y evaluación de desempeño.
 
 ## Funciones
 
-- Inicio de sesión por código de empleado y contraseña.
+- Inicio de sesión corporativo y adaptable a móviles y equipos de escritorio, con el logo original de SURTIBÁSCULAS S.A. y favicon de marca.
+- Opción para mostrar u ocultar las contraseñas en el inicio de sesión y en los formularios administrativos que las solicitan.
 - Registro de entrada y salida e historial personal de marcaciones.
 - Panel de Recursos Humanos para consultar asistencias, corregir marcaciones y registrar incidencias.
 - Exportación de reportes de asistencia e incidencias a Excel.
+- Administración del directorio de empleados, incluidas altas, ediciones y bajas.
 - Evaluación periódica del personal, con cinco competencias generales y escala de 1 a 5.
 - Evaluación técnica y psicométrica adicional para el Jefe de Mantenimiento.
 - Acceso a evaluaciones limitado a Héctor Ortiz (`SUR-GG-001`) y Mafer García (`SUR-AC-002`).
@@ -86,7 +88,100 @@ npm --prefix frontend test -- --watch=false
 ## Estructura
 
 ```text
-backend/    API Express, controladores, rutas y configuración MySQL
-database/   Esquema, datos iniciales y migraciones
-frontend/   Aplicación Angular
+.
+├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   │   ├── authorization.js
+│   │   │   └── db.js
+│   │   ├── controllers/
+│   │   │   ├── asistenciaController.js
+│   │   │   ├── authController.js
+│   │   │   ├── evaluacionesController.js
+│   │   │   └── rrhhController.js
+│   │   ├── middlewares/
+│   │   │   └── authMiddleware.js
+│   │   └── routes/
+│   │       ├── asistenciaRoutes.js
+│   │       ├── authRoutes.js
+│   │       ├── evaluacionesRoutes.js
+│   │       └── rrhhRoutes.js
+│   ├── .env.example
+│   ├── server.js            Entrada de Express y despliegue en Vercel
+│   ├── package.json
+│   ├── package-lock.json
+│   └── vercel.json
+├── database/
+│   ├── migrations/
+│   │   ├── 2026-11-01-evaluaciones-personal.sql
+│   │   └── 2026-11-02-observaciones-evaluaciones.sql
+│   └── schema.sql           Esquema inicial y datos de prueba
+├── frontend/
+│   ├── public/
+│   │   ├── config.js
+│   │   ├── favicon.ico
+│   │   └── surtibasculas-logo.png
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── guards/
+│   │   │   │   ├── admin.guard.ts
+│   │   │   │   ├── auth.guard.ts
+│   │   │   │   ├── evaluation.guard.ts
+│   │   │   │   └── role.guard.ts
+│   │   │   ├── interceptors/
+│   │   │   │   └── auth.interceptor.ts
+│   │   │   ├── pages/
+│   │   │   │   ├── admin-dashboard/
+│   │   │   │   │   ├── admin-dashboard.component.html
+│   │   │   │   │   └── admin-dashboard.component.ts
+│   │   │   │   ├── empleado-dashboard/
+│   │   │   │   │   ├── empleado-dashboard.component.html
+│   │   │   │   │   └── empleado-dashboard.component.ts
+│   │   │   │   ├── empleados/
+│   │   │   │   │   ├── empleados.component.html
+│   │   │   │   │   └── empleados.component.ts
+│   │   │   │   ├── evaluaciones/
+│   │   │   │   │   ├── evaluaciones.component.html
+│   │   │   │   │   └── evaluaciones.component.ts
+│   │   │   │   ├── login/
+│   │   │   │   │   ├── login.component.html
+│   │   │   │   │   └── login.component.ts
+│   │   │   │   └── rrhh-dashboard/
+│   │   │   │       ├── rrhh-dashboard.component.html
+│   │   │   │       └── rrhh-dashboard.component.ts
+│   │   │   ├── services/
+│   │   │   │   ├── asistencia.service.ts
+│   │   │   │   ├── auth.service.ts
+│   │   │   │   ├── evaluaciones.service.ts
+│   │   │   │   └── rrhh.service.ts
+│   │   │   ├── app.config.ts
+│   │   │   ├── app.routes.ts
+│   │   │   ├── app.spec.ts
+│   │   │   └── app.ts
+│   │   ├── environments/
+│   │   │   ├── environment.prod.ts
+│   │   │   └── environment.ts
+│   │   ├── brand-theme.css
+│   │   ├── index.html
+│   │   ├── main.ts
+│   │   └── styles.css
+│   ├── .editorconfig
+│   ├── .gitignore
+│   ├── .prettierrc
+│   ├── README.md
+│   ├── angular.json
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── postcss.config.json
+│   ├── proxy.conf.json
+│   ├── tailwind.config.js
+│   ├── tsconfig.app.json
+│   ├── tsconfig.json
+│   ├── tsconfig.spec.json
+│   └── vercel.json
+├── .gitignore
+├── LICENSE
+└── README.md
 ```
+
+Las carpetas de vistas contienen sus archivos TypeScript y HTML. Las dependencias (`node_modules`), compilaciones (`dist`) y cachés no se versionan; se generan localmente al instalar o compilar el proyecto.

@@ -1,6 +1,6 @@
-# Frontend · SURTIBASCULAS S.A.
+# Frontend · SURTIBÁSCULAS S.A.
 
-SPA de control de asistencia construida con Angular 22, TypeScript y Tailwind CSS 3. Para la configuración completa del sistema, consulta el [README principal](../README.md).
+Aplicación web corporativa construida con Angular 22, TypeScript y Tailwind CSS 3. Incluye acceso adaptable a móviles y escritorio, presentación de marca con el logo original y controles para mostrar u ocultar contraseñas. Para las funciones y la configuración completa del sistema, consulta el [README principal](../README.md).
 
 ## Desarrollo local
 
