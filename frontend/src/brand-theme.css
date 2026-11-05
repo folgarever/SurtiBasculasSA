@@ -1055,3 +1055,40 @@ tbody tr:hover { background: var(--color-surface-alt); }
   .admin-welcome { padding: 20px; }
   .login-visual::after { display: none; }
 }
+
+.brand-logo-login { width: 100%; height: 100%; }
+
+.visual-topline .brand-logo-frame {
+  width: 156px;
+  height: 90px;
+  padding: 8px;
+  border-color: rgba(255,255,255,.65);
+  border-radius: 10px;
+  box-shadow: 0 12px 26px rgba(0,0,0,.18);
+}
+
+.mobile-brand .brand-logo-frame {
+  width: 152px;
+  height: 86px;
+  padding: 7px;
+  border-color: #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(36,48,65,.1);
+}
+
+.sidebar-brand .brand-logo-frame {
+  width: 84px;
+  height: 48px;
+  padding: 2px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(0,0,0,.12);
+}
+
+@media (max-width: 760px) {
+  .sidebar-brand .brand-logo-frame {
+    width: 64px;
+    height: 38px;
+  }
+}

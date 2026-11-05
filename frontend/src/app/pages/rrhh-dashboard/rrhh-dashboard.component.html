@@ -1,6 +1,6 @@
 <div class="app-shell">
   <aside class="app-sidebar">
-    <a class="sidebar-brand" [routerLink]="esAdmin ? '/admin' : '/rrhh'"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBASCULAS S.A."></span><span>Gestión de personal<small>SURTIBASCULAS S.A.</small></span></a>
+    <a class="sidebar-brand" [routerLink]="esAdmin ? '/admin' : '/rrhh'"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
     <span class="sidebar-caption">MÓDULOS</span>
     <nav class="sidebar-nav" aria-label="Navegación principal">
       @if (esAdmin) { <a class="sidebar-link" routerLink="/admin"><ng-icon name="lucideLayoutDashboard" size="18" /> Dashboard</a> }
@@ -17,7 +17,7 @@
 
   <main class="workspace rrhh-workspace">
     <div class="page-heading rrhh-heading">
-      <div><p class="eyebrow">ADMINISTRACIÓN / ASISTENCIA</p><h1>Control de personal</h1><p class="subheading">Consulta, corrige y documenta la jornada del equipo.</p></div>
+      <div><p class="eyebrow">ADMINISTRACIÓN / ASISTENCIA</p><h1>Jornada del equipo</h1><p class="subheading">Consulta, corrige y documenta la jornada del equipo.</p></div>
       <div class="heading-actions"><button class="button button-outline" type="button" (click)="abrirIncidencia()"><ng-icon name="lucidePlus" size="16" /> Nueva incidencia</button><button class="button button-accent" type="button" (click)="exportar()" [disabled]="exportando()"><ng-icon name="lucideArrowDownToLine" size="16" /> {{ exportando() ? 'Preparando…' : 'Exportar Excel' }}</button></div>
     </div>
 
