@@ -1,0 +1,64 @@
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a class="sidebar-brand" routerLink="/admin"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
+    <span class="sidebar-caption">MÓDULOS</span>
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+      <a class="sidebar-link" routerLink="/admin"><ng-icon name="lucideLayoutDashboard" size="18" /> Dashboard</a>
+      <a class="sidebar-link" routerLink="/admin/empleados"><ng-icon name="lucideUsers" size="18" /> Empleados</a>
+      <a class="sidebar-link is-active" routerLink="/admin/sugerencias" aria-current="page"><ng-icon name="lucideMessageSquare" size="18" /> Sugerencias</a>
+    </nav>
+    <div class="sidebar-footer"><span class="status-dot"></span><span>Sistema activo<small>Foro de sugerencias</small></span></div>
+  </aside>
+  <header class="topbar">
+    <div class="topbar-title"><span class="admin-label">ESCUCHA DEL EQUIPO</span><strong>Sugerencias del personal</strong></div>
+    <div class="topbar-actions"><span class="user-chip"><span class="avatar avatar-admin">{{ usuario?.nombre?.slice(0, 1) || 'A' }}</span><span>{{ usuario?.nombre }}</span></span><button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
+  </header>
+
+  <main class="workspace suggestions-workspace">
+    <div class="page-heading">
+      <div><p class="eyebrow">ADMINISTRACIÓN / PERSONAL</p><h1>Foro de sugerencias</h1><p class="subheading">Revisa las ideas del equipo y responde cuando lo consideres oportuno.</p></div>
+    </div>
+
+    @if (aviso()) { <div class="alert alert-success" role="status">{{ aviso() }} <button type="button" aria-label="Cerrar aviso" (click)="aviso.set('')">×</button></div> }
+    @if (error()) { <div class="alert alert-error" role="alert">{{ error() }} <button type="button" aria-label="Cerrar aviso" (click)="error.set('')">×</button></div> }
+
+    <section class="summary-strip">
+      <div class="summary-metric"><span class="summary-number">{{ sugerencias().length }}</span><span class="summary-label">SUGERENCIAS</span></div>
+      <div class="summary-metric"><span class="summary-number">{{ pendientes() }}</span><span class="summary-label">PENDIENTES</span></div>
+      <div class="summary-note"><span class="status-dot"></span><span>Ordenadas: pendientes primero, luego más recientes</span></div>
+    </section>
+
+    <section class="suggestion-list-section">
+      <div class="suggestion-filter" role="group" aria-label="Filtrar sugerencias">
+        <button class="button" [class.button-dark]="filtro() === 'todas'" [class.button-outline]="filtro() !== 'todas'" type="button" (click)="seleccionarFiltro('todas')">Todas</button>
+        <button class="button" [class.button-dark]="filtro() === 'pendientes'" [class.button-outline]="filtro() !== 'pendientes'" type="button" (click)="seleccionarFiltro('pendientes')">Pendientes</button>
+        <button class="button" [class.button-dark]="filtro() === 'respondidas'" [class.button-outline]="filtro() !== 'respondidas'" type="button" (click)="seleccionarFiltro('respondidas')">Respondidas</button>
+      </div>
+
+      @if (cargando()) {
+        <div class="suggestion-empty">Cargando sugerencias…</div>
+      } @else if (sugerenciasFiltradas().length === 0) {
+        <div class="suggestion-empty">No hay sugerencias en esta categoría.</div>
+      } @else {
+        <div class="suggestion-cards">
+          @for (sugerencia of sugerenciasFiltradas(); track sugerencia.id) {
+            <article class="suggestion-card">
+              <div class="suggestion-card-heading"><div><p class="eyebrow">ENVIADA {{ formatoFecha(sugerencia.creado_en) }}</p><h2>{{ sugerencia.titulo }}</h2></div><span class="state-pill" [class.state-good]="sugerencia.respuesta" [class.state-warn]="!sugerencia.respuesta">{{ sugerencia.respuesta ? 'Respondida' : 'Pendiente' }}</span></div>
+              <p class="suggestion-author"><strong>{{ sugerencia.empleado }}</strong> · {{ sugerencia.codigo_empleado }}</p>
+              <p class="suggestion-description">{{ sugerencia.descripcion }}</p>
+              @if (sugerencia.respuesta) {
+                <div class="suggestion-response"><p class="eyebrow">RESPUESTA REGISTRADA {{ formatoFecha(sugerencia.respondido_en || '') }}</p><p>{{ sugerencia.respuesta }}</p><span>— {{ sugerencia.respondido_por }}</span></div>
+              }
+              <div class="suggestion-reply">
+                <label [for]="'respuesta-' + sugerencia.id">{{ sugerencia.respuesta ? 'Actualizar respuesta' : 'Responder (opcional)' }}</label>
+                <textarea [id]="'respuesta-' + sugerencia.id" rows="3" maxlength="5000" [value]="respuestas()[sugerencia.id] ?? sugerencia.respuesta ?? ''" (input)="actualizarRespuesta(sugerencia.id, $event)" placeholder="Escribe una respuesta para el empleado…"></textarea>
+                <div class="suggestion-form-actions"><span class="helper-text">Máximo 5,000 caracteres.</span><button class="button button-accent" type="button" [disabled]="guardandoId() !== null" (click)="guardarRespuesta(sugerencia)"><ng-icon name="lucideSend" size="16" /> {{ guardandoId() === sugerencia.id ? 'Guardando…' : sugerencia.respuesta ? 'Actualizar respuesta' : 'Enviar respuesta' }}</button></div>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+    <footer class="workspace-footer"><span>SURTIBÁSCULAS S.A. · ADMINISTRACIÓN</span><a routerLink="/admin">Volver al panel</a></footer>
+  </main>
+</div>

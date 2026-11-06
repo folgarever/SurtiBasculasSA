@@ -12,6 +12,7 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 - Administración del directorio de empleados, incluidas altas, ediciones y bajas.
 - Evaluación periódica del personal, con cinco competencias generales y escala de 1 a 5.
 - Evaluación técnica y psicométrica adicional para el Jefe de Mantenimiento.
+- Envío de sugerencias por parte del personal y foro administrativo con respuestas.
 - Acceso a evaluaciones limitado a Héctor Ortiz (`SUR-GG-001`) y Mafer García (`SUR-AC-002`).
 
 ## Tecnologías
@@ -24,7 +25,7 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 ## Configuración
 
 1. Crea la base de datos `defaultdb` en MySQL y ejecuta [`database/schema.sql`](database/schema.sql) para una instalación nueva.
-2. Para una base existente, ejecuta una sola vez [`database/migrations/2026-11-01-evaluaciones-personal.sql`](database/migrations/2026-11-01-evaluaciones-personal.sql) y después [`database/migrations/2026-11-02-observaciones-evaluaciones.sql`](database/migrations/2026-11-02-observaciones-evaluaciones.sql). La segunda migración agrega las observaciones por criterio y se puede volver a ejecutar sin duplicar la columna. No vuelvas a ejecutar `schema.sql` sobre una base ya creada. Después, ambos administradores deben iniciar sesión nuevamente para recibir el rol actualizado en su JWT.
+2. Para una base existente, ejecuta una sola vez [`database/migrations/2026-11-01-evaluaciones-personal.sql`](database/migrations/2026-11-01-evaluaciones-personal.sql), [`database/migrations/2026-11-02-observaciones-evaluaciones.sql`](database/migrations/2026-11-02-observaciones-evaluaciones.sql) y [`database/migrations/2026-11-06-sugerencias.sql`](database/migrations/2026-11-06-sugerencias.sql), en ese orden. La segunda migración agrega las observaciones por criterio y se puede volver a ejecutar sin duplicar la columna. No vuelvas a ejecutar `schema.sql` sobre una base ya creada. Después, ambos administradores deben iniciar sesión nuevamente para recibir el rol actualizado en su JWT.
 3. Copia `backend/.env.example` como `backend/.env` y configura la conexión a MySQL y un secreto JWT largo y aleatorio. El nombre de base de datos debe coincidir con `defaultdb`.
 4. Instala dependencias e inicia el backend:
 
@@ -75,6 +76,17 @@ La puntualidad incluye un resumen de días registrados y atrasos de los últimos
 | `POST` | `/api/evaluaciones` | Crear evaluación general y, para `SUR-JM-005`, especializada |
 
 El cuerpo de `POST` contiene `empleado_id`, `fecha_evaluacion` (`YYYY-MM-DD`), `periodo`, `calificaciones` (las cinco competencias generales del 1 al 5), `comentarios` opcional y `especializada` (las nueve competencias del jefe de mantenimiento). Las tablas y restricciones están incluidas en `schema.sql` y en la migración.
+
+## Sugerencias del personal
+
+El personal con una cuenta no administradora puede enviar sugerencias con título y descripción desde `/sugerencias`, y consultar sus respuestas. Los administradores pueden revisar todas las sugerencias, filtrar pendientes/respondidas y responder o actualizar respuestas desde `/admin/sugerencias`. La autorización se valida tanto en Angular como en los endpoints del backend.
+
+| Método | Endpoint | Acceso | Función |
+|---|---|---|---|
+| `GET` | `/api/sugerencias/mis-sugerencias` | Empleado | Consultar las propias sugerencias y respuestas |
+| `POST` | `/api/sugerencias/mis-sugerencias` | Empleado | Crear una sugerencia (`titulo`, `descripcion`) |
+| `GET` | `/api/sugerencias/admin` | Administrador | Consultar todas las sugerencias |
+| `PUT` | `/api/sugerencias/admin/<id>/respuesta` | Administrador | Guardar o actualizar una respuesta |
 
 ## Validación
 

@@ -1,0 +1,62 @@
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a class="sidebar-brand" routerLink="/dashboard"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
+    <span class="sidebar-caption">ESPACIO DE TRABAJO</span>
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+      <a class="sidebar-link" routerLink="/dashboard"><ng-icon name="lucideClipboardCheck" size="18" /> Mi jornada</a>
+      <a class="sidebar-link is-active" routerLink="/sugerencias" aria-current="page"><ng-icon name="lucideLightbulb" size="18" /> Mis sugerencias</a>
+    </nav>
+    <div class="sidebar-footer"><span class="status-dot"></span><span>Portal activo<small>Participación del equipo</small></span></div>
+  </aside>
+  <header class="topbar">
+    <div class="topbar-title"><span class="admin-label">PORTAL DEL PERSONAL</span><strong>Mis sugerencias</strong></div>
+    <div class="topbar-actions"><span class="user-chip"><span class="avatar">{{ usuario?.nombre?.slice(0, 1) || 'U' }}</span><span>{{ usuario?.nombre }}</span></span><button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
+  </header>
+
+  <main class="workspace suggestions-workspace">
+    <div class="page-heading">
+      <div><p class="eyebrow">PORTAL DEL EMPLEADO</p><h1>Ideas para mejorar</h1><p class="subheading">Comparte propuestas sobre el ambiente laboral y las condiciones de trabajo.</p></div>
+    </div>
+
+    @if (aviso()) { <div class="alert alert-success" role="status">{{ aviso() }} <button type="button" aria-label="Cerrar aviso" (click)="aviso.set('')">×</button></div> }
+    @if (error()) { <div class="alert alert-error" role="alert">{{ error() }} <button type="button" aria-label="Cerrar aviso" (click)="error.set('')">×</button></div> }
+
+    <section class="suggestion-form-card">
+      <div class="section-heading"><div><p class="eyebrow">TU VOZ CUENTA</p><h2>Enviar una sugerencia</h2></div></div>
+      <p class="suggestion-intro">Describe tu idea con respeto y detalle. La sugerencia será visible para la administración y quedará asociada a tu cuenta.</p>
+      <form class="suggestion-form" [formGroup]="formulario" (ngSubmit)="enviar()">
+        <label for="sugerencia-titulo">Título</label>
+        <input id="sugerencia-titulo" type="text" formControlName="titulo" maxlength="150" placeholder="Resume tu idea en pocas palabras" required>
+        @if (formulario.controls.titulo.touched && formulario.controls.titulo.invalid) { <span class="field-error">El título debe tener entre 3 y 150 caracteres.</span> }
+
+        <label for="sugerencia-descripcion">Descripción</label>
+        <textarea id="sugerencia-descripcion" formControlName="descripcion" rows="5" maxlength="5000" placeholder="¿Qué propones y cómo podría ayudar a mejorar el trabajo?" required></textarea>
+        @if (formulario.controls.descripcion.touched && formulario.controls.descripcion.invalid) { <span class="field-error">La descripción debe tener entre 10 y 5,000 caracteres.</span> }
+
+        <div class="suggestion-form-actions"><span class="helper-text">No incluyas información personal o confidencial de otras personas.</span><button class="button button-accent" type="submit" [disabled]="enviando()"><ng-icon name="lucideSend" size="16" /> {{ enviando() ? 'Enviando…' : 'Enviar sugerencia' }}</button></div>
+      </form>
+    </section>
+
+    <section class="suggestion-list-section">
+      <div class="section-heading"><div><p class="eyebrow">SEGUIMIENTO</p><h2>Tus sugerencias</h2></div><span class="record-count">{{ sugerencias().length }} enviadas</span></div>
+      @if (cargando()) {
+        <div class="suggestion-empty">Cargando tus sugerencias…</div>
+      } @else if (sugerencias().length === 0) {
+        <div class="suggestion-empty">Aún no has enviado sugerencias. Tus propuestas aparecerán aquí.</div>
+      } @else {
+        <div class="suggestion-cards">
+          @for (sugerencia of sugerencias(); track sugerencia.id) {
+            <article class="suggestion-card">
+              <div class="suggestion-card-heading"><div><p class="eyebrow">ENVIADA {{ formatoFecha(sugerencia.creado_en) }}</p><h3>{{ sugerencia.titulo }}</h3></div><span class="state-pill" [class.state-good]="sugerencia.respuesta" [class.state-warn]="!sugerencia.respuesta">{{ sugerencia.respuesta ? 'Con respuesta' : 'En revisión' }}</span></div>
+              <p class="suggestion-description">{{ sugerencia.descripcion }}</p>
+              @if (sugerencia.respuesta) {
+                <div class="suggestion-response"><p class="eyebrow">RESPUESTA DE ADMINISTRACIÓN · {{ formatoFecha(sugerencia.respondido_en || '') }}</p><p>{{ sugerencia.respuesta }}</p><span>— {{ sugerencia.respondido_por }}</span></div>
+              }
+            </article>
+          }
+        </div>
+      }
+    </section>
+    <footer class="workspace-footer"><span>SURTIBÁSCULAS S.A. · PARTICIPACIÓN DEL PERSONAL</span><a routerLink="/dashboard">Volver a mi jornada</a></footer>
+  </main>
+</div>

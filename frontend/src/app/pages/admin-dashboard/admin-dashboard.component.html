@@ -7,6 +7,7 @@
       <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideClipboardCheck" size="18" /> Control de asistencia</a>
       <a class="sidebar-link" routerLink="/evaluaciones"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluación de personal</a>
       <a class="sidebar-link" routerLink="/admin/empleados"><ng-icon name="lucideUsers" size="18" /> Empleados</a>
+      <a class="sidebar-link" routerLink="/admin/sugerencias"><ng-icon name="lucideMessageSquare" size="18" /> Sugerencias</a>
     </nav>
     <div class="sidebar-footer"><span class="status-dot"></span><span>Sistema activo<small>Gestión de personal</small></span></div>
   </aside>
@@ -43,6 +44,13 @@
         <strong>Gestión de empleados</strong>
         <span class="module-description">Consulta el personal registrado y agrega nuevos empleados.</span>
         <span class="module-link">Ver empleados <span aria-hidden="true">→</span></span>
+      </a>
+      <a class="module-card module-evaluation" routerLink="/admin/sugerencias">
+        <span class="module-icon"><ng-icon name="lucideMessageSquare" size="22" /></span>
+        <span class="module-eyebrow">ESCUCHA DEL EQUIPO</span>
+        <strong>Sugerencias del personal</strong>
+        <span class="module-description">Revisa ideas y recomendaciones y responde cuando sea necesario.</span>
+        <span class="module-link">Abrir foro <span aria-hidden="true">→</span></span>
       </a>
     </section>
 

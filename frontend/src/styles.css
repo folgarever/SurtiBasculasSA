@@ -131,6 +131,35 @@ td { height: 58px; padding: 10px 18px; border-top: 1px solid #edf0ed; color: #38
 .modal-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 22px; padding-top: 15px; border-top: 1px solid #edf0ed; }
 .form-grid-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-grid-two > div { display: flex; flex-direction: column; }
+.suggestions-workspace { max-width: 1180px; }
+.suggestion-form-card { margin-bottom: 36px; padding: 22px 24px; border: 1px solid var(--line); background: white; }
+.suggestion-form-card .section-heading { margin-bottom: 6px; }
+.suggestion-intro { max-width: 700px; margin: 0 0 14px; color: var(--muted); font-size: .79rem; line-height: 1.6; }
+.suggestion-form { display: flex; flex-direction: column; }
+.suggestion-form > label, .suggestion-reply > label { margin: 12px 0 6px; color: #47524d; font-size: .73rem; font-weight: 650; }
+.suggestion-form input, .suggestion-form textarea, .suggestion-reply textarea { width: 100%; min-height: 42px; padding: 10px 11px; border: 1px solid #d5ddd8; border-radius: 2px; outline: none; background: white; color: var(--ink); font-size: .79rem; }
+.suggestion-form textarea, .suggestion-reply textarea { min-height: 100px; resize: vertical; line-height: 1.55; }
+.suggestion-form input:focus, .suggestion-form textarea:focus, .suggestion-reply textarea:focus { border-color: var(--green); box-shadow: 0 0 0 2px rgba(17,102,83,.1); }
+.suggestion-form-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 15px; }
+.suggestion-form-actions .helper-text { margin: 0; }
+.suggestion-list-section { margin-top: 28px; }
+.suggestion-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.suggestion-filter .button { min-height: 36px; }
+.suggestion-cards { display: grid; gap: 14px; }
+.suggestion-card { padding: 20px 22px; border: 1px solid var(--line); background: white; }
+.suggestion-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.suggestion-card-heading h2, .suggestion-card-heading h3 { margin: 5px 0 0; color: var(--blue-deep); font: 600 1.12rem/1.35 'Space Grotesk', sans-serif; }
+.suggestion-card-heading .eyebrow { font-size: .61rem; }
+.suggestion-author { margin: 12px 0 0; color: var(--muted); font-size: .72rem; }
+.suggestion-description { margin: 13px 0 0; color: #39443f; font-size: .82rem; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.suggestion-response { margin-top: 16px; padding: 14px 16px; border-left: 3px solid #1c2c44; background: #f3f6f8; }
+.suggestion-response .eyebrow { font-size: .6rem; }
+.suggestion-response > p:not(.eyebrow) { margin: 8px 0; color: #39443f; font-size: .79rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.suggestion-response > span { color: var(--muted); font-size: .69rem; }
+.suggestion-reply { display: flex; flex-direction: column; margin-top: 18px; padding-top: 14px; border-top: 1px solid #edf0ed; }
+.suggestion-reply > label { margin-top: 0; }
+.suggestion-reply textarea { min-height: 82px; }
+.suggestion-empty { padding: 28px 20px; border: 1px dashed #cbd5d1; background: rgba(255,255,255,.55); color: var(--muted); font-size: .8rem; text-align: center; }
 .login-page { display: grid; min-height: 100vh; grid-template-columns: minmax(350px, 1fr) minmax(420px, .9fr); background: white; }
 .login-visual { position: relative; display: flex; min-height: 100vh; flex-direction: column; justify-content: space-between; overflow: hidden; padding: 50px 10%; background: radial-gradient(ellipse 80% 60% at 20% 0%, rgba(220, 38, 38, 0.15) 0%, transparent 50%), radial-gradient(ellipse 60% 80% at 100% 100%, rgba(148, 27, 20, 0.2) 0%, transparent 50%), linear-gradient(135deg, #0f172a 0%, #1c2c44 40%, #0a0f1e 100%); color: white; }
 .login-visual:before { position: absolute; top: -200px; left: -100px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(220, 38, 38, 0.12) 0%, transparent 70%); border-radius: 50%; content: ''; animation: pulse 8s ease-in-out infinite; } .login-visual:after { position: absolute; right: -150px; bottom: -200px; width: 500px; height: 500px; border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 50%; box-shadow: 0 0 0 80px rgba(220, 38, 38, 0.06), 0 0 0 160px rgba(220, 38, 38, 0.04); content: ''; }
@@ -194,5 +223,8 @@ td { height: 58px; padding: 10px 18px; border-top: 1px solid #edf0ed; color: #38
 	.filter-bar > .button { flex: 1; }
 	.workspace-footer { flex-direction: column; }
 	.modal-panel { padding: 18px; }
+	.suggestion-form-card, .suggestion-card { padding: 18px; }
+	.suggestion-form-actions { align-items: stretch; flex-direction: column; }
+	.suggestion-form-actions .button { width: 100%; }
 }
 /* You can add global styles to this file, and also import other style files */

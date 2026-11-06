@@ -5,6 +5,7 @@ import {
   lucideClipboardCheck,
   lucideLayoutDashboard,
   lucideLogOut,
+  lucideMessageSquare,
   lucideUsers,
   lucideUserRoundCog,
 } from '@ng-icons/lucide';
@@ -14,7 +15,7 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-admin-dashboard',
   standalone: true,
   imports: [RouterLink, NgIcon],
-  providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideUsers, lucideUserRoundCog })],
+  providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideUsers, lucideUserRoundCog })],
   templateUrl: './admin-dashboard.component.html',
 })
 export class AdminDashboardComponent {
