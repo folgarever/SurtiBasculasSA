@@ -3,7 +3,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideClipboardCheck, lucideLightbulb, lucideLogOut, lucideSend } from '@ng-icons/lucide';
+import { lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideSend, lucideUsers } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
 import { Sugerencia, SugerenciasService } from '../../services/sugerencias.service';
 
@@ -20,7 +20,7 @@ function longitudRecortada(minimo: number, maximo: number): ValidatorFn {
   selector: 'app-sugerencias-empleado',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, NgIcon],
-  providers: [provideIcons({ lucideClipboardCheck, lucideLightbulb, lucideLogOut, lucideSend })],
+  providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideSend, lucideUsers })],
   templateUrl: './sugerencias-empleado.component.html',
 })
 export class SugerenciasEmpleadoComponent implements OnInit {
@@ -29,6 +29,7 @@ export class SugerenciasEmpleadoComponent implements OnInit {
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
+  protected readonly puedeAccederRrhh = this.auth.hasRrhhRole();
   protected readonly sugerencias = signal<Sugerencia[]>([]);
   protected readonly cargando = signal(true);
   protected readonly enviando = signal(false);

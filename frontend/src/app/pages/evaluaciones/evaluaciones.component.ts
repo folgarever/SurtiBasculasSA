@@ -3,7 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideUsers, lucideUserRoundCog } from '@ng-icons/lucide';
+import { lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideUsers, lucideUserRoundCog } from '@ng-icons/lucide';
 import {
   CalificacionesGenerales,
   CalificacionesJefatura,
@@ -53,7 +53,7 @@ const CRITERIOS_JEFATURA: CriterioJefatura[] = [
   selector: 'app-evaluaciones',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, NgIcon],
-  providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideUsers, lucideUserRoundCog })],
+  providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideUsers, lucideUserRoundCog })],
   templateUrl: './evaluaciones.component.html',
 })
 export class EvaluacionesComponent implements OnInit {

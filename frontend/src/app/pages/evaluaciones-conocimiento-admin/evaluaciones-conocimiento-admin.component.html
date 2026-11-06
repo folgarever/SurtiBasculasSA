@@ -1,0 +1,115 @@
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a class="sidebar-brand" routerLink="/admin"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
+    <span class="sidebar-caption">MÓDULOS</span>
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+      <a class="sidebar-link" routerLink="/admin"><ng-icon name="lucideLayoutDashboard" size="18" /> Dashboard</a>
+      <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideClipboardCheck" size="18" /> Control de asistencia</a>
+      <a class="sidebar-link" routerLink="/evaluaciones"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluación de personal</a>
+      <a class="sidebar-link" routerLink="/admin/empleados"><ng-icon name="lucideUsers" size="18" /> Empleados</a>
+      <a class="sidebar-link is-active" routerLink="/admin/evaluaciones-conocimiento" aria-current="page"><ng-icon name="lucideClipboardCheck" size="18" /> Evaluaciones mensuales</a>
+    </nav>
+    <a class="sidebar-link sidebar-bottom-link" routerLink="/admin/sugerencias"><ng-icon name="lucideMessageSquare" size="18" /> Sugerencias</a>
+    <div class="sidebar-footer"><span class="status-dot"></span><span>Sistema activo<small>Desarrollo del personal</small></span></div>
+  </aside>
+  <header class="topbar">
+    <div class="topbar-title"><span class="admin-label">ADMINISTRACIÓN / PERSONAL</span><strong>Evaluación de conocimientos y desempeño</strong></div>
+    <div class="topbar-actions"><span class="user-chip"><span class="avatar avatar-admin">{{ usuario?.nombre?.slice(0, 1) || 'A' }}</span><span>{{ usuario?.nombre }}</span></span><button class="icon-button" type="button" aria-label="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
+  </header>
+
+  <main class="workspace knowledge-workspace">
+    <div class="page-heading"><div><p class="eyebrow">ADMINISTRACIÓN / DESARROLLO</p><h1>Evaluación de conocimientos y desempeño</h1><p class="subheading">Seguimiento mensual, resultados y evolución por empleado y puesto.</p></div></div>
+    @if (error()) { <div class="alert alert-error" role="alert">{{ error() }} <button type="button" (click)="error.set('')">×</button></div> }
+
+    <section class="knowledge-kpis" aria-label="Indicadores del periodo actual">
+      <article class="knowledge-kpi"><span>PERIODO ACTUAL</span><strong>{{ periodoActual() ? formatoPeriodo(periodoActual()) : '—' }}</strong><small>{{ totalActuales() }} evaluaciones asignadas</small></article>
+      <article class="knowledge-kpi"><span>PENDIENTES</span><strong>{{ pendientesActuales() }}</strong><small>Empleados que aún deben responder</small></article>
+      <article class="knowledge-kpi"><span>CUMPLIMIENTO</span><strong>{{ cumplimientoActual() }}%</strong><small>Evaluaciones completadas del periodo</small></article>
+      <article class="knowledge-kpi"><span>PROMEDIO DE CONOCIMIENTO</span><strong>{{ promedioActual() === null ? '—' : promedioActual() + '%' }}</strong><small>Entre las evaluaciones completadas</small></article>
+    </section>
+
+    <section class="knowledge-panel">
+      <div class="section-heading"><div><p class="eyebrow">CONSULTA E HISTORIAL</p><h2>Resultados por empleado</h2></div><span class="record-count">{{ evaluaciones().length }} registros</span></div>
+      <div class="knowledge-filters">
+        <label>Empleado
+          <select [value]="filtroEmpleado()" (change)="actualizarFiltro('empleado', $event)">
+            <option value="">Todos los empleados</option>
+            @for (empleado of empleados(); track empleado.id) { <option [value]="empleado.id">{{ empleado.nombre }} · {{ empleado.codigo_empleado }}</option> }
+          </select>
+        </label>
+        <label>Puesto
+          <select [value]="filtroPuesto()" (change)="actualizarFiltro('puesto', $event)">
+            <option value="">Todos los puestos</option>
+            @for (puesto of puestos(); track puesto.id) { <option [value]="puesto.id">{{ puesto.nombre_puesto }}</option> }
+          </select>
+        </label>
+        <label>Departamento
+          <select [value]="filtroDepartamento()" (change)="actualizarFiltro('departamento', $event)">
+            <option value="">Todos los departamentos</option>
+            @for (departamento of departamentos(); track departamento) { <option [value]="departamento">{{ departamento }}</option> }
+          </select>
+        </label>
+      </div>
+
+      @if (cargando()) {
+        <div class="knowledge-empty">Cargando resultados…</div>
+      } @else {
+        <div class="table-frame"><div class="table-scroll">
+          <table>
+            <thead><tr><th>Empleado</th><th>Puesto / departamento</th><th>Periodo</th><th>Calificación</th><th>Resultado</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              @if (!evaluaciones().length) {
+                <tr><td colspan="7" class="table-empty">No hay evaluaciones para estos filtros.</td></tr>
+              } @else {
+                @for (item of evaluaciones(); track item.id) {
+                  <tr>
+                    <td><strong>{{ item.empleado }}</strong><small class="employee-code">{{ item.codigo_empleado }}</small></td>
+                    <td>{{ item.nombre_puesto }}<small class="employee-code">{{ item.departamento }}</small></td>
+                    <td>{{ formatoPeriodo(item.periodo) }}</td>
+                    <td>{{ item.porcentaje === null ? '—' : item.porcentaje + '%' }}</td>
+                    <td>{{ item.resultado || '—' }}</td>
+                    <td><span class="state-pill" [class.state-good]="item.estado === 'completada'" [class.state-warn]="item.estado === 'pendiente'">{{ item.estado === 'completada' ? 'Completada' : 'Pendiente' }}</span></td>
+                    <td><button class="details-button" type="button" [disabled]="item.estado !== 'completada'" (click)="verDetalle(item.id)">Ver respuestas</button></td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div></div>
+      }
+    </section>
+
+    @if (cargandoDetalle()) { <div class="knowledge-empty">Cargando respuestas…</div> }
+    @if (detalle(); as evaluacion) {
+      <section class="knowledge-panel knowledge-detail">
+        <div class="section-heading">
+          <div><p class="eyebrow">RESULTADO INDIVIDUAL · {{ formatoPeriodo(evaluacion.periodo) }}</p><h2>{{ evaluacion.empleado }} · {{ evaluacion.nombre_puesto }}</h2><p class="subheading">{{ evaluacion.departamento }} · {{ evaluacion.codigo_empleado }}</p></div>
+          <button class="details-button" type="button" (click)="cerrarDetalle()">Cerrar</button>
+        </div>
+        <div class="knowledge-result" [class.result-needs-work]="evaluacion.resultado === 'Requiere refuerzo'">
+          <strong>{{ evaluacion.porcentaje }}%</strong><span>{{ evaluacion.respuestas_correctas }} de {{ evaluacion.total_preguntas }} correctas · {{ evaluacion.resultado }}</span>
+        </div>
+        <div class="knowledge-questions">
+          @for (pregunta of evaluacion.preguntas ?? []; track pregunta.id; let index = $index) {
+            <article class="knowledge-question">
+              <h3>{{ index + 1 }}. {{ pregunta.texto }}</h3>
+              <div class="knowledge-options">
+                @for (opcion of pregunta.opciones; track opcion; let opcionIndex = $index) {
+                  <p [class.option-correct]="opcionIndex === pregunta.correcta" [class.option-incorrect]="opcionIndex === pregunta.respuesta && opcionIndex !== pregunta.correcta">
+                    {{ opcionIndex === pregunta.correcta ? '✓' : opcionIndex === pregunta.respuesta ? '×' : '·' }} {{ opcion }}
+                  </p>
+                }
+              </div>
+            </article>
+          }
+        </div>
+        <h3 class="knowledge-history-title">Evolución del rendimiento</h3>
+        @if (!evolucionEmpleado().length) { <p class="knowledge-intro">Aún no hay resultados anteriores para comparar.</p> }
+        @for (item of evolucionEmpleado(); track item.id) {
+          <div class="evolution-row"><span>{{ formatoPeriodo(item.periodo) }}</span><div class="evolution-track"><span [style.width.%]="item.porcentaje ?? 0"></span></div><strong>{{ item.porcentaje }}%</strong></div>
+        }
+      </section>
+    }
+    <footer class="workspace-footer"><span>SURTIBÁSCULAS S.A. · EVALUACIONES MENSUALES</span><a routerLink="/admin">Volver al panel</a></footer>
+  </main>
+</div>

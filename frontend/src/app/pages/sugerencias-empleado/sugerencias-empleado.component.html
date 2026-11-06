@@ -3,9 +3,11 @@
     <a class="sidebar-brand" routerLink="/dashboard"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
     <span class="sidebar-caption">ESPACIO DE TRABAJO</span>
     <nav class="sidebar-nav" aria-label="Navegación principal">
-      <a class="sidebar-link" routerLink="/dashboard"><ng-icon name="lucideClipboardCheck" size="18" /> Mi jornada</a>
-      <a class="sidebar-link is-active" routerLink="/sugerencias" aria-current="page"><ng-icon name="lucideLightbulb" size="18" /> Mis sugerencias</a>
+      <a class="sidebar-link" routerLink="/dashboard"><ng-icon name="lucideLayoutDashboard" size="18" /> Mi jornada</a>
+      @if (puedeAccederRrhh) { <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideUsers" size="18" /> Gestión de personal</a> }
+      <a class="sidebar-link" routerLink="/evaluaciones-conocimiento"><ng-icon name="lucideClipboardCheck" size="18" /> Evaluación mensual</a>
     </nav>
+    <a class="sidebar-link sidebar-bottom-link is-active" routerLink="/sugerencias" aria-current="page"><ng-icon name="lucideLightbulb" size="18" /> Mis sugerencias</a>
     <div class="sidebar-footer"><span class="status-dot"></span><span>Portal activo<small>Participación del equipo</small></span></div>
   </aside>
   <header class="topbar">

@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideSend, lucideUsers } from '@ng-icons/lucide';
+import { lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideSend, lucideUserRoundCog, lucideUsers } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
 import { Sugerencia, SugerenciasService } from '../../services/sugerencias.service';
 
@@ -12,7 +12,7 @@ type FiltroSugerencias = 'todas' | 'pendientes' | 'respondidas';
   selector: 'app-sugerencias-admin',
   standalone: true,
   imports: [RouterLink, NgIcon],
-  providers: [provideIcons({ lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideSend, lucideUsers })],
+  providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideSend, lucideUserRoundCog, lucideUsers })],
   templateUrl: './sugerencias-admin.component.html',
 })
 export class SugerenciasAdminComponent implements OnInit {

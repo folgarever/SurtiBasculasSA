@@ -20,6 +20,18 @@ export const routes: Routes = [
 	{ path: 'admin/empleados', component: EmpleadosComponent, canActivate: [adminGuard] },
 	{ path: 'rrhh', component: RrhhDashboardComponent, canActivate: [authGuard, roleGuard] },
 	{ path: 'evaluaciones', component: EvaluacionesComponent, canActivate: [authGuard, evaluationGuard] },
+	{
+		path: 'evaluaciones-conocimiento',
+		loadComponent: () => import('./pages/evaluacion-conocimiento-empleado/evaluacion-conocimiento-empleado.component')
+			.then((module) => module.EvaluacionConocimientoEmpleadoComponent),
+		canActivate: [authGuard],
+	},
+	{
+		path: 'admin/evaluaciones-conocimiento',
+		loadComponent: () => import('./pages/evaluaciones-conocimiento-admin/evaluaciones-conocimiento-admin.component')
+			.then((module) => module.EvaluacionesConocimientoAdminComponent),
+		canActivate: [authGuard, evaluationGuard],
+	},
 	{ path: 'sugerencias', component: SugerenciasEmpleadoComponent, canActivate: [employeeGuard] },
 	{ path: 'admin/sugerencias', component: SugerenciasAdminComponent, canActivate: [adminGuard] },
 	{ path: '', pathMatch: 'full', redirectTo: 'login' },

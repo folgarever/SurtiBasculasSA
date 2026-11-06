@@ -7,8 +7,9 @@
       <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideClipboardCheck" size="18" /> Control de asistencia</a>
       <a class="sidebar-link" routerLink="/evaluaciones"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluación de personal</a>
       <a class="sidebar-link" routerLink="/admin/empleados"><ng-icon name="lucideUsers" size="18" /> Empleados</a>
-      <a class="sidebar-link" routerLink="/admin/sugerencias"><ng-icon name="lucideMessageSquare" size="18" /> Sugerencias</a>
+      <a class="sidebar-link" routerLink="/admin/evaluaciones-conocimiento"><ng-icon name="lucideClipboardCheck" size="18" /> Evaluaciones mensuales</a>
     </nav>
+    <a class="sidebar-link sidebar-bottom-link" routerLink="/admin/sugerencias"><ng-icon name="lucideMessageSquare" size="18" /> Sugerencias</a>
     <div class="sidebar-footer"><span class="status-dot"></span><span>Sistema activo<small>Gestión de personal</small></span></div>
   </aside>
   <header class="topbar">
@@ -37,6 +38,13 @@
         <strong>Evaluación de personal</strong>
         <span class="module-description">Registra y consulta evaluaciones de desempeño por puesto.</span>
         <span class="module-link">Ingresar al módulo <span aria-hidden="true">→</span></span>
+      </a>
+      <a class="module-card module-evaluation" routerLink="/admin/evaluaciones-conocimiento">
+        <span class="module-icon"><ng-icon name="lucideClipboardCheck" size="22" /></span>
+        <span class="module-eyebrow">SEGUIMIENTO MENSUAL</span>
+        <strong>Evaluación de conocimientos y desempeño</strong>
+        <span class="module-description">Consulta resultados, evaluaciones pendientes y evolución del personal.</span>
+        <span class="module-link">Ver indicadores <span aria-hidden="true">→</span></span>
       </a>
       <a class="module-card module-employees" routerLink="/admin/empleados">
         <span class="module-icon"><ng-icon name="lucideUsers" size="22" /></span>
