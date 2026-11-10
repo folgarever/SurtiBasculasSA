@@ -166,6 +166,8 @@ CREATE TABLE evaluaciones_conocimiento (
     respuestas JSON NULL,
     total_preguntas TINYINT UNSIGNED NOT NULL,
     respuestas_correctas TINYINT UNSIGNED NULL,
+    puntos_obtenidos DECIMAL(10, 2) NULL,
+    puntos_totales DECIMAL(10, 2) NULL,
     porcentaje TINYINT UNSIGNED NULL,
     estado ENUM('pendiente', 'completada') NOT NULL DEFAULT 'pendiente',
     resultado ENUM('Aprobado', 'Requiere refuerzo') NULL,
@@ -177,6 +179,26 @@ CREATE TABLE evaluaciones_conocimiento (
     INDEX idx_eval_conocimiento_periodo_estado (periodo, estado),
     INDEX idx_eval_conocimiento_puesto_periodo (puesto_id, periodo),
     FOREIGN KEY (empleado_id) REFERENCES empleados(id),
+    FOREIGN KEY (puesto_id) REFERENCES puestos(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE evaluaciones_banco_inicializado (
+    puesto_id INT PRIMARY KEY,
+    inicializado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (puesto_id) REFERENCES puestos(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE evaluaciones_banco_preguntas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    puesto_id INT NOT NULL,
+    texto VARCHAR(1000) NOT NULL,
+    opciones JSON NOT NULL,
+    respuesta_correcta TINYINT UNSIGNED NOT NULL,
+    puntos_maximos DECIMAL(8, 2) NOT NULL DEFAULT 1.00,
+    orden INT UNSIGNED NOT NULL DEFAULT 1,
+    creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_banco_preguntas_puesto_orden (puesto_id, orden, id),
     FOREIGN KEY (puesto_id) REFERENCES puestos(id)
 ) ENGINE=InnoDB;
 

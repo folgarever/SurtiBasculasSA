@@ -12,7 +12,7 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 - Administración del directorio de empleados, incluidas altas, ediciones y bajas.
 - Evaluación periódica del personal, con cinco competencias generales y escala de 1 a 5.
 - Evaluación técnica y psicométrica adicional para el Jefe de Mantenimiento.
-- Evaluación mensual de conocimientos con preguntas por puesto, historial individual y panel administrativo con KPIs.
+- Evaluación mensual de conocimientos con preguntas por puesto, puntaje parcial configurable por opción, historial individual y panel administrativo con KPIs.
 - Envío de sugerencias por parte del personal y foro administrativo con respuestas.
 - Acceso a evaluaciones limitado a Héctor Ortiz (`SUR-GG-001`) y Mafer García (`SUR-AC-002`).
 
@@ -26,7 +26,7 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 ## Configuración
 
 1. Crea la base de datos `defaultdb` en MySQL y ejecuta [`database/schema.sql`](database/schema.sql) para una instalación nueva.
-2. Para una base existente, ejecuta una sola vez [`database/migrations/2026-11-01-evaluaciones-personal.sql`](database/migrations/2026-11-01-evaluaciones-personal.sql), [`database/migrations/2026-11-02-observaciones-evaluaciones.sql`](database/migrations/2026-11-02-observaciones-evaluaciones.sql), [`database/migrations/2026-11-06-sugerencias.sql`](database/migrations/2026-11-06-sugerencias.sql) y [`database/migrations/2026-11-06-evaluaciones-conocimiento.sql`](database/migrations/2026-11-06-evaluaciones-conocimiento.sql), en ese orden. La segunda migración agrega las observaciones por criterio y se puede volver a ejecutar sin duplicar la columna. No vuelvas a ejecutar `schema.sql` sobre una base ya creada. Después, ambos administradores deben iniciar sesión nuevamente para recibir el rol actualizado en su JWT.
+2. Para una base existente, ejecuta una sola vez [`database/migrations/2026-11-01-evaluaciones-personal.sql`](database/migrations/2026-11-01-evaluaciones-personal.sql), [`database/migrations/2026-11-02-observaciones-evaluaciones.sql`](database/migrations/2026-11-02-observaciones-evaluaciones.sql), [`database/migrations/2026-11-06-sugerencias.sql`](database/migrations/2026-11-06-sugerencias.sql), [`database/migrations/2026-11-06-evaluaciones-conocimiento.sql`](database/migrations/2026-11-06-evaluaciones-conocimiento.sql), [`database/migrations/2026-11-09-banco-preguntas-conocimiento.sql`](database/migrations/2026-11-09-banco-preguntas-conocimiento.sql) y [`database/migrations/2026-11-09-puntuacion-parcial-evaluaciones.sql`](database/migrations/2026-11-09-puntuacion-parcial-evaluaciones.sql), en ese orden. La segunda migración agrega las observaciones por criterio y se puede volver a ejecutar sin duplicar la columna. No vuelvas a ejecutar `schema.sql` sobre una base ya creada. Después, ambos administradores deben iniciar sesión nuevamente para recibir el rol actualizado en su JWT.
 3. Copia `backend/.env.example` como `backend/.env` y configura la conexión a MySQL y un secreto JWT largo y aleatorio. El nombre de base de datos debe coincidir con `defaultdb`.
 4. Instala dependencias e inicia el backend:
 
@@ -82,17 +82,21 @@ El cuerpo de `POST` contiene `empleado_id`, `fecha_evaluacion` (`YYYY-MM-DD`), `
 
 Cada empleado puede abrir `/evaluaciones-conocimiento` para realizar una evaluación del mes asociada a su puesto activo. El servidor crea y conserva una evaluación por empleado y periodo (`YYYY-MM`), calcula la calificación sobre respuestas correctas, fija el resultado en **Aprobado** (70% o más) o **Requiere refuerzo**, y no permite modificar una entrega completada. Las respuestas correctas no se envían al empleado hasta que termina la prueba. Los bancos cubren Gerencia General, Asistente Comercial y RR. HH., Vendedor, Auxiliar Contable, Jefe de Mantenimiento, Técnico, Auxiliar Técnico, Director de Calidad, Metrológico y Auxiliar de Laboratorio.
 
-El panel `/admin/evaluaciones-conocimiento`, restringido a las cuentas administradoras autorizadas, habilita los pendientes del mes y muestra KPIs de cumplimiento y promedio, filtros por empleado/puesto/departamento, resultados individuales, historial de respuestas y evolución mensual. Los departamentos son una clasificación asignada a los puestos (Gerencia; Comercial y Recursos Humanos; Administración y Finanzas; Mantenimiento; Calidad y Metrología) para habilitar el filtro; no sustituyen una estructura de departamentos independiente.
+El panel `/admin/evaluaciones-conocimiento`, restringido a las cuentas administradoras autorizadas, permite administrar las preguntas, opciones, puntaje máximo por pregunta y puntaje completo, parcial o nulo de cada opción; los cambios se reflejan en las evaluaciones pendientes del mes de todos sus empleados y no alteran resultados ya completados. La nota se calcula como puntos obtenidos sobre los puntos posibles. También habilita los pendientes del mes y muestra KPIs de cumplimiento y promedio, filtros por empleado/puesto/departamento, resultados individuales, historial de respuestas y evolución mensual. Los departamentos son una clasificación asignada a los puestos (Gerencia; Comercial y Recursos Humanos; Administración y Finanzas; Mantenimiento; Calidad y Metrología) para habilitar el filtro; no sustituyen una estructura de departamentos independiente.
 
 | Método | Endpoint | Acceso | Función |
 |---|---|---|---|
 | `GET` | `/api/evaluaciones-conocimiento/mi` | Empleado autenticado | Habilitar y consultar la evaluación e historial propios |
 | `POST` | `/api/evaluaciones-conocimiento/mi/responder` | Empleado autenticado | Entregar respuestas y calcular el resultado |
 | `GET` | `/api/evaluaciones-conocimiento/admin/catalogos` | Administrador autorizado | Obtener empleados, puestos y departamentos para filtros |
+| `GET` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas` | Administrador autorizado | Consultar las preguntas del puesto |
+| `POST` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas` | Administrador autorizado | Agregar una pregunta con puntaje máximo y opciones de puntaje completo, parcial o nulo |
+| `PUT` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas/<pregunta_id>` | Administrador autorizado | Editar una pregunta, su puntaje máximo y los puntajes de sus opciones |
+| `DELETE` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas/<pregunta_id>` | Administrador autorizado | Eliminar una pregunta (el puesto debe conservar al menos una) |
 | `GET` | `/api/evaluaciones-conocimiento/admin` | Administrador autorizado | Consultar evaluaciones y pendientes, con filtros opcionales `empleado_id`, `puesto_id` y `departamento` |
 | `GET` | `/api/evaluaciones-conocimiento/admin/<id>` | Administrador autorizado | Consultar respuestas y calificación de una evaluación completada |
 
-El esquema nuevo está en `schema.sql`; para una base instalada, la migración agrega los departamentos de los puestos y la tabla de evaluaciones mensuales.
+El esquema nuevo está en `schema.sql`; para una base instalada, las migraciones agregan los departamentos, las evaluaciones mensuales y el banco de preguntas por puesto.
 
 ## Sugerencias del personal
 

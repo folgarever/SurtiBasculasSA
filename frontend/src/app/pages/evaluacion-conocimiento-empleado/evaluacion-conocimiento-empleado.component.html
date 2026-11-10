@@ -48,7 +48,7 @@
         @if (actual.estado === 'completada') {
           <div class="knowledge-result" [class.result-needs-work]="actual.resultado === 'Requiere refuerzo'">
             <strong>{{ actual.porcentaje }}%</strong>
-            <span>{{ actual.respuestas_correctas }} de {{ actual.total_preguntas }} respuestas correctas · {{ actual.resultado }}</span>
+            <span>{{ actual.puntos_obtenidos }} de {{ actual.puntos_totales }} puntos · {{ actual.respuestas_correctas }} respuestas totalmente correctas · {{ actual.resultado }}</span>
           </div>
           <div class="knowledge-questions">
             @for (pregunta of actual.preguntas ?? []; track pregunta.id; let index = $index) {
@@ -56,8 +56,9 @@
                 <h3>{{ index + 1 }}. {{ pregunta.texto }}</h3>
                 <div class="knowledge-options">
                   @for (opcion of pregunta.opciones; track opcion; let opcionIndex = $index) {
-                    <p [class.option-correct]="opcionIndex === pregunta.correcta" [class.option-incorrect]="opcionIndex === pregunta.respuesta && opcionIndex !== pregunta.correcta">
-                      {{ opcionIndex === pregunta.correcta ? '✓' : opcionIndex === pregunta.respuesta ? '×' : '·' }} {{ opcion }}
+                    <p [class.option-correct]="opcionIndex === pregunta.correcta" [class.option-partial]="opcionIndex === pregunta.respuesta && (pregunta.puntajes_opciones?.[opcionIndex] ?? 0) > 0 && opcionIndex !== pregunta.correcta" [class.option-incorrect]="opcionIndex === pregunta.respuesta && (pregunta.puntajes_opciones?.[opcionIndex] ?? 0) === 0">
+                      {{ opcionIndex === pregunta.correcta ? '✓' : opcionIndex === pregunta.respuesta ? (pregunta.puntajes_opciones?.[opcionIndex] ? '~' : '×') : '·' }} {{ opcion }}
+                      @if (opcionIndex === pregunta.respuesta) { <strong>· {{ pregunta.puntajes_opciones?.[opcionIndex] ?? 0 }} / {{ pregunta.puntaje_maximo }} pts</strong> }
                     </p>
                   }
                 </div>
@@ -71,7 +72,7 @@
               <article class="knowledge-question">
                 <h3>{{ index + 1 }}. {{ pregunta.texto }}</h3>
                 <div class="knowledge-options">
-                  @for (opcion of pregunta.opciones; track opcion; let opcionIndex = $index) {
+                  @for (opcion of pregunta.opciones; track $index; let opcionIndex = $index) {
                     <label class="knowledge-option">
                       <input type="radio" [name]="'pregunta-' + pregunta.id" [checked]="respuestas()[pregunta.id] === opcionIndex" (change)="seleccionar(pregunta.id, opcionIndex)">
                       <span>{{ opcion }}</span>

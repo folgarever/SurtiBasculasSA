@@ -16,7 +16,8 @@ SET departamento = CASE codigo_abreviatura
     WHEN 'MET' THEN 'Calidad y Metrología'
     WHEN 'AUXLAB' THEN 'Calidad y Metrología'
     ELSE 'General'
-END;
+END
+WHERE id > 0;
 
 CREATE TABLE evaluaciones_conocimiento (
     id INT AUTO_INCREMENT PRIMARY KEY,

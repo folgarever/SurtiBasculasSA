@@ -264,6 +264,27 @@ tbody tr:hover { background: #fafbfc; }
 .knowledge-panel > .section-heading { align-items: center; gap: 16px; }
 .knowledge-panel > .section-heading h2 { text-transform: capitalize; }
 .knowledge-intro { margin: 0 0 18px; color: var(--muted); font-size: .82rem; line-height: 1.55; }
+.question-bank-heading, .question-bank-question-heading, .question-bank-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.question-bank-heading { margin: 16px 0; color: var(--color-mid-gray); font-size: .75rem; }
+.question-bank-list { display: grid; gap: 13px; }
+.question-bank-question-heading { align-items: flex-start; margin-bottom: 10px; }
+.question-bank-question-heading h3 { margin: 0; }
+.question-bank-actions { justify-content: flex-end; margin-top: 12px; }
+.question-delete-button { color: #8c241d; }
+.question-delete-button:disabled { cursor: not-allowed; opacity: .5; }
+.question-editor { display: grid; gap: 15px; margin-top: 20px; padding: 18px; border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface-alt); }
+.question-editor h3 { margin: 0; color: var(--color-secondary); font-size: 1rem; }
+.question-editor .evaluation-field { gap: 7px; }
+.question-editor .evaluation-field span, .question-editor-label { color: var(--color-secondary); font-size: .75rem; font-weight: 650; }
+.question-editor .evaluation-field textarea, .question-editor .evaluation-field select, .question-editor-option > input[type="text"] { width: 100%; min-height: 40px; padding: 9px 11px; border: 1px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-paper); color: var(--color-ink); font: inherit; font-size: .8rem; }
+.question-editor-options { display: grid; gap: 9px; }
+.question-editor-option { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(190px, 1fr) minmax(130px, auto) auto; align-items: center; gap: 10px; }
+.question-editor-option > input[type="radio"] { accent-color: var(--color-primary); }
+.question-editor-option > select, .question-partial-score input { width: 100%; min-height: 40px; padding: 8px; border: 1px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-paper); color: var(--color-ink); font: inherit; font-size: .75rem; }
+.question-partial-score { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.question-partial-score label { display: grid; grid-template-columns: auto minmax(55px, 1fr); align-items: center; gap: 6px; color: var(--color-mid-gray); font-size: .7rem; }
+.question-option-score { color: var(--color-mid-gray); font-size: .75rem; white-space: nowrap; }
+.knowledge-bank-filter { grid-template-columns: minmax(220px, 360px); }
 .knowledge-questions { display: grid; gap: 13px; }
 .knowledge-question { padding: 17px 18px; border: 1px solid #e4e8ed; border-radius: 4px; background: #fbfcfd; }
 .knowledge-question h3 { margin: 0 0 13px; color: var(--blue-dark); font-size: .89rem; line-height: 1.5; }
@@ -273,6 +294,7 @@ tbody tr:hover { background: #fafbfc; }
 .knowledge-option input { margin-top: 2px; accent-color: var(--red-dark); }
 .knowledge-options > p { margin: 0; padding: 8px 10px; border-radius: 3px; color: #536174; font-size: .77rem; line-height: 1.45; }
 .knowledge-options .option-correct { background: #e8f3ec; color: #285d3b; }
+.knowledge-options .option-partial { background: #fff5df; color: #805613; }
 .knowledge-options .option-incorrect { background: #fbefed; color: #8c241d; }
 .knowledge-submit { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 18px; padding-top: 17px; border-top: 1px solid #e9edf1; }
 .knowledge-submit > span { color: var(--muted); font-size: .74rem; }
@@ -297,6 +319,10 @@ tbody tr:hover { background: #fafbfc; }
   .knowledge-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .knowledge-filters { grid-template-columns: 1fr; }
   .knowledge-panel, .knowledge-history { padding: 16px; }
+  .question-bank-question-heading { flex-direction: column; }
+  .question-editor-option { grid-template-columns: minmax(0, 1fr) auto; }
+  .question-editor-option > select, .question-partial-score { grid-column: 1 / -1; }
+  .question-editor-option .details-button { grid-column: 2; justify-self: start; }
   .knowledge-submit { align-items: stretch; flex-direction: column; }
   .knowledge-submit .button { width: 100%; }
 }

@@ -9,6 +9,8 @@ export interface PreguntaConocimiento {
   opciones: string[];
   respuesta: number | null;
   correcta?: number;
+  puntajes_opciones?: number[];
+  puntaje_maximo?: number;
 }
 
 export interface EvaluacionConocimiento {
@@ -23,6 +25,8 @@ export interface EvaluacionConocimiento {
   estado: 'pendiente' | 'completada';
   total_preguntas: number;
   respuestas_correctas: number | null;
+  puntos_obtenidos: number | null;
+  puntos_totales: number | null;
   porcentaje: number | null;
   resultado: 'Aprobado' | 'Requiere refuerzo' | null;
   fecha_realizacion: string | null;
@@ -42,6 +46,34 @@ export interface PuestoConocimiento {
   id: number;
   nombre_puesto: string;
   departamento: string;
+}
+
+export type TipoPuntuacionOpcion = 'correcta' | 'intermedia' | 'incorrecta';
+
+export interface PreguntaBanco {
+  id: number;
+  texto: string;
+  opciones: OpcionBanco[];
+  puntos_maximos: number;
+}
+
+export interface OpcionBanco {
+  texto: string;
+  puntos: number;
+  tipo: TipoPuntuacionOpcion;
+  porcentaje: number;
+}
+
+export interface OpcionPreguntaInput {
+  texto: string;
+  tipo: TipoPuntuacionOpcion;
+  porcentaje: number;
+}
+
+export interface PreguntaBancoInput {
+  texto: string;
+  opciones: OpcionPreguntaInput[];
+  puntos_maximos: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -66,12 +98,16 @@ export class EvaluacionesConocimientoService {
   responder(respuestas: Record<string, number>): Observable<{
     mensaje: string;
     respuestas_correctas: number;
+    puntos_obtenidos: number;
+    puntos_totales: number;
     porcentaje: number;
     resultado: string;
   }> {
     return this.http.post<{
       mensaje: string;
       respuestas_correctas: number;
+      puntos_obtenidos: number;
+      puntos_totales: number;
       porcentaje: number;
       resultado: string;
     }>(`${this.baseUrl}/mi/responder`, { respuestas });
@@ -106,5 +142,38 @@ export class EvaluacionesConocimientoService {
 
   obtenerDetalleAdmin(id: number): Observable<{ evaluacion: EvaluacionConocimiento }> {
     return this.http.get<{ evaluacion: EvaluacionConocimiento }>(`${this.baseUrl}/admin/${id}`);
+  }
+
+  obtenerBancoAdmin(puestoId: number): Observable<{ preguntas: PreguntaBanco[] }> {
+    return this.http.get<{ preguntas: PreguntaBanco[] }>(
+      `${this.baseUrl}/admin/banco/${puestoId}/preguntas`,
+    );
+  }
+
+  crearPreguntaAdmin(
+    puestoId: number,
+    pregunta: PreguntaBancoInput,
+  ): Observable<{ mensaje: string }> {
+    return this.http.post<{ mensaje: string }>(
+      `${this.baseUrl}/admin/banco/${puestoId}/preguntas`,
+      pregunta,
+    );
+  }
+
+  editarPreguntaAdmin(
+    puestoId: number,
+    preguntaId: number,
+    pregunta: PreguntaBancoInput,
+  ): Observable<{ mensaje: string }> {
+    return this.http.put<{ mensaje: string }>(
+      `${this.baseUrl}/admin/banco/${puestoId}/preguntas/${preguntaId}`,
+      pregunta,
+    );
+  }
+
+  eliminarPreguntaAdmin(puestoId: number, preguntaId: number): Observable<{ mensaje: string }> {
+    return this.http.delete<{ mensaje: string }>(
+      `${this.baseUrl}/admin/banco/${puestoId}/preguntas/${preguntaId}`,
+    );
   }
 }

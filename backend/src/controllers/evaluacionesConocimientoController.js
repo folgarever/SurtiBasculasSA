@@ -17,15 +17,36 @@ function leerJson(valor) {
   return valor;
 }
 
+function puntajeMaximoPregunta(pregunta) {
+  return Number(pregunta.puntaje_maximo ?? 1);
+}
+
+function puntosOpcionesPregunta(pregunta) {
+  const maximo = puntajeMaximoPregunta(pregunta);
+  return pregunta.opciones.map((opcion, indice) => {
+    if (typeof opcion === 'string') {
+      return indice === pregunta.correcta ? maximo : 0;
+    }
+    return Number(opcion.puntos);
+  });
+}
+
 function preguntasPublicas(valor, respuestas, mostrarCorrectas) {
   const preguntas = leerJson(valor);
-  return preguntas.map((pregunta) => ({
-    id: pregunta.id,
-    texto: pregunta.texto,
-    opciones: pregunta.opciones,
-    respuesta: respuestas?.[pregunta.id] ?? null,
-    ...(mostrarCorrectas ? { correcta: pregunta.correcta } : {}),
-  }));
+  return preguntas.map((pregunta) => {
+    const puntajes = puntosOpcionesPregunta(pregunta);
+    return {
+      id: pregunta.id,
+      texto: pregunta.texto,
+      opciones: pregunta.opciones.map((opcion) => typeof opcion === 'string' ? opcion : opcion.texto),
+      respuesta: respuestas?.[pregunta.id] ?? null,
+      ...(mostrarCorrectas ? {
+        correcta: puntajes.indexOf(puntajeMaximoPregunta(pregunta)),
+        puntajes_opciones: puntajes,
+        puntaje_maximo: puntajeMaximoPregunta(pregunta),
+      } : {}),
+    };
+  });
 }
 
 function resumenEvaluacion(registro, incluirPreguntas = false) {
@@ -42,6 +63,12 @@ function resumenEvaluacion(registro, incluirPreguntas = false) {
     estado: registro.estado,
     total_preguntas: registro.total_preguntas,
     respuestas_correctas: registro.respuestas_correctas,
+    puntos_obtenidos: registro.puntos_obtenidos === null || registro.puntos_obtenidos === undefined
+      ? registro.respuestas_correctas
+      : Number(registro.puntos_obtenidos),
+    puntos_totales: registro.puntos_totales === null || registro.puntos_totales === undefined
+      ? registro.total_preguntas
+      : Number(registro.puntos_totales),
     porcentaje: registro.porcentaje,
     resultado: registro.resultado,
     fecha_realizacion: registro.fecha_realizacion,
@@ -67,18 +94,146 @@ async function obtenerEmpleado(connection, empleadoId) {
   return empleados[0];
 }
 
-async function habilitarEvaluacion(connection, empleado, periodo) {
-  const banco = obtenerBanco(empleado.codigo_abreviatura);
-  if (!banco) {
-    const error = new Error(`No hay una evaluación configurada para el puesto ${empleado.codigo_abreviatura}.`);
-    error.status = 409;
+async function inicializarBanco(connection, puesto) {
+  const [inicializados] = await connection.execute(
+    'SELECT puesto_id FROM evaluaciones_banco_inicializado WHERE puesto_id = ? LIMIT 1',
+    [puesto.id]
+  );
+  if (inicializados.length) return;
+
+  await connection.beginTransaction();
+  try {
+    const [marcador] = await connection.execute(
+      'INSERT IGNORE INTO evaluaciones_banco_inicializado (puesto_id) VALUES (?)',
+      [puesto.id]
+    );
+    if (marcador.affectedRows) {
+      const bancoInicial = obtenerBanco(puesto.codigo_abreviatura) || [];
+      for (let indice = 0; indice < bancoInicial.length; indice += 1) {
+        const [texto, opciones, respuestaCorrecta] = bancoInicial[indice];
+        await connection.execute(
+          `INSERT INTO evaluaciones_banco_preguntas
+           (puesto_id, texto, opciones, respuesta_correcta, orden)
+           VALUES (?, ?, ?, ?, ?)`,
+          [puesto.id, texto, JSON.stringify(opciones), respuestaCorrecta, indice + 1]
+        );
+      }
+    }
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
     throw error;
   }
-  const preguntas = banco.map(([texto, opciones, correcta], indice) => ({
-    id: `q${indice + 1}`,
-    texto,
-    opciones,
+}
+
+async function listarPreguntasBanco(connection, puestoId) {
+  const [preguntas] = await connection.execute(
+    `SELECT id, texto, opciones, respuesta_correcta, puntos_maximos
+     FROM evaluaciones_banco_preguntas
+     WHERE puesto_id = ?
+     ORDER BY orden, id`,
+    [puestoId]
+  );
+  return preguntas.map((pregunta) => {
+    const maximo = Number(pregunta.puntos_maximos);
+    const opcionesGuardadas = leerJson(pregunta.opciones);
+    const opciones = opcionesGuardadas.map((opcion, indice) => {
+      const texto = typeof opcion === 'string' ? opcion : opcion.texto;
+      const puntos = typeof opcion === 'string'
+        ? (indice === pregunta.respuesta_correcta ? maximo : 0)
+        : Number(opcion.puntos);
+      return {
+        texto,
+        puntos,
+        tipo: puntos === maximo ? 'correcta' : puntos === 0 ? 'incorrecta' : 'intermedia',
+        porcentaje: maximo ? Math.round((puntos / maximo) * 100) : 0,
+      };
+    });
+    return { ...pregunta, puntos_maximos: maximo, opciones };
+  });
+}
+
+function validarPregunta(cuerpo) {
+  const { texto, opciones, puntos_maximos: maximo } = cuerpo || {};
+  const puntajeMaximo = Number(maximo);
+  if (
+    typeof texto !== 'string'
+    || !texto.trim()
+    || texto.trim().length > 1000
+    || !Number.isFinite(puntajeMaximo)
+    || puntajeMaximo <= 0
+    || puntajeMaximo > 9999.99
+    || Math.abs(Math.round(puntajeMaximo * 100) - puntajeMaximo * 100) > 0.0000001
+    || !Array.isArray(opciones)
+    || opciones.length < 2
+    || opciones.length > 10
+    || opciones.some((opcion) => (
+      !opcion
+      || typeof opcion.texto !== 'string'
+      || !opcion.texto.trim()
+      || opcion.texto.trim().length > 300
+      || !['correcta', 'intermedia', 'incorrecta'].includes(opcion.tipo)
+      || (opcion.tipo === 'intermedia'
+        && (!Number.isInteger(opcion.porcentaje) || opcion.porcentaje < 1 || opcion.porcentaje > 99))
+    ))
+    || opciones.filter((opcion) => opcion.tipo === 'correcta').length !== 1
+  ) {
+    return null;
+  }
+  const opcionesPuntuadas = opciones.map((opcion) => {
+    const porcentaje = opcion.tipo === 'correcta' ? 100 : opcion.tipo === 'incorrecta' ? 0 : opcion.porcentaje;
+    return {
+      texto: opcion.texto.trim(),
+      puntos: Math.round((puntajeMaximo * porcentaje) / 100 * 100) / 100,
+    };
+  });
+  if (opciones.some((opcion, indice) => (
+    opcion.tipo === 'intermedia'
+    && (opcionesPuntuadas[indice].puntos <= 0 || opcionesPuntuadas[indice].puntos >= puntajeMaximo)
+  ))) {
+    return null;
+  }
+  const correcta = opciones.findIndex((opcion) => opcion.tipo === 'correcta');
+  return {
+    texto: texto.trim(),
+    opciones: opcionesPuntuadas,
     correcta,
+    puntosMaximos: puntajeMaximo,
+  };
+}
+
+async function sincronizarPendientes(connection, puestoId) {
+  const preguntas = await listarPreguntasBanco(connection, puestoId);
+  const preguntasEvaluacion = preguntas.map((pregunta) => ({
+    id: `q${pregunta.id}`,
+    texto: pregunta.texto,
+    opciones: pregunta.opciones.map(({ texto, puntos }) => ({ texto, puntos })),
+    correcta: pregunta.respuesta_correcta,
+    puntaje_maximo: pregunta.puntos_maximos,
+  }));
+  await connection.execute(
+    `UPDATE evaluaciones_conocimiento
+     SET preguntas = ?, total_preguntas = ?
+     WHERE puesto_id = ? AND periodo = ? AND estado = 'pendiente'`,
+    [JSON.stringify(preguntasEvaluacion), preguntasEvaluacion.length, puestoId, mesActual()]
+  );
+}
+
+async function habilitarEvaluacion(connection, empleado, periodo) {
+  await inicializarBanco(connection, empleado);
+  const banco = await listarPreguntasBanco(connection, empleado.puesto_id);
+  if (!banco.length) {
+    const error = new Error(`No hay preguntas configuradas para el puesto ${empleado.codigo_abreviatura}.`);
+    error.status = 409;
+    error.codigo = 'BANCO_PREGUNTAS_VACIO';
+    throw error;
+  }
+  const preguntas = banco.map((pregunta) => ({
+    id: `q${pregunta.id}`,
+    texto: pregunta.texto,
+    opciones: pregunta.opciones.map(({ texto, puntos }) => ({ texto, puntos })),
+    correcta: pregunta.respuesta_correcta,
+    puntaje_maximo: pregunta.puntos_maximos,
   }));
   await connection.execute(
     `INSERT IGNORE INTO evaluaciones_conocimiento
@@ -88,7 +243,8 @@ async function habilitarEvaluacion(connection, empleado, periodo) {
   );
   const [evaluaciones] = await connection.execute(
     `SELECT id, empleado_id, puesto_id, periodo, preguntas, respuestas,
-            total_preguntas, respuestas_correctas, porcentaje, estado, resultado, fecha_realizacion
+            total_preguntas, respuestas_correctas, puntos_obtenidos, puntos_totales,
+            porcentaje, estado, resultado, fecha_realizacion
      FROM evaluaciones_conocimiento
      WHERE empleado_id = ? AND periodo = ?
      LIMIT 1`,
@@ -107,7 +263,8 @@ async function obtenerMiEvaluacion(req, res, next) {
     const actual = await habilitarEvaluacion(connection, empleado, mesActual());
     const [historial] = await connection.execute(
       `SELECT id, empleado_id, puesto_id, periodo, preguntas, respuestas,
-              total_preguntas, respuestas_correctas, porcentaje, estado, resultado, fecha_realizacion
+              total_preguntas, respuestas_correctas, puntos_obtenidos, puntos_totales,
+              porcentaje, estado, resultado, fecha_realizacion
        FROM evaluaciones_conocimiento
        WHERE empleado_id = ?
        ORDER BY periodo DESC`,
@@ -167,21 +324,42 @@ async function entregarEvaluacion(req, res, next) {
       return res.status(400).json({ mensaje: 'Las respuestas están incompletas o contienen opciones inválidas.' });
     }
 
+    const puntosTotales = preguntas.reduce(
+      (total, pregunta) => total + Math.round(puntajeMaximoPregunta(pregunta) * 100),
+      0
+    ) / 100;
+    const puntosObtenidos = preguntas.reduce((total, pregunta) => (
+      total + Math.round(puntosOpcionesPregunta(pregunta)[respuestas[pregunta.id]] * 100)
+    ), 0) / 100;
+    if (puntosTotales <= 0) {
+      await connection.rollback();
+      return res.status(409).json({ mensaje: 'La evaluación no tiene un puntaje total válido.' });
+    }
     const correctas = preguntas.reduce(
-      (total, pregunta) => total + (respuestas[pregunta.id] === pregunta.correcta ? 1 : 0),
+      (total, pregunta) => total + (
+        puntosOpcionesPregunta(pregunta)[respuestas[pregunta.id]] === puntajeMaximoPregunta(pregunta) ? 1 : 0
+      ),
       0
     );
-    const porcentaje = Math.round((correctas / preguntas.length) * 100);
+    const porcentaje = Math.round((puntosObtenidos / puntosTotales) * 100);
     const resultado = porcentaje >= 70 ? 'Aprobado' : 'Requiere refuerzo';
     await connection.execute(
       `UPDATE evaluaciones_conocimiento
        SET respuestas = ?, respuestas_correctas = ?, porcentaje = ?,
+           puntos_obtenidos = ?, puntos_totales = ?,
            resultado = ?, estado = 'completada', fecha_realizacion = CURRENT_TIMESTAMP
        WHERE id = ?`,
-      [JSON.stringify(respuestas), correctas, porcentaje, resultado, evaluacion.id]
+      [JSON.stringify(respuestas), correctas, porcentaje, puntosObtenidos, puntosTotales, resultado, evaluacion.id]
     );
     await connection.commit();
-    return res.json({ mensaje: 'Evaluación enviada.', respuestas_correctas: correctas, porcentaje, resultado });
+    return res.json({
+      mensaje: 'Evaluación enviada.',
+      respuestas_correctas: correctas,
+      puntos_obtenidos: puntosObtenidos,
+      puntos_totales: puntosTotales,
+      porcentaje,
+      resultado,
+    });
   } catch (error) {
     if (connection) await connection.rollback();
     if (error.status) return res.status(error.status).json({ mensaje: error.message });
@@ -211,6 +389,186 @@ async function obtenerCatalogosAdmin(req, res, next) {
   }
 }
 
+async function obtenerBancoAdmin(req, res, next) {
+  if (!/^\d+$/.test(req.params.puestoId) || Number(req.params.puestoId) < 1) {
+    return res.status(400).json({ mensaje: 'El identificador del puesto no es válido.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [puestos] = await connection.execute(
+      'SELECT id, codigo_abreviatura FROM puestos WHERE id = ? LIMIT 1',
+      [Number(req.params.puestoId)]
+    );
+    if (!puestos[0]) return res.status(404).json({ mensaje: 'Puesto no encontrado.' });
+    await inicializarBanco(connection, puestos[0]);
+    return res.json({ preguntas: await listarPreguntasBanco(connection, puestos[0].id) });
+  } catch (error) {
+    return next(error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function crearPreguntaAdmin(req, res, next) {
+  const pregunta = validarPregunta(req.body);
+  if (!pregunta) {
+    return res.status(400).json({ mensaje: 'La pregunta, sus opciones o los puntajes configurados no son válidos.' });
+  }
+  if (!/^\d+$/.test(req.params.puestoId) || Number(req.params.puestoId) < 1) {
+    return res.status(400).json({ mensaje: 'El identificador del puesto no es válido.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [puestos] = await connection.execute(
+      'SELECT id, codigo_abreviatura FROM puestos WHERE id = ? LIMIT 1',
+      [Number(req.params.puestoId)]
+    );
+    if (!puestos[0]) return res.status(404).json({ mensaje: 'Puesto no encontrado.' });
+    await inicializarBanco(connection, puestos[0]);
+    await connection.beginTransaction();
+    const [preguntasExistentes] = await connection.execute(
+      'SELECT id FROM evaluaciones_banco_preguntas WHERE puesto_id = ? FOR UPDATE',
+      [puestos[0].id]
+    );
+    if (preguntasExistentes.length >= 255) {
+      await connection.rollback();
+      return res.status(409).json({ mensaje: 'El banco de preguntas admite un máximo de 255 preguntas por puesto.' });
+    }
+    const [orden] = await connection.execute(
+      'SELECT COALESCE(MAX(orden), 0) + 1 AS siguiente FROM evaluaciones_banco_preguntas WHERE puesto_id = ?',
+      [puestos[0].id]
+    );
+    await connection.execute(
+      `INSERT INTO evaluaciones_banco_preguntas
+       (puesto_id, texto, opciones, respuesta_correcta, puntos_maximos, orden)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        puestos[0].id,
+        pregunta.texto,
+        JSON.stringify(pregunta.opciones),
+        pregunta.correcta,
+        pregunta.puntosMaximos,
+        orden[0].siguiente,
+      ]
+    );
+    await sincronizarPendientes(connection, puestos[0].id);
+    await connection.commit();
+    return res.status(201).json({ mensaje: 'Pregunta agregada.' });
+  } catch (error) {
+    if (connection) await connection.rollback();
+    return next(error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function editarPreguntaAdmin(req, res, next) {
+  const pregunta = validarPregunta(req.body);
+  if (!pregunta) {
+    return res.status(400).json({ mensaje: 'La pregunta, sus opciones o los puntajes configurados no son válidos.' });
+  }
+  if (
+    !/^\d+$/.test(req.params.puestoId)
+    || Number(req.params.puestoId) < 1
+    || !/^\d+$/.test(req.params.preguntaId)
+    || Number(req.params.preguntaId) < 1
+  ) {
+    return res.status(400).json({ mensaje: 'El identificador del puesto o de la pregunta no es válido.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [puestos] = await connection.execute(
+      'SELECT id, codigo_abreviatura FROM puestos WHERE id = ? LIMIT 1',
+      [Number(req.params.puestoId)]
+    );
+    if (!puestos[0]) return res.status(404).json({ mensaje: 'Puesto no encontrado.' });
+    await inicializarBanco(connection, puestos[0]);
+    await connection.beginTransaction();
+    const [resultado] = await connection.execute(
+      `UPDATE evaluaciones_banco_preguntas
+       SET texto = ?, opciones = ?, respuesta_correcta = ?, puntos_maximos = ?
+       WHERE id = ? AND puesto_id = ?`,
+      [
+        pregunta.texto,
+        JSON.stringify(pregunta.opciones),
+        pregunta.correcta,
+        pregunta.puntosMaximos,
+        Number(req.params.preguntaId),
+        puestos[0].id,
+      ]
+    );
+    if (!resultado.affectedRows) {
+      await connection.rollback();
+      return res.status(404).json({ mensaje: 'Pregunta no encontrada para este puesto.' });
+    }
+    await sincronizarPendientes(connection, puestos[0].id);
+    await connection.commit();
+    return res.json({ mensaje: 'Pregunta actualizada.' });
+  } catch (error) {
+    if (connection) await connection.rollback();
+    return next(error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function eliminarPreguntaAdmin(req, res, next) {
+  if (
+    !/^\d+$/.test(req.params.puestoId)
+    || Number(req.params.puestoId) < 1
+    || !/^\d+$/.test(req.params.preguntaId)
+    || Number(req.params.preguntaId) < 1
+  ) {
+    return res.status(400).json({ mensaje: 'El identificador del puesto o de la pregunta no es válido.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [puestos] = await connection.execute(
+      'SELECT id, codigo_abreviatura FROM puestos WHERE id = ? LIMIT 1',
+      [Number(req.params.puestoId)]
+    );
+    if (!puestos[0]) return res.status(404).json({ mensaje: 'Puesto no encontrado.' });
+    await inicializarBanco(connection, puestos[0]);
+    await connection.beginTransaction();
+    const [preguntas] = await connection.execute(
+      'SELECT id FROM evaluaciones_banco_preguntas WHERE puesto_id = ? FOR UPDATE',
+      [puestos[0].id]
+    );
+    if (!preguntas.some((pregunta) => pregunta.id === Number(req.params.preguntaId))) {
+      await connection.rollback();
+      return res.status(404).json({ mensaje: 'Pregunta no encontrada para este puesto.' });
+    }
+    if (preguntas.length <= 1) {
+      await connection.rollback();
+      return res.status(409).json({ mensaje: 'Cada puesto debe conservar al menos una pregunta.' });
+    }
+    const [resultado] = await connection.execute(
+      'DELETE FROM evaluaciones_banco_preguntas WHERE id = ? AND puesto_id = ?',
+      [Number(req.params.preguntaId), puestos[0].id]
+    );
+    if (!resultado.affectedRows) {
+      await connection.rollback();
+      return res.status(404).json({ mensaje: 'Pregunta no encontrada para este puesto.' });
+    }
+    await sincronizarPendientes(connection, puestos[0].id);
+    await connection.commit();
+    return res.json({ mensaje: 'Pregunta eliminada.' });
+  } catch (error) {
+    if (connection) await connection.rollback();
+    return next(error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
 async function listarEvaluacionesAdmin(req, res, next) {
   const { empleado_id: empleadoId, puesto_id: puestoId, departamento } = req.query;
   if (
@@ -232,7 +590,11 @@ async function listarEvaluacionesAdmin(req, res, next) {
     );
     const periodoActual = mesActual();
     for (const empleado of empleadosActivos) {
-      await habilitarEvaluacion(connection, empleado, periodoActual);
+      try {
+        await habilitarEvaluacion(connection, empleado, periodoActual);
+      } catch (error) {
+        if (error.codigo !== 'BANCO_PREGUNTAS_VACIO') throw error;
+      }
     }
 
     const condiciones = [];
@@ -252,7 +614,8 @@ async function listarEvaluacionesAdmin(req, res, next) {
     const [evaluaciones] = await connection.execute(
       `SELECT ev.id, ev.empleado_id, e.codigo_empleado, e.nombre AS empleado,
               ev.puesto_id, p.nombre_puesto, p.departamento, ev.periodo,
-              ev.estado, ev.total_preguntas, ev.respuestas_correctas, ev.porcentaje,
+              ev.estado, ev.total_preguntas, ev.respuestas_correctas,
+              ev.puntos_obtenidos, ev.puntos_totales, ev.porcentaje,
               ev.resultado, ev.fecha_realizacion
        FROM evaluaciones_conocimiento ev
        INNER JOIN empleados e ON e.id = ev.empleado_id
@@ -261,7 +624,14 @@ async function listarEvaluacionesAdmin(req, res, next) {
        ORDER BY ev.periodo DESC, e.nombre ASC`,
       parametros
     );
-    return res.json({ periodo_actual: periodoActual, evaluaciones });
+    return res.json({
+      periodo_actual: periodoActual,
+      evaluaciones: evaluaciones.map((evaluacion) => ({
+        ...evaluacion,
+        puntos_obtenidos: evaluacion.puntos_obtenidos === null ? null : Number(evaluacion.puntos_obtenidos),
+        puntos_totales: evaluacion.puntos_totales === null ? null : Number(evaluacion.puntos_totales),
+      })),
+    });
   } catch (error) {
     if (error.status) return res.status(error.status).json({ mensaje: error.message });
     return next(error);
@@ -279,7 +649,8 @@ async function obtenerDetalleAdmin(req, res, next) {
       `SELECT ev.id, ev.empleado_id, e.codigo_empleado, e.nombre AS empleado,
               ev.puesto_id, p.nombre_puesto, p.departamento, ev.periodo,
               ev.preguntas, ev.respuestas, ev.estado, ev.total_preguntas,
-              ev.respuestas_correctas, ev.porcentaje, ev.resultado, ev.fecha_realizacion
+              ev.respuestas_correctas, ev.puntos_obtenidos, ev.puntos_totales,
+              ev.porcentaje, ev.resultado, ev.fecha_realizacion
        FROM evaluaciones_conocimiento ev
        INNER JOIN empleados e ON e.id = ev.empleado_id
        INNER JOIN puestos p ON p.id = ev.puesto_id
@@ -298,6 +669,10 @@ module.exports = {
   obtenerMiEvaluacion,
   entregarEvaluacion,
   obtenerCatalogosAdmin,
+  obtenerBancoAdmin,
+  crearPreguntaAdmin,
+  editarPreguntaAdmin,
+  eliminarPreguntaAdmin,
   listarEvaluacionesAdmin,
   obtenerDetalleAdmin,
 };

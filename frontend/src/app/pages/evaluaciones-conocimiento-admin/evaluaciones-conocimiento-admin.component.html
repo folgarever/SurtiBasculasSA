@@ -4,9 +4,9 @@
     <span class="sidebar-caption">MÓDULOS</span>
     <nav class="sidebar-nav" aria-label="Navegación principal">
       <a class="sidebar-link" routerLink="/admin"><ng-icon name="lucideLayoutDashboard" size="18" /> Dashboard</a>
+      <a class="sidebar-link" routerLink="/admin/empleados"><ng-icon name="lucideUsers" size="18" /> Empleados</a>
       <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideClipboardCheck" size="18" /> Control de asistencia</a>
       <a class="sidebar-link" routerLink="/evaluaciones"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluación de personal</a>
-      <a class="sidebar-link" routerLink="/admin/empleados"><ng-icon name="lucideUsers" size="18" /> Empleados</a>
       <a class="sidebar-link is-active" routerLink="/admin/evaluaciones-conocimiento" aria-current="page"><ng-icon name="lucideClipboardCheck" size="18" /> Evaluaciones mensuales</a>
     </nav>
     <a class="sidebar-link sidebar-bottom-link" routerLink="/admin/sugerencias"><ng-icon name="lucideMessageSquare" size="18" /> Sugerencias</a>
@@ -26,6 +26,97 @@
       <article class="knowledge-kpi"><span>PENDIENTES</span><strong>{{ pendientesActuales() }}</strong><small>Empleados que aún deben responder</small></article>
       <article class="knowledge-kpi"><span>CUMPLIMIENTO</span><strong>{{ cumplimientoActual() }}%</strong><small>Evaluaciones completadas del periodo</small></article>
       <article class="knowledge-kpi"><span>PROMEDIO DE CONOCIMIENTO</span><strong>{{ promedioActual() === null ? '—' : promedioActual() + '%' }}</strong><small>Entre las evaluaciones completadas</small></article>
+    </section>
+
+    <section class="knowledge-panel">
+      <div class="section-heading">
+        <div><p class="eyebrow">ADMINISTRACIÓN / DESARROLLO</p><h2>Banco de preguntas por puesto</h2><p class="subheading">Los cambios se aplican a las evaluaciones pendientes del mes para todos los empleados del puesto.</p></div>
+      </div>
+      <div class="knowledge-filters knowledge-bank-filter">
+        <label>Puesto
+          <select [value]="puestoBanco()" [disabled]="cargandoBanco() || guardandoPregunta()" (change)="actualizarPuestoBanco($event)">
+            <option value="">Selecciona un puesto</option>
+            @for (puesto of puestos(); track puesto.id) { <option [value]="puesto.id">{{ puesto.nombre_puesto }}</option> }
+          </select>
+        </label>
+      </div>
+
+      @if (cargandoBanco()) {
+        <div class="knowledge-empty">Cargando banco de preguntas…</div>
+      } @else {
+        <div class="question-bank-heading">
+          <span>{{ preguntasBanco().length }} preguntas</span>
+          <button class="button button-accent" type="button" [disabled]="!puestoBanco()" (click)="nuevaPregunta()">Agregar pregunta</button>
+        </div>
+        @if (!preguntasBanco().length) {
+          <p class="knowledge-intro">Este puesto aún no tiene preguntas. Agrega al menos una para habilitar sus evaluaciones mensuales.</p>
+        }
+        <div class="question-bank-list">
+          @for (pregunta of preguntasBanco(); track pregunta.id; let index = $index) {
+            <article class="knowledge-question">
+              <div class="question-bank-question-heading">
+                <h3>{{ index + 1 }}. {{ pregunta.texto }}</h3>
+                <span class="state-pill">{{ pregunta.puntos_maximos }} puntos posibles</span>
+              </div>
+              <div class="knowledge-options">
+                @for (opcion of pregunta.opciones; track $index; let opcionIndex = $index) {
+                  <p [class.option-correct]="opcion.tipo === 'correcta'" [class.option-partial]="opcion.tipo === 'intermedia'">
+                    {{ etiquetaTipoPuntuacion(opcion.tipo) }} · {{ opcion.puntos }} pts · {{ opcion.texto }}
+                  </p>
+                }
+              </div>
+              <div class="question-bank-actions">
+                <button class="details-button" type="button" (click)="editarPregunta(pregunta)">Editar</button>
+                <button class="details-button question-delete-button" type="button" [disabled]="preguntasBanco().length <= 1" (click)="eliminarPregunta(pregunta)">Eliminar</button>
+              </div>
+            </article>
+          }
+        </div>
+
+        @if (mostrandoEditor()) {
+          <div class="question-editor">
+            <h3>{{ editandoPreguntaId() === null ? 'Nueva pregunta' : 'Editar pregunta' }}</h3>
+            <label class="evaluation-field">
+              <span>Pregunta</span>
+              <textarea rows="3" maxlength="1000" [value]="textoPregunta()" (input)="actualizarTextoPregunta($event)"></textarea>
+            </label>
+            <label class="evaluation-field">
+              <span>Puntaje máximo de la pregunta</span>
+              <input type="number" min="0.01" max="9999.99" step="0.01" [value]="puntajeMaximoPregunta()" (input)="actualizarPuntajeMaximo($event)">
+            </label>
+            <div class="question-editor-options">
+              <span class="question-editor-label">Opciones y puntaje asignado</span>
+              @for (opcion of opcionesPregunta(); track $index; let opcionIndex = $index) {
+                <div class="question-editor-option">
+                  <input type="text" [value]="opcion.texto" maxlength="300" [attr.aria-label]="'Texto de la opción ' + (opcionIndex + 1)" (input)="actualizarOpcion(opcionIndex, $event)">
+                  <select [value]="opcion.tipo" [attr.aria-label]="'Tipo de puntaje para opción ' + (opcionIndex + 1)" (change)="actualizarTipoOpcion(opcionIndex, $event)">
+                    <option value="correcta">Correcta · puntaje completo</option>
+                    <option value="intermedia">Intermedia · puntaje parcial</option>
+                    <option value="incorrecta">Incorrecta · 0 puntos</option>
+                  </select>
+                  @if (opcion.tipo === 'intermedia') {
+                    <div class="question-partial-score">
+                      <label>
+                        <span>% del puntaje</span>
+                        <input type="number" min="1" max="99" step="1" [value]="opcion.porcentaje" (input)="actualizarPorcentajeOpcion(opcionIndex, $event)">
+                      </label>
+                      <span class="question-option-score">{{ puntosOpcion(opcion.tipo, opcion.porcentaje, puntajeMaximoPregunta()) }} pts</span>
+                    </div>
+                  } @else {
+                    <span class="question-option-score">{{ puntosOpcion(opcion.tipo, opcion.porcentaje, puntajeMaximoPregunta()) }} pts</span>
+                  }
+                  <button class="details-button question-delete-button" type="button" [disabled]="opcionesPregunta().length <= 2" (click)="quitarOpcion(opcionIndex)">Quitar</button>
+                </div>
+              }
+              <button class="details-button" type="button" [disabled]="opcionesPregunta().length >= 10" (click)="agregarOpcion()">Agregar opción</button>
+            </div>
+            <div class="question-bank-actions">
+              <button class="details-button" type="button" [disabled]="guardandoPregunta()" (click)="cancelarEdicionPregunta()">Cancelar</button>
+              <button class="button button-accent" type="button" [disabled]="guardandoPregunta()" (click)="guardarPregunta()">{{ guardandoPregunta() ? 'Guardando…' : 'Guardar pregunta' }}</button>
+            </div>
+          </div>
+        }
+      }
     </section>
 
     <section class="knowledge-panel">
@@ -56,16 +147,17 @@
       } @else {
         <div class="table-frame"><div class="table-scroll">
           <table>
-            <thead><tr><th>Empleado</th><th>Puesto / departamento</th><th>Periodo</th><th>Calificación</th><th>Resultado</th><th>Estado</th><th></th></tr></thead>
+            <thead><tr><th>Empleado</th><th>Puesto / departamento</th><th>Periodo</th><th>Puntos</th><th>Calificación</th><th>Resultado</th><th>Estado</th><th></th></tr></thead>
             <tbody>
               @if (!evaluaciones().length) {
-                <tr><td colspan="7" class="table-empty">No hay evaluaciones para estos filtros.</td></tr>
+                <tr><td colspan="8" class="table-empty">No hay evaluaciones para estos filtros.</td></tr>
               } @else {
                 @for (item of evaluaciones(); track item.id) {
                   <tr>
                     <td><strong>{{ item.empleado }}</strong><small class="employee-code">{{ item.codigo_empleado }}</small></td>
                     <td>{{ item.nombre_puesto }}<small class="employee-code">{{ item.departamento }}</small></td>
                     <td>{{ formatoPeriodo(item.periodo) }}</td>
+                    <td>{{ item.estado === 'completada' ? item.puntos_obtenidos + ' / ' + item.puntos_totales : '—' }}</td>
                     <td>{{ item.porcentaje === null ? '—' : item.porcentaje + '%' }}</td>
                     <td>{{ item.resultado || '—' }}</td>
                     <td><span class="state-pill" [class.state-good]="item.estado === 'completada'" [class.state-warn]="item.estado === 'pendiente'">{{ item.estado === 'completada' ? 'Completada' : 'Pendiente' }}</span></td>
@@ -87,7 +179,7 @@
           <button class="details-button" type="button" (click)="cerrarDetalle()">Cerrar</button>
         </div>
         <div class="knowledge-result" [class.result-needs-work]="evaluacion.resultado === 'Requiere refuerzo'">
-          <strong>{{ evaluacion.porcentaje }}%</strong><span>{{ evaluacion.respuestas_correctas }} de {{ evaluacion.total_preguntas }} correctas · {{ evaluacion.resultado }}</span>
+          <strong>{{ evaluacion.porcentaje }}%</strong><span>{{ evaluacion.puntos_obtenidos }} de {{ evaluacion.puntos_totales }} puntos · {{ evaluacion.respuestas_correctas }} respuestas totalmente correctas · {{ evaluacion.resultado }}</span>
         </div>
         <div class="knowledge-questions">
           @for (pregunta of evaluacion.preguntas ?? []; track pregunta.id; let index = $index) {
@@ -95,8 +187,9 @@
               <h3>{{ index + 1 }}. {{ pregunta.texto }}</h3>
               <div class="knowledge-options">
                 @for (opcion of pregunta.opciones; track opcion; let opcionIndex = $index) {
-                  <p [class.option-correct]="opcionIndex === pregunta.correcta" [class.option-incorrect]="opcionIndex === pregunta.respuesta && opcionIndex !== pregunta.correcta">
-                    {{ opcionIndex === pregunta.correcta ? '✓' : opcionIndex === pregunta.respuesta ? '×' : '·' }} {{ opcion }}
+                  <p [class.option-correct]="opcionIndex === pregunta.correcta" [class.option-partial]="opcionIndex === pregunta.respuesta && (pregunta.puntajes_opciones?.[opcionIndex] ?? 0) > 0 && opcionIndex !== pregunta.correcta" [class.option-incorrect]="opcionIndex === pregunta.respuesta && (pregunta.puntajes_opciones?.[opcionIndex] ?? 0) === 0">
+                    {{ opcionIndex === pregunta.correcta ? '✓' : opcionIndex === pregunta.respuesta ? (pregunta.puntajes_opciones?.[opcionIndex] ? '~' : '×') : '·' }} {{ opcion }}
+                    @if (opcionIndex === pregunta.respuesta) { <strong>· {{ pregunta.puntajes_opciones?.[opcionIndex] ?? 0 }} / {{ pregunta.puntaje_maximo }} pts</strong> }
                   </p>
                 }
               </div>
