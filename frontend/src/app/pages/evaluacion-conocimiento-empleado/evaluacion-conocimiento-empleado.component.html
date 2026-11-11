@@ -20,7 +20,7 @@
   </aside>
   <header class="topbar">
     <div class="topbar-title"><span class="admin-label">PORTAL DEL PERSONAL</span><strong>Evaluación de conocimientos y desempeño</strong></div>
-    <div class="topbar-actions"><span class="user-chip"><span class="avatar">{{ usuario?.nombre?.slice(0, 1) || 'U' }}</span><span>{{ usuario?.nombre }}</span></span><button class="icon-button" type="button" aria-label="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
+    <div class="topbar-actions"><app-selector-tema [nombre]="usuario?.nombre || ''" [inicial]="usuario?.nombre?.slice(0, 1) || 'U'" /><button class="icon-button" type="button" aria-label="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
   </header>
 
   <main class="workspace knowledge-workspace">

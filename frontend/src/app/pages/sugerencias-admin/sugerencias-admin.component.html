@@ -15,7 +15,7 @@
   </aside>
   <header class="topbar">
     <div class="topbar-title"><span class="admin-label">ESCUCHA DEL EQUIPO</span><strong>Sugerencias del personal</strong></div>
-    <div class="topbar-actions"><span class="user-chip"><span class="avatar avatar-admin">{{ usuario?.nombre?.slice(0, 1) || 'A' }}</span><span>{{ usuario?.nombre }}</span></span><button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
+    <div class="topbar-actions"><app-selector-tema [admin]="true" [nombre]="usuario?.nombre || ''" [inicial]="usuario?.nombre?.slice(0, 1) || 'A'" /><button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
   </header>
 
   <main class="workspace suggestions-workspace">

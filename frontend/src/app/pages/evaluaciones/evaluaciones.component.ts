@@ -13,6 +13,7 @@ import {
   EvaluacionesService,
 } from '../../services/evaluaciones.service';
 import { AuthService } from '../../services/auth.service';
+import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 
 type CriterioGeneral = {
   clave: keyof CalificacionesGenerales;
@@ -52,7 +53,7 @@ const CRITERIOS_JEFATURA: CriterioJefatura[] = [
 @Component({
   selector: 'app-evaluaciones',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, NgIcon],
+  imports: [ReactiveFormsModule, RouterLink, NgIcon, SelectorTemaComponent],
   providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideUsers, lucideUserRoundCog })],
   templateUrl: './evaluaciones.component.html',
 })

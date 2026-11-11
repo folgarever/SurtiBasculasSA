@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideUsers, lucideUserRoundCog } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
+import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 import {
   EvaluacionConocimiento,
   EvaluacionesConocimientoService,
@@ -12,7 +13,7 @@ import {
 @Component({
   selector: 'app-evaluacion-conocimiento-empleado',
   standalone: true,
-  imports: [RouterLink, NgIcon],
+  imports: [RouterLink, NgIcon, SelectorTemaComponent],
   providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideUsers, lucideUserRoundCog })],
   templateUrl: './evaluacion-conocimiento-empleado.component.html',
 })

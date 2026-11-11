@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 import {
   EvaluacionesSeleccionService,
   PuestoPruebaCandidato,
@@ -11,6 +12,7 @@ import {
 @Component({
   selector: 'app-seleccion-candidato',
   standalone: true,
+  imports: [SelectorTemaComponent],
   templateUrl: './seleccion-candidato.component.html',
   styleUrl: './seleccion-candidato.component.css',
 })

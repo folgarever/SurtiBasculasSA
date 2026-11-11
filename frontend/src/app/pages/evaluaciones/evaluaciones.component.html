@@ -16,7 +16,7 @@
   <header class="topbar">
     <div class="topbar-title"><span class="admin-label">PERSONAL / DESARROLLO</span><strong>Evaluación de personal</strong></div>
     <div class="topbar-actions">
-      <span class="user-chip"><span class="avatar avatar-admin">{{ usuario?.nombre?.slice(0, 1) || 'A' }}</span><span>{{ usuario?.nombre }}</span></span>
+      <app-selector-tema [admin]="true" [nombre]="usuario?.nombre || ''" [inicial]="usuario?.nombre?.slice(0, 1) || 'A'" />
       <button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button>
     </div>
   </header>

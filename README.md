@@ -26,6 +26,8 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 
 La interfaz utiliza la paleta corporativa navy y roja, superficies claras y componentes adaptables a equipos de escritorio y móviles. Los tokens visuales compartidos se definen en `frontend/src/brand-theme.css`.
 
+El selector de apariencia permite usar el tema claro, oscuro o el del dispositivo. Para abrirlo, toca el logotipo en el inicio de sesión o el perfil dentro de la aplicación. La elección se guarda en el navegador.
+
 ## Configuración
 
 1. Crea la base de datos `defaultdb` en MySQL y ejecuta [`database/schema.sql`](database/schema.sql) para una instalación nueva.

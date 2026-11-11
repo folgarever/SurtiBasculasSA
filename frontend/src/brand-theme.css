@@ -1574,3 +1574,174 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .login-mode-switch button, .login-submit, .login-submit ng-icon { transition: none; }
   .login-submit:not(:disabled):hover { transform: none; }
 }
+
+.theme-control { position: relative; }
+.theme-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-2xl);
+  background: transparent;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+.theme-trigger-logo { display: block; border-radius: 10px; }
+.theme-trigger:hover .avatar { box-shadow: 0 0 0 2px var(--color-hairline); }
+.theme-popover {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 220px;
+  padding: 12px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  background: var(--color-paper);
+  box-shadow: 0 12px 30px rgba(0,0,0,.18);
+}
+.theme-control:has(.theme-trigger-logo) .theme-popover { right: auto; left: 0; }
+.visual-topline:has(.theme-popover), .mobile-brand:has(.theme-popover) { z-index: 3; }
+.mobile-brand:has(.theme-popover) { overflow: visible; }
+.theme-selector { display: flex; align-items: center; gap: 3px; }
+.theme-label { display: block; margin: 0 0 8px 8px; color: var(--color-mid-gray); font-size: .73rem; font-weight: 600; }
+.theme-selector button {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: var(--radius-2xl);
+  background: transparent;
+  color: var(--color-ink-soft);
+  font-size: .73rem;
+}
+.theme-selector button:hover { background: var(--color-surface-alt); }
+.theme-selector button[aria-pressed="true"] { background: var(--color-ink); color: #fff; }
+.candidate-actions { position: relative; display: flex; align-items: center; gap: 12px; }
+.candidate-actions .theme-control { position: static; }
+@media (max-width: 560px) {
+  .theme-trigger-name { display: none; }
+}
+@media print {
+  .theme-control { display: none; }
+}
+
+@media screen {
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --color-canvas: #101827;
+    --color-paper: #192437;
+    --color-surface-alt: #243248;
+    --color-ink: #edf3fa;
+    --color-ink-soft: #d3dfed;
+    --color-mid-gray: #acbdd0;
+    --color-hairline: #394a61;
+    --color-ember: #ffaaaa;
+    --color-primary-soft: #4a2d37;
+    --shadow-card: 0 0 0 1px rgba(255,255,255,.025), 0 1px 3px rgba(0,0,0,.2);
+    --blue-deep: #edf3fa;
+    --green-deep: #edf3fa;
+    --danger: #ffb4b4;
+  }
+
+  html[data-theme="dark"] .theme-selector button[aria-pressed="true"] { background: #d3dfed; color: #101827; }
+  html[data-theme="dark"] .app-sidebar { background: #111b30; border-color: var(--color-hairline); }
+  html[data-theme="dark"] .topbar,
+  html[data-theme="dark"] .records-section,
+  html[data-theme="dark"] .records-section .table-frame,
+  html[data-theme="dark"] .summary-strip,
+  html[data-theme="dark"] .evaluation-panel,
+  html[data-theme="dark"] .evaluation-detail,
+  html[data-theme="dark"] .filter-bar { background: var(--color-paper); }
+  html[data-theme="dark"] .admin-welcome,
+  html[data-theme="dark"] .attendance-band { background: #23395b; }
+  html[data-theme="dark"] .admin-welcome h1 { color: #fff; }
+  html[data-theme="dark"] .topbar .user-chip { color: var(--color-ink-soft); }
+  html[data-theme="dark"] .topbar .icon-button { color: var(--color-ink-soft); }
+  html[data-theme="dark"] .module-icon,
+  html[data-theme="dark"] .module-evaluation .module-icon,
+  html[data-theme="dark"] .module-employees .module-icon { background: #365275; color: #fff; }
+  html[data-theme="dark"] .module-attendance .module-icon { background: #a71f28; }
+  html[data-theme="dark"] .module-card::before { background: #698ab2; }
+  html[data-theme="dark"] .module-attendance::before { background: #ef7373; }
+  html[data-theme="dark"] .module-link > span { color: var(--color-ember); }
+
+  html[data-theme="dark"] .button-primary,
+  html[data-theme="dark"] .button-dark,
+  html[data-theme="dark"] .candidate-submit { background: #365275; color: #fff; }
+  html[data-theme="dark"] .button-primary:hover,
+  html[data-theme="dark"] .button-dark:hover,
+  html[data-theme="dark"] .candidate-submit:hover { background: #46678f; }
+  html[data-theme="dark"] .button-accent,
+  html[data-theme="dark"] .button-light,
+  html[data-theme="dark"] .button-danger { background: #a71f28; color: #fff; }
+  html[data-theme="dark"] .button-accent:hover,
+  html[data-theme="dark"] .button-light:hover,
+  html[data-theme="dark"] .button-danger:hover { background: #bf3037; }
+  html[data-theme="dark"] .sidebar-link.is-active,
+  html[data-theme="dark"] .sidebar-link.is-active:hover { background: #a71f28; color: #fff; }
+
+  html[data-theme="dark"] :is(.table-frame, .modal-panel, .knowledge-panel, .knowledge-history, .knowledge-kpi, .suggestion-card, .suggestion-form-card) {
+    background: var(--color-paper);
+    border-color: var(--color-hairline);
+  }
+  html[data-theme="dark"] :is(th, .employee-table-frame th) { background: var(--color-surface-alt); color: var(--color-ink); }
+  html[data-theme="dark"] :is(.record-count, .date-stamp) { background: var(--color-surface-alt); border-color: var(--color-hairline); color: var(--color-ink-soft); }
+  html[data-theme="dark"] td { color: var(--color-ink-soft); border-color: var(--color-hairline); }
+  html[data-theme="dark"] tbody tr:hover { background: var(--color-surface-alt); }
+  html[data-theme="dark"] :is(.table-empty, .employee-code, .protected-account, .helper-text, .selection-count) { color: var(--color-mid-gray); }
+  html[data-theme="dark"] :is(.criteria-section, .specialized-section, .knowledge-question, .question-editor, .knowledge-empty, .employee-toggle, .generated-code, .suggestion-response, .modal-context, .detail-comments) {
+    background: var(--color-surface-alt);
+    border-color: var(--color-hairline);
+    color: var(--color-ink-soft);
+  }
+  html[data-theme="dark"] :is(.knowledge-option, .score-option span) {
+    background: var(--color-paper);
+    border-color: var(--color-hairline);
+    color: var(--color-ink);
+  }
+  html[data-theme="dark"] .knowledge-option:has(input:checked) { background: #31455e; border-color: #9eb7d5; }
+  html[data-theme="dark"] .score-option input:checked + span { background: #a71f28; border-color: #a71f28; color: #fff; }
+  html[data-theme="dark"] :is(.search-field, .date-filter, .employee-search, .filter-fields .search-field, .filter-fields .date-filter) {
+    background: var(--color-canvas);
+    border-color: transparent;
+  }
+  html[data-theme="dark"] :is(.search-field input, .date-filter input, .employee-search input) { background: transparent; color: var(--color-ink); }
+  html[data-theme="dark"] :is(input, select, textarea)::placeholder { color: var(--color-mid-gray); opacity: 1; }
+  html[data-theme="dark"] :is(.suggestion-description, .suggestion-response > p:not(.eyebrow), .suggestion-form > label, .suggestion-reply > label, .knowledge-filters label, .question-editor-label, .knowledge-options > p) { color: var(--color-ink-soft); }
+  html[data-theme="dark"] :is(.criterion-card, .evaluation-section-heading, .summary-metric + .summary-metric, .summary-note, .workspace-footer, .login-footnote, .modal-actions) { border-color: var(--color-hairline); }
+
+  html[data-theme="dark"] :is(.alert-success, .state-good, .knowledge-result, .knowledge-options .option-correct, .candidate-notice) { background: #193b30; border-color: #397c60; color: #b7ebca; }
+  html[data-theme="dark"] :is(.state-warn, .knowledge-options .option-partial, .selection-internal-note) { background: #47391f; border-color: #947333; color: #ffe2a3; }
+  html[data-theme="dark"] :is(.alert-error, .knowledge-result.result-needs-work, .knowledge-options .option-incorrect, .candidate-error) { background: #482a30; border-color: #a95860; color: #ffd2d2; }
+  html[data-theme="dark"] :is(.field-error, .required-mark, .question-delete-button) { color: #ffb4b4; }
+
+  html[data-theme="dark"] .login-visual {
+    background:
+      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
+      radial-gradient(ellipse at 85% 85%, rgba(185,28,28,.2), transparent 42%),
+      linear-gradient(145deg, #23395b, #111b30 70%);
+    background-size: 40px 40px, 40px 40px, auto, auto;
+  }
+  html[data-theme="dark"] .login-visual::after { box-shadow: inset 0 0 0 35px #111b30, inset 0 0 0 36px rgba(255,255,255,.14), 0 0 0 30px rgba(255,255,255,.025); }
+  html[data-theme="dark"] .login-form-side { background: radial-gradient(circle at 90% 8%, rgba(185,28,28,.11), transparent 28%), var(--color-canvas); }
+  html[data-theme="dark"] .login-form-wrap { background: var(--color-paper); }
+  html[data-theme="dark"] .login-form-wrap input:hover,
+  html[data-theme="dark"] .login-form-wrap input:focus { background: var(--color-surface-alt); }
+  html[data-theme="dark"] .login-mode-switch button { color: var(--color-mid-gray); }
+  html[data-theme="dark"] .login-mode-switch button.is-active { background: #3a4f6c; color: #fff; }
+  html[data-theme="dark"] .mobile-brand { background: #111b30; }
+  html[data-theme="dark"] .password-toggle { color: var(--color-mid-gray); }
+  html[data-theme="dark"] .password-toggle:hover { background: var(--color-surface-alt); color: var(--color-ink); }
+
+  html[data-theme="dark"] .candidate-portal :is(.candidate-profile-form label, .candidate-question, .candidate-option span, .candidate-result, .candidate-result h2),
+  html[data-theme="dark"] .selection-workspace :is(.selection-table, .selection-candidate-header, .selection-prompt, .selection-section-heading h3) { color: var(--color-ink); }
+  html[data-theme="dark"] .candidate-portal :is(.candidate-brand small, .candidate-profile-age, .candidate-question > span, .candidate-section > p, .candidate-section > header span, .candidate-complete > p),
+  html[data-theme="dark"] .selection-workspace :is(.selection-position-picker, .selection-detail, .selection-candidate-instructions) { color: var(--color-mid-gray); }
+  html[data-theme="dark"] .candidate-portal :is(.candidate-option, .candidate-result),
+  html[data-theme="dark"] .selection-workspace :is(.selection-rubric, .selection-thresholds, .selection-live-check) { background: var(--color-surface-alt); border-color: var(--color-hairline); color: var(--color-ink-soft); }
+  html[data-theme="dark"] .candidate-portal .candidate-option:has(input:checked) { background: #493039; border-color: #e27d7d; }
+  html[data-theme="dark"] .candidate-portal :is(.candidate-section, .candidate-question),
+  html[data-theme="dark"] .selection-workspace :is(.selection-section, .selection-item, .selection-table th, .selection-table td) { border-color: var(--color-hairline); }
+}

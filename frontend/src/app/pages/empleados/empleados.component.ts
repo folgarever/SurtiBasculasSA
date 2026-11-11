@@ -20,12 +20,13 @@ import {
   lucideX,
 } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
+import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 import { EmpleadoAdministracion, RrhhService, Puesto } from '../../services/rrhh.service';
 
 @Component({
   selector: 'app-empleados',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, NgIcon],
+  imports: [ReactiveFormsModule, RouterLink, NgIcon, SelectorTemaComponent],
   providers: [provideIcons({
     lucideClipboardCheck,
     lucideEye,

@@ -1,6 +1,6 @@
 <main class="login-page">
   <section class="login-visual" aria-label="SURTIBÁSCULAS S.A., plataforma corporativa">
-    <div class="visual-topline"><span class="brand-logo-frame"><img class="brand-logo brand-logo-login" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A. <b>/ PLATAFORMA DE GESTIÓN</b></span></div>
+    <div class="visual-topline"><app-selector-tema tipo="logo"><span class="brand-logo-frame"><img class="brand-logo brand-logo-login" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span></app-selector-tema><span>SURTIBÁSCULAS S.A. <b>/ PLATAFORMA DE GESTIÓN</b></span></div>
     <div class="visual-copy">
       <p class="eyebrow">PLATAFORMA CORPORATIVA</p>
       <h1>Gestión clara,<br>equipos<br><em>conectados.</em></h1>
@@ -11,7 +11,7 @@
 
   <section class="login-form-side">
     <div class="login-form-wrap">
-      <div class="mobile-brand"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span></div>
+      <div class="mobile-brand"><app-selector-tema tipo="logo"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span></app-selector-tema></div>
       <div class="login-copy">
         <p class="eyebrow">{{ modoCandidato() ? 'PORTAL DE CANDIDATOS' : 'PORTAL DEL PERSONAL' }}</p>
         <h2>Bienvenido</h2>

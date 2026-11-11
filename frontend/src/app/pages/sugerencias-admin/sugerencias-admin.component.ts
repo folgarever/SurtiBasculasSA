@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideSend, lucideUserRoundCog, lucideUsers } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
+import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 import { Sugerencia, SugerenciasService } from '../../services/sugerencias.service';
 
 type FiltroSugerencias = 'todas' | 'pendientes' | 'respondidas';
@@ -11,7 +12,7 @@ type FiltroSugerencias = 'todas' | 'pendientes' | 'respondidas';
 @Component({
   selector: 'app-sugerencias-admin',
   standalone: true,
-  imports: [RouterLink, NgIcon],
+  imports: [RouterLink, NgIcon, SelectorTemaComponent],
   providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideSend, lucideUserRoundCog, lucideUsers })],
   templateUrl: './sugerencias-admin.component.html',
 })

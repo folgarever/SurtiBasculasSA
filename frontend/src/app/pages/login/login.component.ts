@@ -5,11 +5,12 @@ import { Router } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideArrowRight, lucideEye, lucideEyeClosed } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
+import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, NgIcon],
+  imports: [ReactiveFormsModule, NgIcon, SelectorTemaComponent],
   providers: [provideIcons({ lucideArrowRight, lucideEye, lucideEyeClosed })],
   templateUrl: './login.component.html',
 })

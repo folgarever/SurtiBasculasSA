@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideSend, lucideUsers } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
+import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 import { Sugerencia, SugerenciasService } from '../../services/sugerencias.service';
 
 function longitudRecortada(minimo: number, maximo: number): ValidatorFn {
@@ -19,7 +20,7 @@ function longitudRecortada(minimo: number, maximo: number): ValidatorFn {
 @Component({
   selector: 'app-sugerencias-empleado',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, NgIcon],
+  imports: [ReactiveFormsModule, RouterLink, NgIcon, SelectorTemaComponent],
   providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideSend, lucideUsers })],
   templateUrl: './sugerencias-empleado.component.html',
 })

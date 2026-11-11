@@ -15,11 +15,12 @@ import {
 import { interval } from 'rxjs';
 import { AsistenciaService, Marcacion, ResultadoMarcacion } from '../../services/asistencia.service';
 import { AuthService } from '../../services/auth.service';
+import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 
 @Component({
   selector: 'app-empleado-dashboard',
   standalone: true,
-  imports: [RouterLink, NgIcon],
+  imports: [RouterLink, NgIcon, SelectorTemaComponent],
   providers: [provideIcons({
     lucideArrowRight,
     lucideClipboardCheck,

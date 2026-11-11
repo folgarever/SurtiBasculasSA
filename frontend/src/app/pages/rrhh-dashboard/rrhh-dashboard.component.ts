@@ -18,6 +18,7 @@ import {
 } from '@ng-icons/lucide';
 import { Marcacion } from '../../services/asistencia.service';
 import { AuthService } from '../../services/auth.service';
+import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 import { DatosCorreccion, DatosIncidencia, EmpleadoRrhh, FiltrosAsistencia, RrhhService } from '../../services/rrhh.service';
 
 interface EmpleadoOpcion {
@@ -29,7 +30,7 @@ interface EmpleadoOpcion {
 @Component({
   selector: 'app-rrhh-dashboard',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, NgIcon],
+  imports: [ReactiveFormsModule, RouterLink, NgIcon, SelectorTemaComponent],
   providers: [provideIcons({
     lucideArrowDownToLine,
     lucideArrowRight,
