@@ -266,6 +266,26 @@
   line-height: 1.6;
 }
 
+.candidate-result {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.6rem;
+  background: #eff6ff;
+  color: #334155;
+  text-align: left;
+}
+
+.candidate-result h2 {
+  margin-top: 0;
+  color: #17365d;
+  font-size: 1.1rem;
+}
+
+.candidate-result p:last-child {
+  margin-bottom: 0;
+}
+
 @media (max-width: 640px) {
   .candidate-main {
     width: min(100% - 1rem, 940px);

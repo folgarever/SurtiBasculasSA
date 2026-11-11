@@ -34,6 +34,14 @@ export class SeleccionCandidatoComponent implements OnInit {
     () => this.plantillas().find((plantilla) => plantilla.id === this.candidato()?.puesto_id) ?? null,
   );
 
+  protected etiquetaDecision(decision: NonNullable<RegistroCandidatoSeleccion['decision']>): string {
+    return {
+      recomendable: 'Recomendable para el puesto',
+      revision_adicional: 'Revisión adicional',
+      no_demostrada: 'Competencia aún no demostrada',
+    }[decision];
+  }
+
   ngOnInit(): void {
     this.servicio.obtenerPlantillasCandidato().subscribe({
       next: ({ plantillas }) => {

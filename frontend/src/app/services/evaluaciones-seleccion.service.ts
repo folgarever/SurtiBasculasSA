@@ -14,7 +14,7 @@ export interface ItemPlantillaSeleccion {
   enunciado: string;
   detalle?: string;
   rubrica: CriterioSeleccion[];
-  opciones?: Array<{ id: string; texto: string; puntos: number }>;
+  opciones?: Array<{ id: string; texto: string; puntos: number; correcta?: boolean }>;
 }
 
 export interface SeccionPlantillaSeleccion {
@@ -57,6 +57,7 @@ export interface ItemPruebaCandidato {
   enunciado: string;
   detalle?: string;
   opciones: Array<{ id: string; texto: string }>;
+  rubrica?: CriterioSeleccion[];
 }
 
 export interface SeccionPruebaCandidato {
@@ -73,13 +74,16 @@ export interface PuestoPruebaCandidato {
   evaluacion: {
     titulo: string;
     tiempo_total_minutos: number;
-    secciones: SeccionPruebaCandidato[];
+    puntaje_total: number;
+    umbrales: PlantillaEvaluacionSeleccion['umbrales'];
+    secciones: Array<SeccionPruebaCandidato & { puntaje_maximo: number }>;
   };
 }
 
 export interface ResultadoSeleccion {
   id: number;
   candidato: string;
+  candidato_id: number | null;
   puesto_id: number;
   nombre_puesto: string;
   fecha_evaluacion: string;
@@ -88,6 +92,13 @@ export interface ResultadoSeleccion {
   puntaje_practica: number;
   puntaje_valores: number;
   puntaje_total: number;
+  respuestas_correctas: number | null;
+  total_preguntas: number | null;
+  porcentaje_correctas: number | null;
+  numero_intento: number | null;
+  origen: 'automatica' | 'manual_anterior';
+  estado_candidato?: RegistroCandidatoSeleccion['estado'];
+  reintento_motivo?: string | null;
   fecha_nacimiento: string | null;
   edad: number | null;
   discrepancia_pendiente: boolean;
@@ -96,17 +107,6 @@ export interface ResultadoSeleccion {
   observaciones: string | null;
   evaluador: string;
   creado_en: string;
-}
-
-export interface ResultadoSeleccionInput {
-  candidato?: string;
-  candidato_id?: number;
-  puesto_id: number;
-  fecha_evaluacion: string;
-  puntajes: Record<SeccionSeleccion, number>;
-  discrepancia_pendiente: boolean;
-  riesgo_control_pendiente: boolean;
-  observaciones: string;
 }
 
 export interface RegistroCandidatoSeleccion {
@@ -125,6 +125,12 @@ export interface RegistroCandidatoSeleccion {
   completada_en?: string | null;
   curriculum_nombre?: string | null;
   puntajes_automaticos?: Record<SeccionSeleccion, number> | null;
+  puntaje_total?: number | null;
+  respuestas_correctas?: number | null;
+  total_preguntas?: number | null;
+  porcentaje_correctas?: number | null;
+  numero_intento?: number | null;
+  decision?: ResultadoSeleccion['decision'] | null;
 }
 
 export interface CuentaCandidato {
@@ -155,15 +161,6 @@ export class EvaluacionesSeleccionService {
     return this.http.get<{ resultados: ResultadoSeleccion[] }>(`${this.baseUrl}/resultados`, { params });
   }
 
-  registrarResultado(
-    resultado: ResultadoSeleccionInput,
-  ): Observable<{ mensaje: string; resultado: { id: number; puntaje_total: number; decision: ResultadoSeleccion['decision'] } }> {
-    return this.http.post<{
-      mensaje: string;
-      resultado: { id: number; puntaje_total: number; decision: ResultadoSeleccion['decision'] };
-    }>(`${this.baseUrl}/resultados`, resultado);
-  }
-
   obtenerPlantillasCandidato(): Observable<{ plantillas: PuestoPruebaCandidato[] }> {
     return this.http.get<{ plantillas: PuestoPruebaCandidato[] }>(`${this.baseUrl}/candidato/plantillas`);
   }
@@ -172,10 +169,10 @@ export class EvaluacionesSeleccionService {
     return this.http.get<{ candidato: RegistroCandidatoSeleccion | null }>(`${this.baseUrl}/candidato/mi`);
   }
 
-  registrarCandidatoAdmin(): Observable<{ cuenta: CuentaCandidato }> {
+  registrarCandidatoAdmin(puesto_id: number): Observable<{ cuenta: CuentaCandidato }> {
     return this.http.post<{ cuenta: CuentaCandidato }>(
       `${this.baseUrl}/admin/candidatos`,
-      {},
+      { puesto_id },
     );
   }
 
@@ -214,5 +211,12 @@ export class EvaluacionesSeleccionService {
     return this.http.get(`${this.baseUrl}/admin/candidatos/${candidatoId}/curriculum`, {
       responseType: 'blob',
     });
+  }
+
+  autorizarReintento(candidatoId: number, motivo: string): Observable<{ mensaje: string }> {
+    return this.http.post<{ mensaje: string }>(
+      `${this.baseUrl}/admin/candidatos/${candidatoId}/reintentar`,
+      { motivo },
+    );
   }
 }

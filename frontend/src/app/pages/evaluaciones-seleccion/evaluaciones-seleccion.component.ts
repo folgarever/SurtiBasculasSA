@@ -1,12 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideUserRoundCog, lucideUsers } from '@ng-icons/lucide';
+import { lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideUsers } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
 import {
-  EvaluacionesSeleccionService,
   CuentaCandidato,
+  EvaluacionesSeleccionService,
   PlantillaEvaluacionSeleccion,
   PuestoPlantillaSeleccion,
   RegistroCandidatoSeleccion,
@@ -14,13 +15,11 @@ import {
   SeccionSeleccion,
 } from '../../services/evaluaciones-seleccion.service';
 
-type PuntajesSeleccion = Record<SeccionSeleccion, number>;
-
 @Component({
   selector: 'app-evaluaciones-seleccion',
   standalone: true,
-  imports: [RouterLink, NgIcon],
-  providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideUserRoundCog, lucideUsers })],
+  imports: [CommonModule, RouterLink, NgIcon],
+  providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideUsers })],
   templateUrl: './evaluaciones-seleccion.component.html',
   styleUrl: './evaluaciones-seleccion.component.css',
 })
@@ -31,26 +30,15 @@ export class EvaluacionesSeleccionComponent implements OnInit {
   protected readonly usuario = this.auth.getUsuario();
   protected readonly plantillas = signal<PuestoPlantillaSeleccion[]>([]);
   protected readonly puestoSeleccionado = signal('');
+  protected readonly puestoParaCuenta = signal('');
   protected readonly resultados = signal<ResultadoSeleccion[]>([]);
   protected readonly candidatosPendientes = signal<RegistroCandidatoSeleccion[]>([]);
   protected readonly cuentaCreada = signal<CuentaCandidato | null>(null);
-  protected readonly candidatoSeleccionado = signal<number | null>(null);
   protected readonly cargando = signal(true);
   protected readonly guardando = signal(false);
   protected readonly mostrarGuia = signal(false);
   protected readonly error = signal('');
   protected readonly aviso = signal('');
-  protected readonly nombreCandidato = signal('');
-  protected readonly fechaEvaluacion = signal(this.fechaLocal());
-  protected readonly discrepanciaPendiente = signal(false);
-  protected readonly riesgoControlPendiente = signal(false);
-  protected readonly observaciones = signal('');
-  protected readonly puntajes = signal<PuntajesSeleccion>({
-    aptitudes: 0,
-    conocimientos: 0,
-    practica: 0,
-    valores: 0,
-  });
   protected readonly plantillaActual = computed(
     () => this.plantillas().find((plantilla) => String(plantilla.id) === this.puestoSeleccionado()) ?? null,
   );
@@ -63,26 +51,35 @@ export class EvaluacionesSeleccionComponent implements OnInit {
   }
 
   protected seleccionarPuesto(event: Event): void {
-    const puestoId = (event.target as HTMLSelectElement).value;
-    this.puestoSeleccionado.set(puestoId);
-    this.cargarResultados();
-    this.cargarCandidatos();
+    this.puestoSeleccionado.set((event.target as HTMLSelectElement).value);
+  }
+
+  protected seleccionarPuestoCuenta(event: Event): void {
+    this.puestoParaCuenta.set((event.target as HTMLSelectElement).value);
+  }
+
+  protected alternarGuia(): void {
+    this.mostrarGuia.update((visible) => !visible);
   }
 
   protected registrarCandidato(): void {
     this.error.set('');
     this.aviso.set('');
     this.cuentaCreada.set(null);
+    if (!this.puestoParaCuenta()) {
+      this.error.set('Selecciona el puesto al que aspira el candidato.');
+      return;
+    }
     this.guardando.set(true);
-    this.servicio.registrarCandidatoAdmin().subscribe({
+    this.servicio.registrarCandidatoAdmin(Number(this.puestoParaCuenta())).subscribe({
       next: ({ cuenta }) => {
         this.cuentaCreada.set(cuenta);
-        this.aviso.set('Cuenta generada. Comparte el usuario y la contraseña con el candidato por un canal privado.');
+        this.aviso.set('Cuenta generada. Comparte las credenciales con el candidato por un canal privado.');
         this.guardando.set(false);
         this.cargarCandidatos();
       },
       error: (error: HttpErrorResponse) => {
-        this.error.set(error.error?.mensaje || 'No se pudo registrar al candidato.');
+        this.error.set(error.error?.mensaje || 'No se pudo crear la cuenta de candidato.');
         this.guardando.set(false);
       },
     });
@@ -97,16 +94,28 @@ export class EvaluacionesSeleccionComponent implements OnInit {
     );
   }
 
-  protected actualizarCandidato(event: Event): void {
-    this.candidatoSeleccionado.set(null);
-    this.nombreCandidato.set((event.target as HTMLInputElement).value);
-  }
-
-  protected calificarCandidato(candidato: RegistroCandidatoSeleccion): void {
-    if (candidato.estado !== 'completada' || candidato.id === null) return;
-    this.candidatoSeleccionado.set(candidato.id);
-    this.nombreCandidato.set(`${candidato.nombres} ${candidato.apellidos}`.trim());
-    if (candidato.puntajes_automaticos) this.puntajes.set(candidato.puntajes_automaticos);
+  protected autorizarReintento(candidatoId: number, nombre: string): void {
+    const motivo = window.prompt(`Motivo para autorizar un nuevo intento de ${nombre}:`);
+    if (motivo === null) return;
+    if (!motivo.trim()) {
+      this.error.set('Debes indicar y registrar el motivo de autorización.');
+      return;
+    }
+    this.error.set('');
+    this.aviso.set('');
+    this.guardando.set(true);
+    this.servicio.autorizarReintento(candidatoId, motivo.trim()).subscribe({
+      next: ({ mensaje }) => {
+        this.aviso.set(mensaje);
+        this.guardando.set(false);
+        this.cargarCandidatos();
+        this.cargarResultados();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.error.set(error.error?.mensaje || 'No se pudo autorizar el nuevo intento.');
+        this.guardando.set(false);
+      },
+    });
   }
 
   protected descargarCurriculum(candidato: RegistroCandidatoSeleccion): void {
@@ -133,86 +142,11 @@ export class EvaluacionesSeleccionComponent implements OnInit {
     seccion: SeccionSeleccion,
     indice: number,
   ): string {
+    const evaluacion = this.plantillas().find((plantilla) => plantilla.id === candidato.puesto_id)?.evaluacion;
     const respuesta = candidato.respuestas?.[`${seccion}-${indice}`];
-    const opcion = this.evaluacionActual()?.secciones
-      .find((item) => item.id === seccion)?.items[indice]?.opciones
+    const opcion = evaluacion?.secciones.find((item) => item.id === seccion)?.items[indice]?.opciones
       ?.find((item) => item.id === respuesta);
-    return opcion ? `${opcion.texto} (${opcion.puntos} pts)` : 'Sin respuesta registrada.';
-  }
-
-  protected puntajeAutomaticoTotal(candidato: RegistroCandidatoSeleccion): number | null {
-    const puntajes = candidato.puntajes_automaticos;
-    return puntajes
-      ? puntajes.aptitudes + puntajes.conocimientos + puntajes.practica + puntajes.valores
-      : null;
-  }
-
-  protected actualizarFecha(event: Event): void {
-    this.fechaEvaluacion.set((event.target as HTMLInputElement).value);
-  }
-
-  protected actualizarPuntaje(seccion: SeccionSeleccion, event: Event): void {
-    const puntaje = (event.target as HTMLInputElement).valueAsNumber;
-    this.puntajes.update((actuales) => ({ ...actuales, [seccion]: puntaje }));
-  }
-
-  protected actualizarObservaciones(event: Event): void {
-    this.observaciones.set((event.target as HTMLTextAreaElement).value);
-  }
-
-  protected actualizarDiscrepancia(event: Event): void {
-    this.discrepanciaPendiente.set((event.target as HTMLInputElement).checked);
-  }
-
-  protected actualizarRiesgoControl(event: Event): void {
-    this.riesgoControlPendiente.set((event.target as HTMLInputElement).checked);
-  }
-
-  protected alternarGuia(): void {
-    this.mostrarGuia.update((mostrar) => !mostrar);
-  }
-
-  protected registrarResultado(): void {
-    const plantilla = this.plantillaActual();
-    const puntajes = this.puntajes();
-    if (!plantilla || (!this.candidatoSeleccionado() && !this.nombreCandidato().trim()) || !this.fechaEvaluacion()) {
-      this.error.set('Selecciona un candidato o registra su nombre, junto con el puesto y la fecha.');
-      return;
-    }
-    const seccionesValidas = plantilla.evaluacion.secciones.every((seccion) => {
-      const puntaje = puntajes[seccion.id];
-      return Number.isFinite(puntaje) && puntaje >= 0 && puntaje <= seccion.puntaje_maximo;
-    });
-    if (!seccionesValidas) {
-      this.error.set('Verifica que los puntajes de todas las secciones estén dentro de sus máximos.');
-      return;
-    }
-
-    this.error.set('');
-    this.aviso.set('');
-    this.guardando.set(true);
-    this.servicio.registrarResultado({
-      candidato: this.nombreCandidato().trim() || undefined,
-      candidato_id: this.candidatoSeleccionado() ?? undefined,
-      puesto_id: plantilla.id,
-      fecha_evaluacion: this.fechaEvaluacion(),
-      puntajes,
-      discrepancia_pendiente: this.discrepanciaPendiente(),
-      riesgo_control_pendiente: this.riesgoControlPendiente(),
-      observaciones: this.observaciones().trim(),
-    }).subscribe({
-      next: () => {
-        this.aviso.set('Resultado de selección registrado.');
-        this.guardando.set(false);
-        this.limpiarFormulario();
-        this.cargarResultados();
-        this.cargarCandidatos();
-      },
-      error: (error: HttpErrorResponse) => {
-        this.error.set(error.error?.mensaje || 'No se pudo registrar el resultado de selección.');
-        this.guardando.set(false);
-      },
-    });
+    return opcion ? opcion.texto : 'Sin respuesta registrada.';
   }
 
   protected etiquetaDecision(decision: ResultadoSeleccion['decision']): string {
@@ -221,6 +155,21 @@ export class EvaluacionesSeleccionComponent implements OnInit {
       revision_adicional: 'Revisión adicional',
       no_demostrada: 'Competencia aún no demostrada',
     }[decision];
+  }
+
+  protected puedeAutorizarReintento(resultado: ResultadoSeleccion): boolean {
+    return resultado.origen === 'automatica'
+      && resultado.candidato_id !== null
+      && (resultado.estado_candidato === 'completada' || resultado.estado_candidato === 'evaluada')
+      && !this.resultados().some((otro) => (
+        otro.candidato_id === resultado.candidato_id
+        && (otro.numero_intento ?? 0) > (resultado.numero_intento ?? 0)
+      ));
+  }
+
+  protected autorizarReintentoResultado(resultado: ResultadoSeleccion): void {
+    if (resultado.candidato_id === null) return;
+    this.autorizarReintento(resultado.candidato_id, resultado.candidato);
   }
 
   protected formatoFecha(fecha: string): string {
@@ -247,8 +196,8 @@ export class EvaluacionesSeleccionComponent implements OnInit {
     this.servicio.obtenerPlantillas().subscribe({
       next: ({ plantillas }) => {
         this.plantillas.set(plantillas);
-        const puestoId = plantillas[0] ? String(plantillas[0].id) : '';
-        this.puestoSeleccionado.set(puestoId);
+        this.puestoSeleccionado.set(plantillas[0] ? String(plantillas[0].id) : '');
+        this.puestoParaCuenta.set(plantillas[0] ? String(plantillas[0].id) : '');
         this.cargando.set(false);
         this.cargarResultados();
         this.cargarCandidatos();
@@ -261,8 +210,7 @@ export class EvaluacionesSeleccionComponent implements OnInit {
   }
 
   private cargarResultados(): void {
-    const puestoId = Number(this.puestoSeleccionado());
-    this.servicio.listarResultados(puestoId || undefined).subscribe({
+    this.servicio.listarResultados().subscribe({
       next: ({ resultados }) => this.resultados.set(resultados),
       error: (error: HttpErrorResponse) => {
         this.error.set(error.error?.mensaje || 'No se pudieron cargar los resultados de selección.');
@@ -270,34 +218,12 @@ export class EvaluacionesSeleccionComponent implements OnInit {
     });
   }
 
-  private limpiarFormulario(): void {
-    this.nombreCandidato.set('');
-    this.candidatoSeleccionado.set(null);
-    this.puntajes.set({ aptitudes: 0, conocimientos: 0, practica: 0, valores: 0 });
-    this.discrepanciaPendiente.set(false);
-    this.riesgoControlPendiente.set(false);
-    this.observaciones.set('');
-    this.fechaEvaluacion.set(this.fechaLocal());
-  }
-
   private cargarCandidatos(): void {
-    const puestoId = Number(this.puestoSeleccionado());
-    if (!puestoId) {
-      this.candidatosPendientes.set([]);
-      return;
-    }
-    this.servicio.listarCandidatosPendientes(puestoId).subscribe({
+    this.servicio.listarCandidatosPendientes().subscribe({
       next: ({ candidatos }) => this.candidatosPendientes.set(candidatos),
       error: (error: HttpErrorResponse) => {
-        this.error.set(error.error?.mensaje || 'No se pudieron cargar las pruebas entregadas por candidatos.');
+        this.error.set(error.error?.mensaje || 'No se pudieron cargar las cuentas y pruebas pendientes.');
       },
     });
-  }
-
-  private fechaLocal(): string {
-    const ahora = new Date();
-    const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-    const dia = String(ahora.getDate()).padStart(2, '0');
-    return `${ahora.getFullYear()}-${mes}-${dia}`;
   }
 }

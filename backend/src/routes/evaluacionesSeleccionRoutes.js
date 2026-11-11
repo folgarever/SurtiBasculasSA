@@ -15,7 +15,7 @@ const {
   entregarPruebaCandidato,
   listarCandidatosPendientes,
   listarResultados,
-  registrarResultado,
+  autorizarReintentoCandidato,
 } = require('../controllers/evaluacionesSeleccionController');
 
 const router = express.Router();
@@ -45,8 +45,8 @@ router.post('/candidato/entregar', permitirCandidato, entregarPruebaCandidato);
 router.get('/admin/candidatos', permitirEvaluaciones, listarCandidatosPendientes);
 router.post('/admin/candidatos', permitirEvaluaciones, registrarCandidatoAdmin);
 router.get('/admin/candidatos/:id/curriculum', permitirEvaluaciones, descargarCurriculumCandidato);
+router.post('/admin/candidatos/:id/reintentar', permitirEvaluaciones, autorizarReintentoCandidato);
 router.get('/plantillas', permitirEvaluaciones, obtenerPlantillas);
 router.get('/resultados', permitirEvaluaciones, listarResultados);
-router.post('/resultados', permitirEvaluaciones, registrarResultado);
 
 module.exports = router;

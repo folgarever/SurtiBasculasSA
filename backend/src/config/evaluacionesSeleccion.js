@@ -268,6 +268,7 @@ function establecerOpciones(seccionId, indice, textos, indiceCorrecto, puntajeMa
     puntos: opcionIndice === indiceCorrecto
       ? puntajeMaximo
       : opcionIndice === indiceParcial ? puntajeParcial : 0,
+    correcta: opcionIndice === indiceCorrecto,
   }));
 }
 

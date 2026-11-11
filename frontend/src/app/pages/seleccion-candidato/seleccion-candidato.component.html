@@ -7,22 +7,26 @@
   <section class="candidate-main">
     @if (cargando()) {
       <article class="candidate-card"><p>Cargando portal de selección…</p></article>
-    } @else if (!candidato()) {
+    } @else if (!candidato()?.nombres) {
       <article class="candidate-card">
         <p class="candidate-eyebrow">REGISTRO DEL CANDIDATO</p>
         <h1>Completa tus datos antes de la evaluación</h1>
-        <p class="candidate-intro">Ingresa tu información, adjunta tu currículum en PDF y selecciona el puesto al que aspiras. El equipo de selección podrá consultar estos datos.</p>
+        <p class="candidate-intro">Ingresa tu información y adjunta tu currículum en PDF. El equipo de selección podrá consultar estos datos.</p>
         @if (error()) { <div class="candidate-error" role="alert">{{ error() }}</div> }
         <div class="candidate-profile-form">
           <label class="candidate-question"><strong>Nombres</strong><input type="text" maxlength="100" autocomplete="given-name" [value]="nombres()" (input)="actualizarPerfil('nombres', $event)" required></label>
           <label class="candidate-question"><strong>Apellidos</strong><input type="text" maxlength="120" autocomplete="family-name" [value]="apellidos()" (input)="actualizarPerfil('apellidos', $event)" required></label>
           <label class="candidate-question"><strong>Fecha de nacimiento</strong><input type="date" [value]="fechaNacimiento()" (input)="actualizarPerfil('fecha_nacimiento', $event)" required></label>
           @if (edadCalculada() !== null) { <p class="candidate-profile-age">Edad calculada: <strong>{{ edadCalculada() }} años</strong></p> }
-          <label class="candidate-question"><strong>Puesto al que aspiras</strong>
-            <select [value]="puestoId()" (change)="actualizarPerfil('puesto_id', $event)" required>
-              @for (plantilla of plantillas(); track plantilla.id) { <option [value]="plantilla.id">{{ plantilla.nombre_puesto }}</option> }
-            </select>
-          </label>
+          @if (candidato()?.puesto_id) {
+            <p class="candidate-question"><strong>Puesto asignado por Administración:</strong> {{ plantillaActual()?.nombre_puesto }}</p>
+          } @else {
+            <label class="candidate-question"><strong>Puesto al que aspiras</strong>
+              <select [value]="puestoId()" (change)="actualizarPerfil('puesto_id', $event)" required>
+                @for (plantilla of plantillas(); track plantilla.id) { <option [value]="plantilla.id">{{ plantilla.nombre_puesto }}</option> }
+              </select>
+            </label>
+          }
           <label class="candidate-question"><strong>Currículum (solo PDF, máximo 5 MB)</strong><input type="file" accept="application/pdf,.pdf" (change)="seleccionarCurriculum($event)" required></label>
           @if (curriculum()) { <p class="candidate-profile-age">Archivo seleccionado: <strong>{{ curriculum()?.name }}</strong></p> }
           <button class="candidate-submit" type="button" [disabled]="guardando()" (click)="registrarPerfil()">{{ guardando() ? 'Guardando perfil…' : 'Guardar y continuar a la evaluación' }}</button>
@@ -62,9 +66,19 @@
       <article class="candidate-card candidate-complete">
         <p class="candidate-eyebrow">PRUEBA RECIBIDA</p>
         <h1>Gracias, {{ candidato()?.nombres }}</h1>
-        <p>{{ aviso() || 'Tus respuestas fueron entregadas y serán revisadas por el equipo de selección.' }}</p>
+        <p>{{ aviso() || 'La prueba fue calificada automáticamente y sus resultados se guardaron correctamente.' }}</p>
         <p><strong>Puesto:</strong> {{ candidato()?.nombre_puesto }}</p>
         <p><strong>Edad al día de hoy:</strong> {{ candidato()?.edad }} años</p>
+        @if (candidato()?.puntaje_total !== null && candidato()?.puntaje_total !== undefined) {
+          <div class="candidate-result">
+            <h2>Resultado de tu evaluación</h2>
+            <p><strong>Calificación:</strong> {{ candidato()?.puntaje_total }}/100</p>
+            <p><strong>Respuestas correctas:</strong> {{ candidato()?.respuestas_correctas }}/{{ candidato()?.total_preguntas }} ({{ candidato()?.porcentaje_correctas }}%)</p>
+            @if (candidato()?.decision; as decision) { <p><strong>Resultado:</strong> {{ etiquetaDecision(decision) }}</p> }
+            @if (candidato()?.numero_intento) { <p><strong>Intento:</strong> {{ candidato()?.numero_intento }}</p> }
+          </div>
+        }
+        <p>Para volver a realizar la evaluación, Administración debe autorizar un nuevo intento. Tus intentos anteriores se conservan.</p>
         @if (error()) { <div class="candidate-error" role="alert">{{ error() }}</div> }
       </article>
     }
