@@ -19,20 +19,13 @@ export class SeleccionCandidatoComponent implements OnInit {
 
   protected readonly plantillas = signal<PuestoPruebaCandidato[]>([]);
   protected readonly candidato = signal<RegistroCandidatoSeleccion | null>(null);
-  protected readonly nombres = signal('');
-  protected readonly apellidos = signal('');
-  protected readonly fechaNacimiento = signal('');
-  protected readonly puestoId = signal('');
   protected readonly respuestas = signal<Record<string, string>>({});
   protected readonly cargando = signal(true);
   protected readonly guardando = signal(false);
   protected readonly error = signal('');
   protected readonly aviso = signal('');
-  protected readonly edadCalculada = computed(() => this.calcularEdad(this.fechaNacimiento()));
   protected readonly plantillaActual = computed(
-    () => this.plantillas().find((plantilla) => String(plantilla.id) === this.puestoId())
-      ?? this.plantillas().find((plantilla) => plantilla.id === this.candidato()?.puesto_id)
-      ?? null,
+    () => this.plantillas().find((plantilla) => plantilla.id === this.candidato()?.puesto_id) ?? null,
   );
 
   ngOnInit(): void {
@@ -40,17 +33,10 @@ export class SeleccionCandidatoComponent implements OnInit {
     this.servicio.obtenerPlantillasCandidato().subscribe({
       next: ({ plantillas }) => {
         this.plantillas.set(plantillas);
-        if (plantillas.length) this.puestoId.set(String(plantillas[0].id));
         this.servicio.obtenerMiRegistroCandidato().subscribe({
           next: ({ candidato }) => {
             this.candidato.set(candidato);
-            if (candidato) {
-              this.nombres.set(candidato.nombres);
-              this.apellidos.set(candidato.apellidos);
-              this.fechaNacimiento.set(candidato.fecha_nacimiento);
-              this.puestoId.set(String(candidato.puesto_id));
-              this.respuestas.set(candidato.respuestas ?? {});
-            }
+            this.respuestas.set(candidato?.respuestas ?? {});
             this.cargando.set(false);
           },
           error: (error: HttpErrorResponse) => {
@@ -66,54 +52,9 @@ export class SeleccionCandidatoComponent implements OnInit {
     });
   }
 
-  protected actualizarNombres(event: Event): void {
-    this.nombres.set((event.target as HTMLInputElement).value);
-  }
-
-  protected actualizarApellidos(event: Event): void {
-    this.apellidos.set((event.target as HTMLInputElement).value);
-  }
-
-  protected actualizarFechaNacimiento(event: Event): void {
-    this.fechaNacimiento.set((event.target as HTMLInputElement).value);
-  }
-
-  protected actualizarPuesto(event: Event): void {
-    this.puestoId.set((event.target as HTMLSelectElement).value);
-  }
-
   protected actualizarRespuesta(clave: string, event: Event): void {
     const texto = (event.target as HTMLTextAreaElement).value;
     this.respuestas.update((actuales) => ({ ...actuales, [clave]: texto }));
-  }
-
-  protected iniciarPrueba(): void {
-    if (!this.nombres().trim() || !this.apellidos().trim() || !this.fechaNacimiento() || !this.puestoId()) {
-      this.error.set('Completa nombres, apellidos, fecha de nacimiento y puesto al que aspiras.');
-      return;
-    }
-    const edad = this.edadCalculada();
-    if (edad === null || edad < 0) {
-      this.error.set('La fecha de nacimiento no es válida.');
-      return;
-    }
-    this.error.set('');
-    this.guardando.set(true);
-    this.servicio.registrarCandidato({
-      nombres: this.nombres().trim(),
-      apellidos: this.apellidos().trim(),
-      fecha_nacimiento: this.fechaNacimiento(),
-      puesto_id: Number(this.puestoId()),
-    }).subscribe({
-      next: ({ candidato }) => {
-        this.candidato.set(candidato);
-        this.guardando.set(false);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.error.set(error.error?.mensaje || 'No se pudo registrar la información del candidato.');
-        this.guardando.set(false);
-      },
-    });
   }
 
   protected entregarPrueba(): void {
@@ -153,20 +94,5 @@ export class SeleccionCandidatoComponent implements OnInit {
 
   protected salir(): void {
     this.auth.logout();
-  }
-
-  private calcularEdad(fecha: string): number | null {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
-    const [anio, mes, dia] = fecha.split('-').map(Number);
-    const nacimiento = new Date(anio, mes - 1, dia);
-    if (
-      nacimiento.getFullYear() !== anio
-      || nacimiento.getMonth() !== mes - 1
-      || nacimiento.getDate() !== dia
-    ) return null;
-    const hoy = new Date();
-    let edad = hoy.getFullYear() - anio;
-    if (hoy.getMonth() < mes - 1 || (hoy.getMonth() === mes - 1 && hoy.getDate() < dia)) edad -= 1;
-    return edad;
   }
 }

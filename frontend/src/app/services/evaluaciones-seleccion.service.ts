@@ -119,6 +119,14 @@ export interface RegistroCandidatoSeleccion {
   estado: 'registro' | 'completada' | 'evaluada';
   creado_en?: string;
   completada_en?: string | null;
+  codigo_acceso?: string;
+}
+
+export interface RegistroCandidatoInput {
+  nombres: string;
+  apellidos: string;
+  fecha_nacimiento: string;
+  puesto_id: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -153,14 +161,11 @@ export class EvaluacionesSeleccionService {
     return this.http.get<{ candidato: RegistroCandidatoSeleccion | null }>(`${this.baseUrl}/candidato/mi`);
   }
 
-  registrarCandidato(registro: {
-    nombres: string;
-    apellidos: string;
-    fecha_nacimiento: string;
-    puesto_id: number;
-  }): Observable<{ candidato: RegistroCandidatoSeleccion }> {
+  registrarCandidatoAdmin(
+    registro: RegistroCandidatoInput,
+  ): Observable<{ candidato: RegistroCandidatoSeleccion }> {
     return this.http.post<{ candidato: RegistroCandidatoSeleccion }>(
-      `${this.baseUrl}/candidato/registro`,
+      `${this.baseUrl}/admin/candidatos`,
       registro,
     );
   }

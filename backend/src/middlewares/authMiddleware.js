@@ -81,7 +81,11 @@ function permitirEvaluaciones(req, res, next) {
 }
 
 function permitirCandidato(req, res, next) {
-  if (req.usuario?.role !== 'CANDIDATE' || !/^[0-9a-f-]{36}$/i.test(req.usuario?.sesion_seleccion_id || '')) {
+  if (
+    req.usuario?.role !== 'CANDIDATE'
+    || !Number.isInteger(Number(req.usuario?.candidato_id))
+    || Number(req.usuario.candidato_id) < 1
+  ) {
     return res.status(403).json({ mensaje: 'Este acceso está disponible únicamente para candidatos.' });
   }
   return next();

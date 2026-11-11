@@ -8,6 +8,7 @@ import {
   EvaluacionesSeleccionService,
   PlantillaEvaluacionSeleccion,
   PuestoPlantillaSeleccion,
+  RegistroCandidatoInput,
   RegistroCandidatoSeleccion,
   ResultadoSeleccion,
   SeccionSeleccion,
@@ -32,6 +33,11 @@ export class EvaluacionesSeleccionComponent implements OnInit {
   protected readonly puestoSeleccionado = signal('');
   protected readonly resultados = signal<ResultadoSeleccion[]>([]);
   protected readonly candidatosPendientes = signal<RegistroCandidatoSeleccion[]>([]);
+  protected readonly nuevoNombre = signal('');
+  protected readonly nuevosApellidos = signal('');
+  protected readonly nuevaFechaNacimiento = signal('');
+  protected readonly nuevoPuestoId = signal('');
+  protected readonly candidatoCreado = signal<RegistroCandidatoSeleccion | null>(null);
   protected readonly candidatoSeleccionado = signal<number | null>(null);
   protected readonly cargando = signal(true);
   protected readonly guardando = signal(false);
@@ -63,8 +69,66 @@ export class EvaluacionesSeleccionComponent implements OnInit {
   protected seleccionarPuesto(event: Event): void {
     const puestoId = (event.target as HTMLSelectElement).value;
     this.puestoSeleccionado.set(puestoId);
+    this.nuevoPuestoId.set(puestoId);
     this.cargarResultados();
     this.cargarCandidatos();
+  }
+
+  protected actualizarNuevoCandidato(campo: 'nombres' | 'apellidos' | 'fecha_nacimiento', event: Event): void {
+    const valor = (event.target as HTMLInputElement).value;
+    if (campo === 'nombres') this.nuevoNombre.set(valor);
+    if (campo === 'apellidos') this.nuevosApellidos.set(valor);
+    if (campo === 'fecha_nacimiento') this.nuevaFechaNacimiento.set(valor);
+  }
+
+  protected actualizarPuestoNuevoCandidato(event: Event): void {
+    this.nuevoPuestoId.set((event.target as HTMLSelectElement).value);
+  }
+
+  protected registrarCandidato(): void {
+    if (
+      !this.nuevoNombre().trim()
+      || !this.nuevosApellidos().trim()
+      || !this.nuevaFechaNacimiento()
+      || !this.nuevoPuestoId()
+    ) {
+      this.error.set('Completa nombres, apellidos, fecha de nacimiento y puesto del candidato.');
+      return;
+    }
+    const registro: RegistroCandidatoInput = {
+      nombres: this.nuevoNombre().trim(),
+      apellidos: this.nuevosApellidos().trim(),
+      fecha_nacimiento: this.nuevaFechaNacimiento(),
+      puesto_id: Number(this.nuevoPuestoId()),
+    };
+    this.error.set('');
+    this.aviso.set('');
+    this.candidatoCreado.set(null);
+    this.guardando.set(true);
+    this.servicio.registrarCandidatoAdmin(registro).subscribe({
+      next: ({ candidato }) => {
+        this.candidatoCreado.set(candidato);
+        this.aviso.set('Candidato registrado. Comparte el código personal con esa persona; solo se mostrará ahora.');
+        this.nuevoNombre.set('');
+        this.nuevosApellidos.set('');
+        this.nuevaFechaNacimiento.set('');
+        this.guardando.set(false);
+        this.cargarCandidatos();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.error.set(error.error?.mensaje || 'No se pudo registrar al candidato.');
+        this.guardando.set(false);
+      },
+    });
+  }
+
+  protected copiarCodigoAcceso(): void {
+    const codigo = this.candidatoCreado()?.codigo_acceso;
+    if (!codigo) return;
+    navigator.clipboard.writeText(codigo).then(
+      () => this.aviso.set('Código de acceso copiado. Compártelo con el candidato por un canal privado.'),
+      () => this.error.set('No se pudo copiar el código. Selecciónalo y cópialo manualmente.'),
+    );
   }
 
   protected actualizarCandidato(event: Event): void {
@@ -73,6 +137,7 @@ export class EvaluacionesSeleccionComponent implements OnInit {
   }
 
   protected calificarCandidato(candidato: RegistroCandidatoSeleccion): void {
+    if (candidato.estado !== 'completada') return;
     this.candidatoSeleccionado.set(candidato.id);
     this.nombreCandidato.set(`${candidato.nombres} ${candidato.apellidos}`);
   }
@@ -187,6 +252,7 @@ export class EvaluacionesSeleccionComponent implements OnInit {
         this.plantillas.set(plantillas);
         const puestoId = plantillas[0] ? String(plantillas[0].id) : '';
         this.puestoSeleccionado.set(puestoId);
+        this.nuevoPuestoId.set(puestoId);
         this.cargando.set(false);
         this.cargarResultados();
         this.cargarCandidatos();

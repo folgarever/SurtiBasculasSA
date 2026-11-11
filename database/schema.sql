@@ -206,6 +206,7 @@ CREATE TABLE evaluaciones_banco_preguntas (
 CREATE TABLE candidatos_seleccion (
     id INT AUTO_INCREMENT PRIMARY KEY,
     sesion_id CHAR(36) NOT NULL UNIQUE,
+    codigo_acceso_hash CHAR(64) NULL UNIQUE,
     nombres VARCHAR(100) NOT NULL,
     apellidos VARCHAR(120) NOT NULL,
     fecha_nacimiento DATE NOT NULL,

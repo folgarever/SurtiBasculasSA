@@ -8,7 +8,7 @@ const {
   obtenerPlantillas,
   obtenerPlantillasCandidato,
   obtenerMiRegistroCandidato,
-  registrarCandidato,
+  registrarCandidatoAdmin,
   entregarPruebaCandidato,
   listarCandidatosPendientes,
   listarResultados,
@@ -20,9 +20,9 @@ const router = express.Router();
 router.use(verificarToken);
 router.get('/candidato/plantillas', permitirCandidato, obtenerPlantillasCandidato);
 router.get('/candidato/mi', permitirCandidato, obtenerMiRegistroCandidato);
-router.post('/candidato/registro', permitirCandidato, registrarCandidato);
 router.post('/candidato/entregar', permitirCandidato, entregarPruebaCandidato);
 router.get('/admin/candidatos', permitirEvaluaciones, listarCandidatosPendientes);
+router.post('/admin/candidatos', permitirEvaluaciones, registrarCandidatoAdmin);
 router.get('/plantillas', permitirEvaluaciones, obtenerPlantillas);
 router.get('/resultados', permitirEvaluaciones, listarResultados);
 router.post('/resultados', permitirEvaluaciones, registrarResultado);

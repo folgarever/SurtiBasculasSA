@@ -81,6 +81,30 @@
         }
       </section>
 
+      <section class="knowledge-panel selection-candidate-registration">
+        <div class="section-heading"><div><p class="eyebrow">ALTA DE ASPIRANTE</p><h2>Registrar candidato</h2><p class="subheading">Crea el registro antes de que inicie la prueba. Se generará un código personal de acceso para esta persona.</p></div></div>
+        <div class="selection-form-grid">
+          <label class="evaluation-field"><span>Nombres</span><input type="text" maxlength="100" autocomplete="given-name" [value]="nuevoNombre()" (input)="actualizarNuevoCandidato('nombres', $event)"></label>
+          <label class="evaluation-field"><span>Apellidos</span><input type="text" maxlength="120" autocomplete="family-name" [value]="nuevosApellidos()" (input)="actualizarNuevoCandidato('apellidos', $event)"></label>
+          <label class="evaluation-field"><span>Fecha de nacimiento</span><input type="date" [value]="nuevaFechaNacimiento()" (input)="actualizarNuevoCandidato('fecha_nacimiento', $event)"></label>
+          <label class="evaluation-field"><span>Puesto al que aspira</span>
+            <select [value]="nuevoPuestoId()" (change)="actualizarPuestoNuevoCandidato($event)">
+              @for (plantilla of plantillas(); track plantilla.id) { <option [value]="plantilla.id">{{ plantilla.nombre_puesto }}</option> }
+            </select>
+          </label>
+        </div>
+        <button class="button button-accent" type="button" [disabled]="guardando()" (click)="registrarCandidato()">{{ guardando() ? 'Registrando…' : 'Registrar y generar código' }}</button>
+        @if (candidatoCreado()?.codigo_acceso; as codigoAcceso) {
+          <div class="selection-access-code" role="status">
+            <strong>Código personal de acceso · mostrar y compartir una sola vez</strong>
+            <p>{{ candidatoCreado()?.nombres }} {{ candidatoCreado()?.apellidos }} · Usuario genérico: <strong>CANDITATO-2026</strong></p>
+            <code>{{ codigoAcceso }}</code>
+            <button class="details-button" type="button" (click)="copiarCodigoAcceso()">Copiar código</button>
+            <p>No cierres ni recargues esta página antes de entregarlo: el código no se guarda en texto legible ni volverá a mostrarse.</p>
+          </div>
+        }
+      </section>
+
       <section class="knowledge-panel selection-candidate-submissions">
         <div class="section-heading"><div><p class="eyebrow">PRUEBAS ENTREGADAS</p><h2>Candidatos pendientes de calificación</h2><p class="subheading">Revisa sus respuestas y selecciona a la persona para registrar la rúbrica.</p></div></div>
         @if (!candidatosPendientes().length) {
@@ -89,8 +113,8 @@
           <div class="selection-results-list">
             @for (candidato of candidatosPendientes(); track candidato.id) {
               <article class="selection-result">
-                <div class="selection-result-heading"><div><h3>{{ candidato.nombres }} {{ candidato.apellidos }}</h3><span>{{ candidato.edad }} años · {{ candidato.nombre_puesto }} · Entregó {{ candidato.completada_en ? formatoFecha(candidato.completada_en) : '—' }}</span></div><button class="details-button" type="button" (click)="calificarCandidato(candidato)">{{ candidatoSeleccionado() === candidato.id ? 'Seleccionado' : 'Calificar' }}</button></div>
-                <details class="selection-candidate-answers">
+                <div class="selection-result-heading"><div><h3>{{ candidato.nombres }} {{ candidato.apellidos }}</h3><span>{{ candidato.edad }} años · {{ candidato.nombre_puesto }} · {{ candidato.estado === 'completada' ? 'Entregó ' + (candidato.completada_en ? formatoFecha(candidato.completada_en) : 'la prueba') : 'Registro creado · pendiente de iniciar la prueba' }}</span></div>@if (candidato.estado === 'completada') { <button class="details-button" type="button" (click)="calificarCandidato(candidato)">{{ candidatoSeleccionado() === candidato.id ? 'Seleccionado' : 'Calificar' }}</button> }</div>
+                @if (candidato.estado === 'completada') { <details class="selection-candidate-answers">
                   <summary>Consultar respuestas de la prueba</summary>
                   @for (seccion of evaluacionActual()?.secciones ?? []; track seccion.id) {
                     <h4>{{ seccion.nombre }}</h4>
@@ -102,7 +126,7 @@
                       </div>
                     }
                   }
-                </details>
+                </details> }
               </article>
             }
           </div>

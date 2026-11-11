@@ -15,7 +15,7 @@
       <div class="login-copy">
         <p class="eyebrow">{{ modoCandidato() ? 'PORTAL DE CANDIDATOS' : 'PORTAL DEL PERSONAL' }}</p>
         <h2>Bienvenido</h2>
-        <p class="form-intro">{{ modoCandidato() ? 'Ingresa con el usuario genérico proporcionado para realizar una prueba de selección.' : 'Ingresa con tus credenciales de empleado.' }}</p>
+        <p class="form-intro">{{ modoCandidato() ? 'Ingresa con el usuario genérico y el código personal que te entregó Administración.' : 'Ingresa con tus credenciales de empleado.' }}</p>
       </div>
 
       <div class="login-mode-switch" role="group" aria-label="Tipo de acceso">
@@ -25,14 +25,14 @@
 
       <form class="login-form" [formGroup]="formulario" (ngSubmit)="ingresar()" novalidate>
         <label for="codigo">{{ modoCandidato() ? 'Usuario genérico' : 'Código de empleado' }}</label>
-        <input id="codigo" type="text" formControlName="codigo_empleado" autocomplete="username" [placeholder]="modoCandidato() ? 'candidato' : 'Ej. SUR-GG-001'" required>
+        <input id="codigo" type="text" formControlName="codigo_empleado" autocomplete="username" [placeholder]="modoCandidato() ? 'CANDITATO-2026' : 'Ej. SUR-GG-001'" required>
         @if (formulario.controls.codigo_empleado.touched && formulario.controls.codigo_empleado.invalid) {
           <span class="field-error">{{ modoCandidato() ? 'Ingresa el usuario de candidato.' : 'Ingresa tu código de empleado.' }}</span>
         }
 
-        <label for="password">Contraseña</label>
+        <label for="password">{{ modoCandidato() ? 'Código personal de acceso' : 'Contraseña' }}</label>
         <div class="password-field">
-          <input id="password" [type]="mostrarContrasena() ? 'text' : 'password'" formControlName="password" autocomplete="current-password" placeholder="Tu contraseña" required>
+          <input id="password" [type]="mostrarContrasena() ? 'text' : 'password'" formControlName="password" autocomplete="current-password" [placeholder]="modoCandidato() ? 'Código entregado por Administración' : 'Tu contraseña'" required>
           <button class="password-toggle" type="button" [attr.aria-label]="mostrarContrasena() ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="mostrarContrasena()" [attr.title]="mostrarContrasena() ? 'Ocultar contraseña' : 'Mostrar contraseña'" (click)="alternarVisibilidadContrasena()">
             <ng-icon [name]="mostrarContrasena() ? 'lucideEyeClosed' : 'lucideEye'" size="18" aria-hidden="true" />
           </button>
@@ -51,7 +51,7 @@
         </button>
       </form>
 
-      <p class="login-footnote">{{ modoCandidato() ? 'Solicita a Recursos Humanos el usuario y la contraseña genéricos.' : 'Acceso exclusivo para personal autorizado.' }}</p>
+      <p class="login-footnote">{{ modoCandidato() ? 'Solicita a Administración tu registro y código personal. El usuario genérico es CANDITATO-2026.' : 'Acceso exclusivo para personal autorizado.' }}</p>
     </div>
     <footer>SURTIBÁSCULAS S.A. · PLATAFORMA DE GESTIÓN <span>VERSIÓN 1.0</span></footer>
   </section>

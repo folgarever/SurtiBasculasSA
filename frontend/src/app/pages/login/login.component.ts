@@ -37,9 +37,10 @@ export class LoginComponent {
 
   protected cambiarModoCandidato(modoCandidato: boolean): void {
     this.modoCandidato.set(modoCandidato);
+    this.mostrarContrasena.set(false);
     this.error.set('');
     this.formulario.reset({
-      codigo_empleado: modoCandidato ? 'candidato' : '',
+      codigo_empleado: modoCandidato ? 'CANDITATO-2026' : '',
       password: '',
     });
   }

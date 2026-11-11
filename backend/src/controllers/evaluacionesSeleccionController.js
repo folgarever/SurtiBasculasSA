@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const crypto = require('crypto');
 const { evaluacionAsistente, puestoCodigo } = require('../config/evaluacionesSeleccion');
 
 const puntajesMaximos = {
@@ -95,9 +96,9 @@ async function obtenerMiRegistroCandidato(req, res, next) {
               p.nombre_puesto, c.respuestas, c.estado, c.creado_en, c.completada_en
        FROM candidatos_seleccion c
        INNER JOIN puestos p ON p.id = c.puesto_id
-       WHERE c.sesion_id = ?
+       WHERE c.id = ?
        LIMIT 1`,
-      [req.usuario.sesion_seleccion_id]
+      [Number(req.usuario.candidato_id)]
     );
     if (!candidatos[0]) return res.json({ candidato: null });
     const candidato = candidatos[0];
@@ -116,7 +117,7 @@ async function obtenerMiRegistroCandidato(req, res, next) {
   }
 }
 
-async function registrarCandidato(req, res, next) {
+async function registrarCandidatoAdmin(req, res, next) {
   const { nombres, apellidos, fecha_nacimiento: fechaNacimiento, puesto_id: puestoId } = req.body || {};
   const hoy = new Date();
   const fechaActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
@@ -139,14 +140,6 @@ async function registrarCandidato(req, res, next) {
   try {
     connection = await pool.getConnection();
     await connection.beginTransaction();
-    const [existentes] = await connection.execute(
-      'SELECT id FROM candidatos_seleccion WHERE sesion_id = ? LIMIT 1',
-      [req.usuario.sesion_seleccion_id]
-    );
-    if (existentes.length) {
-      await connection.rollback();
-      return res.status(409).json({ mensaje: 'Ya existe un registro para esta sesión de candidato.' });
-    }
     const [puestos] = await connection.execute(
       'SELECT id FROM puestos WHERE id = ? AND codigo_abreviatura = ? LIMIT 1',
       [Number(puestoId), puestoCodigo]
@@ -155,12 +148,15 @@ async function registrarCandidato(req, res, next) {
       await connection.rollback();
       return res.status(400).json({ mensaje: 'No hay una prueba de selección configurada para el puesto elegido.' });
     }
+    const codigoAcceso = crypto.randomBytes(18).toString('hex').toUpperCase();
+    const codigoHash = crypto.createHash('sha256').update(codigoAcceso).digest('hex');
     const [registro] = await connection.execute(
       `INSERT INTO candidatos_seleccion
-       (sesion_id, nombres, apellidos, fecha_nacimiento, puesto_id)
-       VALUES (?, ?, ?, ?, ?)`,
+       (sesion_id, codigo_acceso_hash, nombres, apellidos, fecha_nacimiento, puesto_id)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [
-        req.usuario.sesion_seleccion_id,
+        crypto.randomUUID(),
+        codigoHash,
         nombres.trim(),
         apellidos.trim(),
         fechaNacimiento,
@@ -177,13 +173,11 @@ async function registrarCandidato(req, res, next) {
         edad: calcularEdad(fechaNacimiento),
         puesto_id: Number(puestoId),
         estado: 'registro',
+        codigo_acceso: codigoAcceso,
       },
     });
   } catch (error) {
     if (connection) await connection.rollback();
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ mensaje: 'Ya existe un registro para esta sesión de candidato.' });
-    }
     return next(error);
   } finally {
     if (connection) connection.release();
@@ -211,13 +205,13 @@ async function entregarPruebaCandidato(req, res, next) {
     const [resultado] = await pool.execute(
       `UPDATE candidatos_seleccion
        SET respuestas = ?, estado = 'completada', completada_en = CURRENT_TIMESTAMP
-       WHERE sesion_id = ? AND estado = 'registro'`,
-      [JSON.stringify(respuestas), req.usuario.sesion_seleccion_id]
+       WHERE id = ? AND estado = 'registro'`,
+      [JSON.stringify(respuestas), Number(req.usuario.candidato_id)]
     );
     if (!resultado.affectedRows) {
       const [candidatos] = await pool.execute(
-        'SELECT id FROM candidatos_seleccion WHERE sesion_id = ? LIMIT 1',
-        [req.usuario.sesion_seleccion_id]
+        'SELECT id FROM candidatos_seleccion WHERE id = ? LIMIT 1',
+        [Number(req.usuario.candidato_id)]
       );
       if (!candidatos[0]) return res.status(409).json({ mensaje: 'Primero completa el registro del candidato.' });
       return res.status(409).json({ mensaje: 'Esta prueba ya fue entregada y no puede modificarse.' });
@@ -242,11 +236,11 @@ async function listarCandidatosPendientes(req, res, next) {
     }
     const [candidatos] = await pool.execute(
       `SELECT c.id, c.nombres, c.apellidos, c.fecha_nacimiento, c.puesto_id,
-              p.nombre_puesto, c.respuestas, c.creado_en, c.completada_en,
+              p.nombre_puesto, c.respuestas, c.estado, c.creado_en, c.completada_en,
               TIMESTAMPDIFF(YEAR, c.fecha_nacimiento, CURDATE()) AS edad
        FROM candidatos_seleccion c
        INNER JOIN puestos p ON p.id = c.puesto_id
-       WHERE c.estado = 'completada' ${filtro}
+       WHERE c.estado IN ('registro', 'completada') ${filtro}
          AND NOT EXISTS (
            SELECT 1 FROM evaluaciones_seleccion es WHERE es.candidato_id = c.id
          )
@@ -257,9 +251,9 @@ async function listarCandidatosPendientes(req, res, next) {
       candidatos: candidatos.map((candidato) => ({
         ...candidato,
         fecha_nacimiento: String(candidato.fecha_nacimiento).slice(0, 10),
-        respuestas: typeof candidato.respuestas === 'string'
-          ? JSON.parse(candidato.respuestas)
-          : candidato.respuestas,
+        respuestas: candidato.estado === 'completada'
+          ? (typeof candidato.respuestas === 'string' ? JSON.parse(candidato.respuestas) : candidato.respuestas)
+          : null,
       })),
     });
   } catch (error) {
@@ -448,7 +442,7 @@ module.exports = {
   obtenerPlantillas,
   obtenerPlantillasCandidato,
   obtenerMiRegistroCandidato,
-  registrarCandidato,
+  registrarCandidatoAdmin,
   entregarPruebaCandidato,
   listarCandidatosPendientes,
   listarResultados,

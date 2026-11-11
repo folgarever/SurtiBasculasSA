@@ -7,28 +7,12 @@
   <section class="candidate-main">
     @if (cargando()) {
       <article class="candidate-card"><p>Cargando prueba de selección…</p></article>
-    } @else if (error() && !plantillas().length) {
-      <article class="candidate-card"><div class="candidate-error" role="alert">{{ error() }}</div></article>
     } @else if (!candidato()) {
       <article class="candidate-card">
-        <p class="candidate-eyebrow">REGISTRO DEL ASPIRANTE</p>
-        <h1>Antes de comenzar</h1>
-        <p class="candidate-intro">Ingresa tus datos para identificar tu evaluación. Tu edad se calcula automáticamente a partir de tu fecha de nacimiento.</p>
+        <p class="candidate-eyebrow">PORTAL DE CANDIDATOS</p>
+        <h1>No encontramos un registro para esta cuenta</h1>
+        <p class="candidate-intro">Comunícate con Administración para que registre tu participación y te entregue tu código personal de acceso.</p>
         @if (error()) { <div class="candidate-error" role="alert">{{ error() }}</div> }
-        <form class="candidate-form" (submit)="$event.preventDefault(); iniciarPrueba()">
-          <label>Nombres<input type="text" maxlength="100" autocomplete="given-name" [value]="nombres()" (input)="actualizarNombres($event)" required></label>
-          <label>Apellidos<input type="text" maxlength="120" autocomplete="family-name" [value]="apellidos()" (input)="actualizarApellidos($event)" required></label>
-          <label>Fecha de nacimiento<input type="date" autocomplete="bday" [value]="fechaNacimiento()" (input)="actualizarFechaNacimiento($event)" required></label>
-          <p class="candidate-age">Edad calculada: <strong>{{ edadCalculada() === null ? 'Ingresa una fecha válida' : edadCalculada() + ' años' }}</strong></p>
-          <label>Puesto al que aspiras
-            <select [value]="puestoId()" (change)="actualizarPuesto($event)" required>
-              <option value="" disabled>Selecciona un puesto</option>
-              @for (plantilla of plantillas(); track plantilla.id) { <option [value]="plantilla.id">{{ plantilla.nombre_puesto }}</option> }
-            </select>
-          </label>
-          <p class="candidate-privacy">La información se utilizará para administrar este proceso de selección y vincular tus respuestas con el puesto elegido.</p>
-          <button type="submit" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar datos e iniciar prueba' }}</button>
-        </form>
       </article>
     } @else if (candidato()?.estado === 'registro') {
       <article class="candidate-card candidate-exam-card">

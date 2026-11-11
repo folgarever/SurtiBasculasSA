@@ -52,40 +52,48 @@ async function login(req, res, next) {
   }
 }
 
-function loginCandidato(req, res) {
-  const { usuario, password } = req.body || {};
-  const usuarioConfigurado = process.env.CANDIDATE_USERNAME;
-  const passwordConfigurada = process.env.CANDIDATE_PASSWORD;
-  if (!usuarioConfigurado || !passwordConfigurada) {
-    return res.status(503).json({ mensaje: 'El acceso de candidatos no está configurado en el servidor.' });
-  }
-  if (typeof usuario !== 'string' || typeof password !== 'string') {
-    return res.status(400).json({ mensaje: 'Usuario y contraseña son requeridos.' });
-  }
+const USUARIO_CANDIDATOS = 'CANDITATO-2026';
 
-  const hashRecibido = crypto.createHash('sha256').update(`${usuario}\0${password}`).digest();
-  const hashConfigurado = crypto.createHash('sha256')
-    .update(`${usuarioConfigurado}\0${passwordConfigurada}`)
-    .digest();
-  if (!crypto.timingSafeEqual(hashRecibido, hashConfigurado)) {
+async function loginCandidato(req, res, next) {
+  const { usuario, password } = req.body || {};
+  if (typeof usuario !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ mensaje: 'Usuario y código de acceso son requeridos.' });
+  }
+  if (usuario !== USUARIO_CANDIDATOS || password.length > 100) {
     return res.status(401).json({ mensaje: 'Credenciales inválidas.' });
   }
   if (!process.env.JWT_SECRET) {
     return res.status(500).json({ mensaje: 'La autenticación no está configurada en el servidor.' });
   }
 
-  const perfil = {
-    id: 0,
-    codigo_empleado: 'CANDIDATO',
-    nombre: 'Candidato',
-    puesto: 'Aspirante',
-    rol: 'CANDIDATE',
-    rol_id: 0,
-    role: 'CANDIDATE',
-    sesion_seleccion_id: crypto.randomUUID(),
-  };
-  const token = jwt.sign(perfil, process.env.JWT_SECRET, { expiresIn: '8h' });
-  return res.json({ token, usuario: perfil });
+  try {
+    const codigoHash = crypto.createHash('sha256').update(password).digest('hex');
+    const [candidatos] = await pool.execute(
+      `SELECT c.id, c.nombres, c.apellidos, c.estado, p.nombre_puesto
+       FROM candidatos_seleccion c
+       INNER JOIN puestos p ON p.id = c.puesto_id
+       WHERE c.codigo_acceso_hash = ?
+       LIMIT 1`,
+      [codigoHash]
+    );
+    const candidato = candidatos[0];
+    if (!candidato) return res.status(401).json({ mensaje: 'Credenciales inválidas.' });
+
+    const perfil = {
+      id: candidato.id,
+      candidato_id: candidato.id,
+      codigo_empleado: 'CANDIDATO',
+      nombre: `${candidato.nombres} ${candidato.apellidos}`,
+      puesto: candidato.nombre_puesto,
+      rol: 'CANDIDATE',
+      rol_id: 0,
+      role: 'CANDIDATE',
+    };
+    const token = jwt.sign(perfil, process.env.JWT_SECRET, { expiresIn: '8h' });
+    return res.json({ token, usuario: perfil, estado: candidato.estado });
+  } catch (error) {
+    return next(error);
+  }
 }
 
 module.exports = { login, loginCandidato };
