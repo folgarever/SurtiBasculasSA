@@ -44,14 +44,14 @@
           <section class="candidate-section">
             <header><h2>{{ seccion.nombre }}</h2><span>{{ seccion.tiempo_minutos }} min</span></header>
             <p>{{ seccion.instrucciones }}</p>
-            @for (item of seccion.items; track $index) {
+            @for (item of seccion.items; track $index; let preguntaIndex = $index) {
               <fieldset class="candidate-question">
                 <legend><strong>{{ item.enunciado }}</strong></legend>
                 @if (item.detalle) { <span>{{ item.detalle }}</span> }
                 <div class="candidate-options">
                   @for (opcion of item.opciones; track opcion.id) {
                     <label class="candidate-option">
-                      <input type="radio" [name]="'respuesta-' + seccion.id + '-' + $index" [value]="opcion.id" (change)="actualizarRespuesta(seccion.id + '-' + $index, opcion.id)">
+                      <input type="radio" [name]="'respuesta-' + seccion.id + '-' + preguntaIndex" [value]="opcion.id" [checked]="respuestas()[seccion.id + '-' + preguntaIndex] === opcion.id" (change)="actualizarRespuesta(seccion.id + '-' + preguntaIndex, opcion.id)">
                       <span>{{ opcion.texto }}</span>
                     </label>
                   }
