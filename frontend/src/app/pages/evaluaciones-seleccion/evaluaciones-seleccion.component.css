@@ -22,11 +22,16 @@
 .selection-position-picker select {
   min-height: 2.5rem;
   padding: 0.45rem 0.7rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.5rem;
-  background: #fff;
-  color: #1e293b;
+  border: 1px solid transparent;
+  border-radius: var(--radius-2xl);
+  background: var(--color-canvas);
+  color: var(--color-ink);
   font: inherit;
+}
+
+.selection-position-picker select:focus {
+  border-color: var(--color-ink);
+  outline: 0;
 }
 
 .selection-count {
@@ -72,9 +77,9 @@
 .selection-status {
   display: inline-block;
   padding: 0.25rem 0.5rem;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  border-radius: var(--radius-2xl);
+  background: var(--color-surface-alt);
+  color: var(--color-ink-soft);
   font-size: 0.78rem;
 }
 

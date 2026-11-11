@@ -629,21 +629,26 @@ td { height: 62px; padding-right: 16px; padding-left: 16px; }
 
 :root {
   color-scheme: light;
-  --color-primary: #961a14;
-  --color-secondary: #243041;
-  --color-primary-soft: #f8e9e8;
-  --color-secondary-soft: #e9edf2;
-  --color-canvas: #f4f5f7;
+  --color-canvas: #F8F9FA;
   --color-paper: #ffffff;
-  --color-surface-alt: #f8f9fb;
-  --color-ink: #171717;
-  --color-mid-gray: #737373;
-  --color-border: #e5e7eb;
-  --radius-card: 20px;
-  --radius-button: 12px;
-  --radius-input: 10px;
-  --radius-badge: 18px;
-  --shadow-card: 0 0 0 1px rgba(36, 48, 65, .04), 0 2px 8px rgba(36, 48, 65, .05);
+  --color-surface-alt: #F1F5F9;
+  --color-ink: #1B2A4A;
+  --color-ink-soft: #23395B;
+  --color-mid-gray: #64748B;
+  --color-hairline: #E2E8F0;
+  --color-ember: #B91C1C;
+  --color-primary: var(--color-ember);
+  --color-secondary: var(--color-ink-soft);
+  --color-primary-soft: #f8e9e8;
+  --color-secondary-soft: var(--color-surface-alt);
+  --color-border: var(--color-hairline);
+  --radius-2xl: 18px;
+  --radius-3xl: 24px;
+  --radius-card: var(--radius-3xl);
+  --radius-button: var(--radius-2xl);
+  --radius-input: var(--radius-2xl);
+  --radius-badge: var(--radius-2xl);
+  --shadow-card: 0 0 0 1px rgba(27, 42, 74, .04), 0 1px 3px rgba(0, 0, 0, .05), 0 1px 2px -1px rgba(0, 0, 0, .03);
   --ink: var(--color-ink);
   --muted: var(--color-mid-gray);
   --line: var(--color-border);
@@ -662,8 +667,8 @@ td { height: 62px; padding-right: 16px; padding-left: 16px; }
   --success: #e8f3ec;
   --warning: #fff3df;
   --danger: #a3211a;
-  --focus-ring: rgba(150, 26, 20, .16);
-  font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --focus-ring: var(--color-ink);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 body { background: var(--color-canvas); color: var(--color-ink); font-size: 14px; }
@@ -996,16 +1001,6 @@ tbody tr:hover { background: var(--color-surface-alt); }
 .button-danger:hover { background: #761b16; }
 .employee-modal .modal-actions .button-danger { min-width: 150px; }
 
-:root {
-  --color-canvas: #edf1f6;
-  --color-surface-alt: #f3f6fa;
-  --color-secondary-soft: #e5ebf3;
-  --color-border: #dce3ec;
-  --shadow-card: 0 1px 2px rgba(36, 48, 65, .035), 0 5px 16px rgba(36, 48, 65, .045);
-  --line: var(--color-border);
-  --paper: var(--color-canvas);
-}
-
 .app-sidebar {
   border-right-color: #354357;
   background: var(--color-secondary);
@@ -1316,4 +1311,158 @@ tbody tr:hover { background: var(--color-surface-alt); }
 
 @media (prefers-reduced-motion: reduce) {
   .password-toggle { transition: none; }
+}
+
+/* Clinical blueprint */
+.app-sidebar { background: var(--color-ink); overflow-y: auto; }
+.sidebar-link.is-active, .sidebar-link.is-active:hover {
+  background: var(--color-ember);
+  color: #fff;
+  box-shadow: none;
+}
+.sidebar-link.is-active ng-icon { color: #fff; }
+.topbar { background: var(--color-paper); }
+.topbar .icon-button { border-radius: var(--radius-2xl); background: var(--color-surface-alt); }
+.topbar .icon-button:hover { background: var(--color-hairline); }
+
+@media (min-width: 761px) {
+  .sidebar-nav:has(> a[href$="/admin/evaluaciones-seleccion"]) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+  .sidebar-nav > a[href$="/admin/evaluaciones-seleccion"] { margin-top: auto; }
+  .sidebar-nav:has(> a[href$="/admin/evaluaciones-seleccion"]) ~ .sidebar-bottom-link { margin-top: 0; }
+}
+
+.admin-welcome { padding: 32px 36px; background: var(--color-ink-soft); box-shadow: var(--shadow-card); }
+.admin-welcome::after {
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-ember);
+  box-shadow: none;
+}
+.admin-welcome .eyebrow { color: #f8c3c3; }
+.admin-welcome h1 { font-size: clamp(1.7rem, 3vw, 2rem); letter-spacing: -.04em; }
+.admin-welcome > p:last-child { color: #dce5ef; }
+.module-grid { gap: 16px; }
+.module-card, .module-card:last-child {
+  min-height: 210px;
+  border-radius: var(--radius-3xl);
+  box-shadow: var(--shadow-card);
+}
+.module-card:hover { box-shadow: var(--shadow-card); }
+.module-attendance, .module-evaluation, .module-employees { --module-accent: var(--color-ink-soft); }
+.module-attendance { --module-accent: var(--color-ember); }
+.module-icon, .module-evaluation .module-icon, .module-employees .module-icon {
+  border-radius: 10px;
+  background: var(--module-accent);
+  color: #fff;
+}
+.module-eyebrow { color: var(--color-ink-soft); }
+.module-link { width: 100%; justify-content: space-between; color: var(--color-ink-soft); }
+.module-link > span { color: var(--color-ember); }
+
+.app-shell :is(h1, h2, h3, strong, .digital-clock),
+.login-page :is(h1, h2) { font-family: inherit; }
+.app-shell :is(h1, h2), .login-page :is(h1, h2) { letter-spacing: -.025em; }
+.button, .button-light, .details-button, .icon-button, .login-mode-switch button {
+  border-radius: var(--radius-2xl);
+}
+.button, .button-light, .login-submit, .heading-actions .button, .filter-actions .button {
+  min-height: 40px;
+}
+.button-primary, .button-dark { border: 0; background: var(--color-ink); color: #fff; box-shadow: none; }
+.button-primary:hover, .button-dark:hover { background: var(--color-ink-soft); box-shadow: none; transform: none; }
+.button-accent, .button-light, .button-danger { border: 0; background: var(--color-ember); color: #fff; box-shadow: none; }
+.button-accent:hover, .button-light:hover, .button-danger:hover { background: #991b1b; box-shadow: none; transform: none; }
+.button-outline, .button-quiet, .button-text, .details-button {
+  border: 0;
+  background: var(--color-surface-alt);
+  color: var(--color-ink);
+}
+.button-outline:hover, .button-quiet:hover, .button-text:hover, .details-button:hover {
+  background: var(--color-hairline);
+  color: var(--color-ink);
+}
+
+.records-section, .table-frame, .summary-strip, .evaluation-panel, .evaluation-detail,
+.knowledge-panel, .knowledge-history, .knowledge-kpi, .suggestion-form-card, .suggestion-card,
+.modal-panel, .login-form-wrap {
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-3xl);
+  background: var(--color-paper);
+  box-shadow: var(--shadow-card);
+}
+.records-section .table-frame { box-shadow: none; }
+.knowledge-question, .question-editor, .criteria-section, .specialized-section,
+.suggestion-response, .knowledge-result, .knowledge-empty { border-radius: 10px; }
+.knowledge-option, .score-option span { border-radius: 8px; }
+.state-pill, .average-pill, .record-count, .date-stamp { border-radius: var(--radius-2xl); }
+.filter-bar { border-radius: var(--radius-3xl); }
+.search-field, .date-filter, .employee-search {
+  border: 1px solid transparent;
+  border-radius: var(--radius-2xl);
+  background: var(--color-canvas);
+}
+.search-field input, .date-filter input, .employee-search input { background: transparent; }
+
+.modal-panel input:not([type="checkbox"]):not([type="radio"]),
+.modal-panel select, .modal-panel textarea, .login-form-wrap input,
+.evaluation-field input, .evaluation-field select, .evaluation-field textarea, .observation-row textarea,
+.suggestion-form input, .suggestion-form textarea, .suggestion-reply textarea,
+.knowledge-filters select, .question-editor .evaluation-field textarea, .question-editor .evaluation-field select,
+.question-editor-option > input[type="text"],
+.question-editor-option > select, .question-partial-score input {
+  border: 1px solid transparent;
+  border-radius: var(--radius-2xl);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+.modal-panel input:focus, .modal-panel select:focus, .modal-panel textarea:focus,
+.login-form-wrap input:focus, .evaluation-field input:focus, .evaluation-field select:focus,
+.evaluation-field textarea:focus, .observation-row textarea:focus,
+.suggestion-form input:focus, .suggestion-form textarea:focus, .suggestion-reply textarea:focus,
+.knowledge-filters select:focus, .question-editor .evaluation-field textarea:focus,
+.question-editor .evaluation-field select:focus, .question-editor-option input:focus,
+.question-editor-option select:focus, .question-partial-score input:focus {
+  border-color: var(--color-ink);
+  outline: 0;
+  box-shadow: none;
+}
+.search-field:focus-within, .date-filter:focus-within, .employee-search:focus-within {
+  border-color: var(--color-ink);
+  box-shadow: none;
+}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 1px solid var(--color-ink);
+  outline-offset: 2px;
+}
+.sidebar-link:focus-visible, .sidebar-brand:focus-visible { outline-color: #fff; }
+.login-mode-switch { border: 0; border-radius: var(--radius-2xl); background: var(--color-surface-alt); }
+.login-mode-switch button.is-active { color: var(--color-ink); }
+.login-visual { background: var(--color-ink); animation: none; }
+.login-visual::after { display: none; }
+.login-form-side { background: var(--color-canvas); }
+.login-form-wrap input:hover { background: var(--color-surface-alt); }
+
+@media (max-width: 760px) {
+  .app-sidebar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .sidebar-brand { flex: 0 0 auto; padding: 0 10px 0 0; }
+  .sidebar-nav { display: contents; }
+  .sidebar-link, .sidebar-bottom-link { flex: 0 0 auto; margin: 0; white-space: nowrap; }
+  .admin-welcome { padding: 26px 24px; }
+  .login-form-side { background: var(--color-canvas); }
+  .login-form-wrap { border-radius: var(--radius-3xl); }
 }

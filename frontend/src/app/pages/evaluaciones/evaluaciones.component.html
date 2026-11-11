@@ -89,7 +89,7 @@
                     <div class="score-options" role="group" [attr.aria-label]="'Calificación de ' + criterio.nombre">
                       @for (valor of escala; track valor) {
                         <label class="score-option">
-                          <input type="radio" [name]="'general-' + criterio.clave" [formControlName]="criterio.clave" [value]="valor">
+                          <input type="radio" [attr.name]="'general-' + criterio.clave" [formControlName]="criterio.clave" [value]="valor">
                           <span>{{ valor }}</span>
                         </label>
                       }
@@ -123,7 +123,7 @@
                     <div class="score-options" role="group" [attr.aria-label]="'Calificación de ' + criterio.nombre">
                       @for (valor of escala; track valor) {
                         <label class="score-option">
-                          <input type="radio" [name]="'jefatura-' + criterio.clave" [formControlName]="criterio.clave" [value]="valor">
+                          <input type="radio" [attr.name]="'jefatura-' + criterio.clave" [formControlName]="criterio.clave" [value]="valor">
                           <span>{{ valor }}</span>
                         </label>
                       }

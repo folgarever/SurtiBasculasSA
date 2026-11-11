@@ -1,12 +1,12 @@
 :host {
   display: block;
   min-height: 100vh;
-  background: #f3f6f9;
+  background: var(--paper);
 }
 
 .candidate-portal {
   min-height: 100vh;
-  color: #172b45;
+  color: var(--ink);
 }
 
 .candidate-header {
@@ -15,15 +15,15 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem clamp(1rem, 5vw, 4rem);
-  border-bottom: 1px solid #dfe6ee;
-  background: #fff;
+  border-bottom: 1px solid var(--line);
+  background: var(--white);
 }
 
 .candidate-brand {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  color: #17365d;
+  color: var(--ink);
   font-weight: 700;
   text-decoration: none;
 }
@@ -44,10 +44,10 @@
 
 .candidate-logout {
   padding: 0.55rem 0.85rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.4rem;
-  background: #fff;
-  color: #334155;
+  border: 0;
+  border-radius: var(--radius-2xl);
+  background: var(--color-surface-alt);
+  color: var(--ink);
   cursor: pointer;
 }
 
@@ -58,15 +58,15 @@
 
 .candidate-card {
   padding: clamp(1.25rem, 4vw, 2.5rem);
-  border: 1px solid #e0e7ef;
-  border-radius: 0.9rem;
-  background: #fff;
-  box-shadow: 0 12px 35px rgb(23 54 93 / 7%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-3xl);
+  background: var(--white);
+  box-shadow: var(--shadow-card);
 }
 
 .candidate-eyebrow {
   margin: 0 0 0.45rem;
-  color: #a52e36;
+  color: var(--red);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -74,12 +74,13 @@
 
 .candidate-card h1 {
   margin: 0 0 0.75rem;
-  color: #17365d;
+  color: var(--ink);
   font-size: clamp(1.5rem, 4vw, 2rem);
+  letter-spacing: -.025em;
 }
 
 .candidate-intro {
-  color: #526174;
+  color: var(--muted);
   line-height: 1.65;
 }
 
@@ -100,7 +101,7 @@
 .candidate-profile-form input,
 .candidate-profile-form select,
 .candidate-option input {
-  accent-color: #a52e36;
+  accent-color: var(--red);
 }
 
 .candidate-profile-form input,
@@ -108,17 +109,17 @@
   width: 100%;
   min-height: 2.9rem;
   padding: 0.7rem 0.8rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.4rem;
-  background: white;
-  color: #172b45;
+  border: 1px solid transparent;
+  border-radius: var(--radius-2xl);
+  background: var(--paper);
+  color: var(--ink);
   font: inherit;
 }
 
 .candidate-profile-form input:focus,
 .candidate-profile-form select:focus {
-  outline: 2px solid #bfdbfe;
-  border-color: #2563eb;
+  outline: 0;
+  border-color: var(--ink);
 }
 
 .candidate-profile-age {
@@ -128,11 +129,13 @@
 }
 
 .candidate-submit {
-  min-height: 2.9rem;
-  padding: 0.7rem 1rem;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
   border: 0;
-  border-radius: 0.4rem;
-  background: #a52e36;
+  border-radius: var(--radius-2xl);
+  background: var(--ink);
   color: white;
   font: inherit;
   font-weight: 700;
@@ -149,9 +152,9 @@
   flex-wrap: wrap;
   gap: 0.5rem 1.25rem;
   padding: 0.85rem 1rem;
-  border-radius: 0.45rem;
-  background: #f1f5f9;
-  color: #334155;
+  border-radius: 10px;
+  background: var(--color-surface-alt);
+  color: var(--blue);
 }
 
 .candidate-section {
@@ -168,7 +171,7 @@
 
 .candidate-section h2 {
   margin: 0;
-  color: #17365d;
+  color: var(--ink);
   font-size: 1.2rem;
 }
 
@@ -207,13 +210,13 @@
   gap: 0.65rem;
   padding: 0.75rem;
   border: 1px solid #dbe3ec;
-  border-radius: 0.45rem;
+  border-radius: 10px;
   background: #fbfdff;
   cursor: pointer;
 }
 
 .candidate-option:has(input:checked) {
-  border-color: #a52e36;
+  border-color: var(--red);
   background: #fff7f7;
 }
 
@@ -241,11 +244,6 @@
   border-radius: 0.4rem;
   background: #f0fdf4;
   color: #166534;
-}
-
-.candidate-submit {
-  width: 100%;
-  margin-top: 1rem;
 }
 
 .candidate-error {
