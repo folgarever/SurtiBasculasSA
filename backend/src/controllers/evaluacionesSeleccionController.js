@@ -381,7 +381,7 @@ async function entregarPruebaCandidato(req, res, next) {
     await connection.beginTransaction();
     const [perfiles] = await connection.execute(
       `SELECT c.id, c.nombres, c.apellidos, c.fecha_nacimiento, c.curriculum_nombre,
-              c.puesto_id, c.estado, c.reintento_autorizado_por,
+              c.puesto_id, c.estado, c.reintento_autorizado_por, c.reintento_motivo,
               p.codigo_abreviatura
        FROM candidatos_seleccion c
        INNER JOIN puestos p ON p.id = c.puesto_id
