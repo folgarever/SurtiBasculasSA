@@ -81,12 +81,6 @@
   line-height: 1.6;
 }
 
-.selection-response-space {
-  min-height: 2rem;
-  margin-top: 0.5rem;
-  border-bottom: 1px solid #cbd5e1;
-}
-
 .selection-rubric {
   display: grid;
   gap: 0.35rem;
@@ -145,30 +139,7 @@
   margin-bottom: 1rem;
 }
 
-.selection-access-code {
-  display: grid;
-  justify-items: start;
-  gap: 0.6rem;
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid #facc15;
-  border-radius: 0.65rem;
-  background: #fffbeb;
-  color: #713f12;
-}
-
-.selection-access-code p {
-  margin: 0;
-  line-height: 1.5;
-}
-
 .selection-access-code code {
-  padding: 0.55rem 0.75rem;
-  border-radius: 0.4rem;
-  background: #fff;
-  color: #172554;
-  font-size: 1rem;
-  font-weight: 700;
   overflow-wrap: anywhere;
   user-select: all;
 }
@@ -295,7 +266,6 @@
   .selection-results-panel,
   .selection-template-actions,
   .selection-internal-note,
-  .selection-response-space,
   .selection-thresholds,
   .selection-live-check,
   .alert,
@@ -318,9 +288,4 @@
     break-inside: avoid;
   }
 
-  .selection-response-space {
-    display: block;
-    min-height: 1.25rem;
-    border-bottom: 1px solid #64748b;
-  }
 }

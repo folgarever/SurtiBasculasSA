@@ -203,20 +203,39 @@ CREATE TABLE evaluaciones_banco_preguntas (
     FOREIGN KEY (puesto_id) REFERENCES puestos(id)
 ) ENGINE=InnoDB;
 
+CREATE TABLE candidatos_seleccion_accesos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario VARCHAR(32) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    anio SMALLINT UNSIGNED NOT NULL,
+    secuencia SMALLINT UNSIGNED NOT NULL,
+    creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE INDEX uq_candidatos_acceso_anio_secuencia (anio, secuencia)
+) ENGINE=InnoDB;
+
+CREATE TABLE candidatos_seleccion_secuencias (
+    anio SMALLINT UNSIGNED PRIMARY KEY,
+    ultimo_numero SMALLINT UNSIGNED NOT NULL DEFAULT 0
+) ENGINE=InnoDB;
+
 CREATE TABLE candidatos_seleccion (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    acceso_id INT NULL UNIQUE,
     sesion_id CHAR(36) NOT NULL UNIQUE,
     codigo_acceso_hash CHAR(64) NULL UNIQUE,
-    nombres VARCHAR(100) NOT NULL,
-    apellidos VARCHAR(120) NOT NULL,
-    fecha_nacimiento DATE NOT NULL,
-    puesto_id INT NOT NULL,
+    nombres VARCHAR(100) NULL,
+    apellidos VARCHAR(120) NULL,
+    fecha_nacimiento DATE NULL,
+    puesto_id INT NULL,
     respuestas JSON NULL,
+    curriculum_nombre VARCHAR(255) NULL,
+    curriculum_contenido LONGBLOB NULL,
     estado ENUM('registro', 'completada', 'evaluada') NOT NULL DEFAULT 'registro',
     creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     completada_en TIMESTAMP NULL,
     INDEX idx_candidatos_puesto_estado (puesto_id, estado, creado_en),
-    FOREIGN KEY (puesto_id) REFERENCES puestos(id)
+    FOREIGN KEY (puesto_id) REFERENCES puestos(id),
+    FOREIGN KEY (acceso_id) REFERENCES candidatos_seleccion_accesos(id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE evaluaciones_seleccion (

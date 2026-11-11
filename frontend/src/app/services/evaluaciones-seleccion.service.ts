@@ -14,6 +14,7 @@ export interface ItemPlantillaSeleccion {
   enunciado: string;
   detalle?: string;
   rubrica: CriterioSeleccion[];
+  opciones?: Array<{ id: string; texto: string; puntos: number }>;
 }
 
 export interface SeccionPlantillaSeleccion {
@@ -55,6 +56,7 @@ export interface PuestoPlantillaSeleccion {
 export interface ItemPruebaCandidato {
   enunciado: string;
   detalle?: string;
+  opciones: Array<{ id: string; texto: string }>;
 }
 
 export interface SeccionPruebaCandidato {
@@ -108,25 +110,34 @@ export interface ResultadoSeleccionInput {
 }
 
 export interface RegistroCandidatoSeleccion {
-  id: number;
-  nombres: string;
-  apellidos: string;
-  fecha_nacimiento: string;
-  edad: number;
-  puesto_id: number;
+  id: number | null;
+  acceso_id?: number;
+  usuario?: string;
+  nombres: string | null;
+  apellidos: string | null;
+  fecha_nacimiento: string | null;
+  edad: number | null;
+  puesto_id: number | null;
   nombre_puesto?: string;
   respuestas: Record<string, string> | null;
-  estado: 'registro' | 'completada' | 'evaluada';
+  estado: 'pendiente_perfil' | 'registro' | 'completada' | 'evaluada';
   creado_en?: string;
   completada_en?: string | null;
-  codigo_acceso?: string;
+  curriculum_nombre?: string | null;
+  puntajes_automaticos?: Record<SeccionSeleccion, number> | null;
 }
 
-export interface RegistroCandidatoInput {
+export interface CuentaCandidato {
+  usuario: string;
+  password: string;
+}
+
+export interface PerfilCandidatoInput {
   nombres: string;
   apellidos: string;
   fecha_nacimiento: string;
   puesto_id: number;
+  curriculum: File;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -161,12 +172,23 @@ export class EvaluacionesSeleccionService {
     return this.http.get<{ candidato: RegistroCandidatoSeleccion | null }>(`${this.baseUrl}/candidato/mi`);
   }
 
-  registrarCandidatoAdmin(
-    registro: RegistroCandidatoInput,
-  ): Observable<{ candidato: RegistroCandidatoSeleccion }> {
-    return this.http.post<{ candidato: RegistroCandidatoSeleccion }>(
+  registrarCandidatoAdmin(): Observable<{ cuenta: CuentaCandidato }> {
+    return this.http.post<{ cuenta: CuentaCandidato }>(
       `${this.baseUrl}/admin/candidatos`,
-      registro,
+      {},
+    );
+  }
+
+  registrarPerfilCandidato(perfil: PerfilCandidatoInput): Observable<{ candidato: RegistroCandidatoSeleccion }> {
+    const datos = new FormData();
+    datos.append('nombres', perfil.nombres);
+    datos.append('apellidos', perfil.apellidos);
+    datos.append('fecha_nacimiento', perfil.fecha_nacimiento);
+    datos.append('puesto_id', String(perfil.puesto_id));
+    datos.append('curriculum', perfil.curriculum);
+    return this.http.post<{ candidato: RegistroCandidatoSeleccion }>(
+      `${this.baseUrl}/candidato/perfil`,
+      datos,
     );
   }
 
@@ -186,5 +208,11 @@ export class EvaluacionesSeleccionService {
       `${this.baseUrl}/admin/candidatos`,
       { params },
     );
+  }
+
+  obtenerCurriculum(candidatoId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/admin/candidatos/${candidatoId}/curriculum`, {
+      responseType: 'blob',
+    });
   }
 }

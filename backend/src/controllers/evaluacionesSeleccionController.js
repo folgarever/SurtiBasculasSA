@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 const { evaluacionAsistente, puestoCodigo } = require('../config/evaluacionesSeleccion');
 
 const puntajesMaximos = {
@@ -28,7 +29,7 @@ function nombreCompleto(candidato) {
   return `${candidato.nombres} ${candidato.apellidos}`.trim();
 }
 
-function plantillaPublica(puesto) {
+function plantillaPublica(puesto, incluirRubrica = true) {
   return {
     ...puesto,
     evaluacion: {
@@ -37,7 +38,14 @@ function plantillaPublica(puesto) {
       puntaje_total: evaluacionAsistente.puntaje_total,
       secciones: evaluacionAsistente.secciones.map(({ rubrica, ...seccion }) => ({
         ...seccion,
-        items: seccion.items.map(({ rubrica: rubricaItem, ...item }) => item),
+        items: seccion.items.map((item) => {
+          if (incluirRubrica) return item;
+          const { rubrica: rubricaItem, respuesta_correcta: respuestaCorrecta, ...itemPublico } = item;
+          return {
+            ...itemPublico,
+            opciones: item.opciones?.map(({ puntos, ...opcion }) => opcion) ?? [],
+          };
+        }),
       })),
     },
   };
@@ -83,7 +91,7 @@ async function obtenerPlantillasCandidato(req, res, next) {
        LIMIT 1`,
       [puestoCodigo]
     );
-    return res.json({ plantillas: puestos.map(plantillaPublica) });
+    return res.json({ plantillas: puestos.map((puesto) => plantillaPublica(puesto, false)) });
   } catch (error) {
     return next(error);
   }
@@ -93,23 +101,26 @@ async function obtenerMiRegistroCandidato(req, res, next) {
   try {
     const [candidatos] = await pool.execute(
       `SELECT c.id, c.nombres, c.apellidos, c.fecha_nacimiento, c.puesto_id,
-              p.nombre_puesto, c.respuestas, c.estado, c.creado_en, c.completada_en
+              p.nombre_puesto, c.respuestas, c.estado, c.creado_en, c.completada_en,
+              c.curriculum_nombre
        FROM candidatos_seleccion c
-       INNER JOIN puestos p ON p.id = c.puesto_id
-       WHERE c.id = ?
+       LEFT JOIN puestos p ON p.id = c.puesto_id
+       WHERE c.acceso_id = ?
        LIMIT 1`,
-      [Number(req.usuario.candidato_id)]
+      [Number(req.usuario.candidato_acceso_id)]
     );
     if (!candidatos[0]) return res.json({ candidato: null });
     const candidato = candidatos[0];
     return res.json({
       candidato: {
         ...candidato,
-        fecha_nacimiento: String(candidato.fecha_nacimiento).slice(0, 10),
+        fecha_nacimiento: candidato.fecha_nacimiento
+          ? String(candidato.fecha_nacimiento).slice(0, 10)
+          : null,
         respuestas: candidato.respuestas
           ? (typeof candidato.respuestas === 'string' ? JSON.parse(candidato.respuestas) : candidato.respuestas)
           : null,
-        edad: calcularEdad(candidato.fecha_nacimiento),
+        edad: candidato.fecha_nacimiento ? calcularEdad(candidato.fecha_nacimiento) : null,
       },
     });
   } catch (error) {
@@ -118,6 +129,43 @@ async function obtenerMiRegistroCandidato(req, res, next) {
 }
 
 async function registrarCandidatoAdmin(req, res, next) {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    const anio = new Date().getFullYear();
+    await connection.execute(
+      `INSERT INTO candidatos_seleccion_secuencias (anio, ultimo_numero)
+       VALUES (?, 1)
+       ON DUPLICATE KEY UPDATE ultimo_numero = ultimo_numero + 1`,
+      [anio]
+    );
+    const [secuencias] = await connection.execute(
+      'SELECT ultimo_numero FROM candidatos_seleccion_secuencias WHERE anio = ? FOR UPDATE',
+      [anio]
+    );
+    const secuencia = Number(secuencias[0].ultimo_numero);
+    const usuario = `CANDIDATO-${anio}-${String(secuencia).padStart(3, '0')}`;
+    const password = crypto.randomBytes(12).toString('hex');
+    const passwordHash = await bcrypt.hash(password, 12);
+    await connection.execute(
+      `INSERT INTO candidatos_seleccion_accesos (usuario, password_hash, anio, secuencia)
+       VALUES (?, ?, ?, ?)`,
+      [usuario, passwordHash, anio, secuencia]
+    );
+    await connection.commit();
+    return res.status(201).json({
+      cuenta: { usuario, password },
+    });
+  } catch (error) {
+    if (connection) await connection.rollback();
+    return next(error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function registrarPerfilCandidato(req, res, next) {
   const { nombres, apellidos, fecha_nacimiento: fechaNacimiento, puesto_id: puestoId } = req.body || {};
   const hoy = new Date();
   const fechaActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
@@ -135,6 +183,13 @@ async function registrarCandidatoAdmin(req, res, next) {
   ) {
     return res.status(400).json({ mensaje: 'Completa nombres, apellidos, fecha de nacimiento y puesto con datos válidos.' });
   }
+  if (
+    !req.file
+    || req.file.mimetype !== 'application/pdf'
+    || !req.file.buffer.subarray(0, 5).equals(Buffer.from('%PDF-'))
+  ) {
+    return res.status(400).json({ mensaje: 'Adjunta tu currículum en formato PDF (máximo 5 MB).' });
+  }
 
   let connection;
   try {
@@ -148,19 +203,19 @@ async function registrarCandidatoAdmin(req, res, next) {
       await connection.rollback();
       return res.status(400).json({ mensaje: 'No hay una prueba de selección configurada para el puesto elegido.' });
     }
-    const codigoAcceso = crypto.randomBytes(18).toString('hex').toUpperCase();
-    const codigoHash = crypto.createHash('sha256').update(codigoAcceso).digest('hex');
     const [registro] = await connection.execute(
       `INSERT INTO candidatos_seleccion
-       (sesion_id, codigo_acceso_hash, nombres, apellidos, fecha_nacimiento, puesto_id)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       (acceso_id, sesion_id, nombres, apellidos, fecha_nacimiento, puesto_id,
+        curriculum_nombre, curriculum_contenido)
+       VALUES (?, ?, ?, ?, ?, ?, 'curriculum.pdf', ?)`,
       [
+        Number(req.usuario.candidato_acceso_id),
         crypto.randomUUID(),
-        codigoHash,
         nombres.trim(),
         apellidos.trim(),
         fechaNacimiento,
         Number(puestoId),
+        req.file.buffer,
       ]
     );
     await connection.commit();
@@ -173,14 +228,38 @@ async function registrarCandidatoAdmin(req, res, next) {
         edad: calcularEdad(fechaNacimiento),
         puesto_id: Number(puestoId),
         estado: 'registro',
-        codigo_acceso: codigoAcceso,
+        curriculum_nombre: 'curriculum.pdf',
       },
     });
   } catch (error) {
     if (connection) await connection.rollback();
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ mensaje: 'El perfil de esta cuenta ya fue registrado.' });
+    }
     return next(error);
   } finally {
     if (connection) connection.release();
+  }
+}
+
+async function descargarCurriculumCandidato(req, res, next) {
+  if (!/^\d+$/.test(req.params.id) || Number(req.params.id) < 1) {
+    return res.status(400).json({ mensaje: 'El candidato seleccionado no es válido.' });
+  }
+  try {
+    const [candidatos] = await pool.execute(
+      `SELECT curriculum_contenido
+       FROM candidatos_seleccion
+       WHERE id = ? AND curriculum_contenido IS NOT NULL
+       LIMIT 1`,
+      [Number(req.params.id)]
+    );
+    if (!candidatos[0]) return res.status(404).json({ mensaje: 'No hay currículum disponible para este candidato.' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="curriculum-${Number(req.params.id)}.pdf"`);
+    return res.send(candidatos[0].curriculum_contenido);
+  } catch (error) {
+    return next(error);
   }
 }
 
@@ -193,33 +272,55 @@ async function entregarPruebaCandidato(req, res, next) {
     seccion.items.map((item, indice) => `${seccion.id}-${indice}`)
   ));
   const claves = Object.keys(respuestas);
+  const opcionesValidas = new Map(
+    evaluacionAsistente.secciones.flatMap((seccion) => seccion.items.map((item, indice) => [
+      `${seccion.id}-${indice}`,
+      item.opciones?.map((opcion) => opcion.id) ?? [],
+    ]))
+  );
   if (
     claves.length !== ids.length
-    || ids.some((id) => typeof respuestas[id] !== 'string' || !respuestas[id].trim() || respuestas[id].length > 2500)
+    || ids.some((id) => typeof respuestas[id] !== 'string' || !opcionesValidas.get(id)?.includes(respuestas[id]))
     || claves.some((id) => !ids.includes(id))
   ) {
-    return res.status(400).json({ mensaje: 'Completa todas las respuestas. Cada campo permite hasta 2,500 caracteres.' });
+    return res.status(400).json({ mensaje: 'Selecciona una opción válida para cada pregunta antes de entregar.' });
   }
 
   try {
+    const [perfiles] = await pool.execute(
+      `SELECT id, puesto_id FROM candidatos_seleccion
+       WHERE acceso_id = ? AND estado = 'registro'
+       LIMIT 1`,
+      [Number(req.usuario.candidato_acceso_id)]
+    );
+    if (!perfiles[0]) {
+      return res.status(409).json({ mensaje: 'Completa primero tu perfil antes de iniciar la prueba.' });
+    }
     const [resultado] = await pool.execute(
       `UPDATE candidatos_seleccion
        SET respuestas = ?, estado = 'completada', completada_en = CURRENT_TIMESTAMP
        WHERE id = ? AND estado = 'registro'`,
-      [JSON.stringify(respuestas), Number(req.usuario.candidato_id)]
+      [JSON.stringify(respuestas), Number(perfiles[0].id)]
     );
     if (!resultado.affectedRows) {
-      const [candidatos] = await pool.execute(
-        'SELECT id FROM candidatos_seleccion WHERE id = ? LIMIT 1',
-        [Number(req.usuario.candidato_id)]
-      );
-      if (!candidatos[0]) return res.status(409).json({ mensaje: 'Primero completa el registro del candidato.' });
       return res.status(409).json({ mensaje: 'Esta prueba ya fue entregada y no puede modificarse.' });
     }
     return res.json({ mensaje: 'Prueba entregada correctamente. El equipo de selección revisará tus respuestas.' });
   } catch (error) {
     return next(error);
   }
+}
+
+function puntajesAutomaticos(respuestas) {
+  const puntajes = { aptitudes: 0, conocimientos: 0, practica: 0, valores: 0 };
+  if (!respuestas || typeof respuestas !== 'object' || Array.isArray(respuestas)) return puntajes;
+  for (const seccion of evaluacionAsistente.secciones) {
+    for (const [indice, item] of seccion.items.entries()) {
+      const opcion = item.opciones?.find((alternativa) => alternativa.id === respuestas[`${seccion.id}-${indice}`]);
+      if (opcion) puntajes[seccion.id] += opcion.puntos;
+    }
+  }
+  return puntajes;
 }
 
 async function listarCandidatosPendientes(req, res, next) {
@@ -231,28 +332,40 @@ async function listarCandidatosPendientes(req, res, next) {
     const parametros = [];
     let filtro = '';
     if (puestoId !== undefined) {
-      filtro = 'AND c.puesto_id = ?';
+      filtro = 'AND (c.puesto_id = ? OR c.id IS NULL)';
       parametros.push(Number(puestoId));
     }
     const [candidatos] = await pool.execute(
-      `SELECT c.id, c.nombres, c.apellidos, c.fecha_nacimiento, c.puesto_id,
-              p.nombre_puesto, c.respuestas, c.estado, c.creado_en, c.completada_en,
+      `SELECT c.id, a.id AS acceso_id, a.usuario, c.nombres, c.apellidos,
+              c.fecha_nacimiento, c.puesto_id, p.nombre_puesto, c.respuestas,
+              c.estado, c.curriculum_nombre, a.creado_en,
+              c.completada_en,
               TIMESTAMPDIFF(YEAR, c.fecha_nacimiento, CURDATE()) AS edad
-       FROM candidatos_seleccion c
-       INNER JOIN puestos p ON p.id = c.puesto_id
-       WHERE c.estado IN ('registro', 'completada') ${filtro}
-         AND NOT EXISTS (
+       FROM candidatos_seleccion_accesos a
+       LEFT JOIN candidatos_seleccion c ON c.acceso_id = a.id
+       LEFT JOIN puestos p ON p.id = c.puesto_id
+       WHERE (c.id IS NULL OR c.estado IN ('registro', 'completada'))
+         ${filtro}
+         AND (c.id IS NULL OR NOT EXISTS (
            SELECT 1 FROM evaluaciones_seleccion es WHERE es.candidato_id = c.id
-         )
-       ORDER BY c.completada_en ASC`,
+         ))
+       ORDER BY COALESCE(c.completada_en, a.creado_en) DESC`,
       parametros
     );
     return res.json({
       candidatos: candidatos.map((candidato) => ({
         ...candidato,
-        fecha_nacimiento: String(candidato.fecha_nacimiento).slice(0, 10),
+        estado: candidato.id === null ? 'pendiente_perfil' : candidato.estado,
+        fecha_nacimiento: candidato.fecha_nacimiento
+          ? String(candidato.fecha_nacimiento).slice(0, 10)
+          : null,
         respuestas: candidato.estado === 'completada'
           ? (typeof candidato.respuestas === 'string' ? JSON.parse(candidato.respuestas) : candidato.respuestas)
+          : null,
+        puntajes_automaticos: candidato.estado === 'completada'
+          ? puntajesAutomaticos(
+            typeof candidato.respuestas === 'string' ? JSON.parse(candidato.respuestas) : candidato.respuestas
+          )
           : null,
       })),
     });
@@ -443,6 +556,8 @@ module.exports = {
   obtenerPlantillasCandidato,
   obtenerMiRegistroCandidato,
   registrarCandidatoAdmin,
+  registrarPerfilCandidato,
+  descargarCurriculumCandidato,
   entregarPruebaCandidato,
   listarCandidatosPendientes,
   listarResultados,

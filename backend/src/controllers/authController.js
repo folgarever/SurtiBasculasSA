@@ -1,6 +1,5 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 const pool = require('../config/db');
 const { CODIGOS_ADMINISTRADORES } = require('../config/authorization');
 
@@ -52,45 +51,45 @@ async function login(req, res, next) {
   }
 }
 
-const USUARIO_CANDIDATOS = 'CANDITATO-2026';
-
 async function loginCandidato(req, res, next) {
   const { usuario, password } = req.body || {};
-  if (typeof usuario !== 'string' || typeof password !== 'string') {
-    return res.status(400).json({ mensaje: 'Usuario y código de acceso son requeridos.' });
-  }
-  if (usuario !== USUARIO_CANDIDATOS || password.length > 100) {
-    return res.status(401).json({ mensaje: 'Credenciales inválidas.' });
+  if (
+    typeof usuario !== 'string'
+    || !/^CANDIDATO-\d{4}-\d{3,}$/.test(usuario)
+    || typeof password !== 'string'
+    || password.length > 72
+  ) {
+    return res.status(400).json({ mensaje: 'Usuario de candidato y contraseña son requeridos.' });
   }
   if (!process.env.JWT_SECRET) {
     return res.status(500).json({ mensaje: 'La autenticación no está configurada en el servidor.' });
   }
 
   try {
-    const codigoHash = crypto.createHash('sha256').update(password).digest('hex');
-    const [candidatos] = await pool.execute(
-      `SELECT c.id, c.nombres, c.apellidos, c.estado, p.nombre_puesto
-       FROM candidatos_seleccion c
-       INNER JOIN puestos p ON p.id = c.puesto_id
-       WHERE c.codigo_acceso_hash = ?
+    const [cuentas] = await pool.execute(
+      `SELECT id, usuario, password_hash
+       FROM candidatos_seleccion_accesos
+       WHERE usuario = ?
        LIMIT 1`,
-      [codigoHash]
+      [usuario]
     );
-    const candidato = candidatos[0];
-    if (!candidato) return res.status(401).json({ mensaje: 'Credenciales inválidas.' });
+    const cuenta = cuentas[0];
+    if (!cuenta || !(await bcrypt.compare(password, cuenta.password_hash))) {
+      return res.status(401).json({ mensaje: 'Credenciales inválidas.' });
+    }
 
     const perfil = {
-      id: candidato.id,
-      candidato_id: candidato.id,
-      codigo_empleado: 'CANDIDATO',
-      nombre: `${candidato.nombres} ${candidato.apellidos}`,
-      puesto: candidato.nombre_puesto,
+      id: cuenta.id,
+      candidato_acceso_id: cuenta.id,
+      codigo_empleado: cuenta.usuario,
+      nombre: cuenta.usuario,
+      puesto: 'Candidato',
       rol: 'CANDIDATE',
       rol_id: 0,
       role: 'CANDIDATE',
     };
     const token = jwt.sign(perfil, process.env.JWT_SECRET, { expiresIn: '8h' });
-    return res.json({ token, usuario: perfil, estado: candidato.estado });
+    return res.json({ token, usuario: perfil });
   } catch (error) {
     return next(error);
   }

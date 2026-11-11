@@ -83,8 +83,8 @@ function permitirEvaluaciones(req, res, next) {
 function permitirCandidato(req, res, next) {
   if (
     req.usuario?.role !== 'CANDIDATE'
-    || !Number.isInteger(Number(req.usuario?.candidato_id))
-    || Number(req.usuario.candidato_id) < 1
+    || !Number.isInteger(Number(req.usuario?.candidato_acceso_id))
+    || Number(req.usuario.candidato_acceso_id) < 1
   ) {
     return res.status(403).json({ mensaje: 'Este acceso está disponible únicamente para candidatos.' });
   }

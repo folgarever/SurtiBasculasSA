@@ -6,31 +6,53 @@
 
   <section class="candidate-main">
     @if (cargando()) {
-      <article class="candidate-card"><p>Cargando prueba de selección…</p></article>
+      <article class="candidate-card"><p>Cargando portal de selección…</p></article>
     } @else if (!candidato()) {
       <article class="candidate-card">
-        <p class="candidate-eyebrow">PORTAL DE CANDIDATOS</p>
-        <h1>No encontramos un registro para esta cuenta</h1>
-        <p class="candidate-intro">Comunícate con Administración para que registre tu participación y te entregue tu código personal de acceso.</p>
+        <p class="candidate-eyebrow">REGISTRO DEL CANDIDATO</p>
+        <h1>Completa tus datos antes de la evaluación</h1>
+        <p class="candidate-intro">Ingresa tu información, adjunta tu currículum en PDF y selecciona el puesto al que aspiras. El equipo de selección podrá consultar estos datos.</p>
         @if (error()) { <div class="candidate-error" role="alert">{{ error() }}</div> }
+        <div class="candidate-profile-form">
+          <label class="candidate-question"><strong>Nombres</strong><input type="text" maxlength="100" autocomplete="given-name" [value]="nombres()" (input)="actualizarPerfil('nombres', $event)" required></label>
+          <label class="candidate-question"><strong>Apellidos</strong><input type="text" maxlength="120" autocomplete="family-name" [value]="apellidos()" (input)="actualizarPerfil('apellidos', $event)" required></label>
+          <label class="candidate-question"><strong>Fecha de nacimiento</strong><input type="date" [value]="fechaNacimiento()" (input)="actualizarPerfil('fecha_nacimiento', $event)" required></label>
+          @if (edadCalculada() !== null) { <p class="candidate-profile-age">Edad calculada: <strong>{{ edadCalculada() }} años</strong></p> }
+          <label class="candidate-question"><strong>Puesto al que aspiras</strong>
+            <select [value]="puestoId()" (change)="actualizarPerfil('puesto_id', $event)" required>
+              @for (plantilla of plantillas(); track plantilla.id) { <option [value]="plantilla.id">{{ plantilla.nombre_puesto }}</option> }
+            </select>
+          </label>
+          <label class="candidate-question"><strong>Currículum (solo PDF, máximo 5 MB)</strong><input type="file" accept="application/pdf,.pdf" (change)="seleccionarCurriculum($event)" required></label>
+          @if (curriculum()) { <p class="candidate-profile-age">Archivo seleccionado: <strong>{{ curriculum()?.name }}</strong></p> }
+          <button class="candidate-submit" type="button" [disabled]="guardando()" (click)="registrarPerfil()">{{ guardando() ? 'Guardando perfil…' : 'Guardar y continuar a la evaluación' }}</button>
+        </div>
       </article>
     } @else if (candidato()?.estado === 'registro') {
       <article class="candidate-card candidate-exam-card">
         <p class="candidate-eyebrow">EVALUACIÓN DE SELECCIÓN</p>
         <h1>{{ plantillaActual()?.evaluacion?.titulo }}</h1>
         <div class="candidate-summary"><span>{{ candidato()?.nombres }} {{ candidato()?.apellidos }}</span><span>{{ candidato()?.edad }} años</span><span>{{ plantillaActual()?.nombre_puesto }}</span></div>
-        <p class="candidate-intro">Tiempo sugerido: {{ plantillaActual()?.evaluacion?.tiempo_total_minutos }} minutos. Puedes usar calculadora y una hoja de cálculo para el caso práctico. Guarda tu trabajo y explica tus cálculos. Debes completar todas las respuestas; al entregar ya no podrás modificarlas.</p>
+        <p class="candidate-intro">Tiempo sugerido: {{ plantillaActual()?.evaluacion?.tiempo_total_minutos }} minutos. Lee cada caso y selecciona una respuesta. Puedes usar calculadora u hoja de cálculo para los cálculos. Debes contestar todas las preguntas; al entregar ya no podrás modificarlas.</p>
+        @if (aviso()) { <div class="candidate-notice" role="status">{{ aviso() }}</div> }
         @if (error()) { <div class="candidate-error" role="alert">{{ error() }}</div> }
         @for (seccion of plantillaActual()?.evaluacion?.secciones ?? []; track seccion.id) {
           <section class="candidate-section">
             <header><h2>{{ seccion.nombre }}</h2><span>{{ seccion.tiempo_minutos }} min</span></header>
             <p>{{ seccion.instrucciones }}</p>
             @for (item of seccion.items; track $index) {
-              <label class="candidate-question">
-                <strong>{{ item.enunciado }}</strong>
+              <fieldset class="candidate-question">
+                <legend><strong>{{ item.enunciado }}</strong></legend>
                 @if (item.detalle) { <span>{{ item.detalle }}</span> }
-                <textarea rows="4" maxlength="2500" [value]="respuestas()[seccion.id + '-' + $index] || ''" [attr.aria-label]="'Respuesta ' + item.enunciado" (input)="actualizarRespuesta(seccion.id + '-' + $index, $event)" required></textarea>
-              </label>
+                <div class="candidate-options">
+                  @for (opcion of item.opciones; track opcion.id) {
+                    <label class="candidate-option">
+                      <input type="radio" [name]="seccion.id + '-' + $index" [value]="opcion.id" [checked]="respuestas()[seccion.id + '-' + $index] === opcion.id" (change)="actualizarRespuesta(seccion.id + '-' + $index, opcion.id)">
+                      <span>{{ opcion.texto }}</span>
+                    </label>
+                  }
+                </div>
+              </fieldset>
             }
           </section>
         }
@@ -41,7 +63,7 @@
         <p class="candidate-eyebrow">PRUEBA RECIBIDA</p>
         <h1>Gracias, {{ candidato()?.nombres }}</h1>
         <p>{{ aviso() || 'Tus respuestas fueron entregadas y serán revisadas por el equipo de selección.' }}</p>
-        <p><strong>Puesto:</strong> {{ candidato()?.nombre_puesto || plantillaActual()?.nombre_puesto }}</p>
+        <p><strong>Puesto:</strong> {{ candidato()?.nombre_puesto }}</p>
         <p><strong>Edad al día de hoy:</strong> {{ candidato()?.edad }} años</p>
         @if (error()) { <div class="candidate-error" role="alert">{{ error() }}</div> }
       </article>

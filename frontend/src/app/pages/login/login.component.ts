@@ -40,7 +40,7 @@ export class LoginComponent {
     this.mostrarContrasena.set(false);
     this.error.set('');
     this.formulario.reset({
-      codigo_empleado: modoCandidato ? 'CANDITATO-2026' : '',
+      codigo_empleado: '',
       password: '',
     });
   }

@@ -35,7 +35,7 @@ const evaluacionAsistente = Object.freeze({
       nombre: 'Aptitudes de trabajo',
       tiempo_minutos: 15,
       puntaje_maximo: 10,
-      instrucciones: 'Cada ejercicio vale 2 puntos. Muestre el cálculo o indique las diferencias solicitadas.',
+      instrucciones: 'Seleccione una alternativa por ejercicio. Cada pregunta vale hasta 2 puntos; puede realizar los cálculos en una hoja aparte.',
       items: [
         {
           enunciado: 'A1. Un proveedor cobra Q2,450. Hay un anticipo aplicado de Q600 y una nota de crédito de Q150. ¿Qué saldo queda?',
@@ -79,7 +79,7 @@ const evaluacionAsistente = Object.freeze({
       nombre: 'Conocimientos especializados',
       tiempo_minutos: 20,
       puntaje_maximo: 20,
-      instrucciones: 'Responda en una o dos frases. Cada pregunta vale 2 puntos.',
+      instrucciones: 'Seleccione la alternativa que describe el procedimiento contable correcto. Cada pregunta vale hasta 2 puntos.',
       items: [
         {
           enunciado: '1. ¿Qué cuentas cargaría y abonaría al registrar una venta a crédito? Omita impuestos en este ejercicio.',
@@ -158,7 +158,7 @@ const evaluacionAsistente = Object.freeze({
       nombre: 'Caso práctico de operación',
       tiempo_minutos: 45,
       puntaje_maximo: 55,
-      instrucciones: 'Use Excel o una hoja de cálculo y cree hojas Banco, Cartera, Caja y Control. Los saldos se expresan en quetzales. Corte al 30 de noviembre de 2026. Use los montos tal como aparecen, conserve las fórmulas y explique los supuestos.',
+      instrucciones: 'Revise cada caso y seleccione la alternativa que integra los cálculos y controles correctos. Puede usar calculadora u hoja de cálculo. Los saldos se expresan en quetzales y el corte es al 30 de noviembre de 2026.',
       items: [
         {
           enunciado: 'P1. Conciliación bancaria · 15 puntos',
@@ -213,7 +213,7 @@ const evaluacionAsistente = Object.freeze({
       nombre: 'Valores y juicio laboral',
       tiempo_minutos: 15,
       puntaje_maximo: 15,
-      instrucciones: 'En cada caso escriba qué haría primero, qué evidencia dejaría y a quién informaría. Cada caso vale 3 puntos.',
+      instrucciones: 'En cada caso seleccione la respuesta que mejor protege la integridad, la confidencialidad y los controles. Cada caso vale hasta 3 puntos.',
       items: [
         {
           enunciado: 'V1. Un compañero pide cambiar la fecha de un comprobante para que el cierre cuadre.',
@@ -258,6 +258,108 @@ const evaluacionAsistente = Object.freeze({
       ],
     },
   ],
+});
+
+function establecerOpciones(seccionId, indice, textos, indiceCorrecto, puntajeMaximo, indiceParcial, puntajeParcial) {
+  const seccion = evaluacionAsistente.secciones.find((item) => item.id === seccionId);
+  seccion.items[indice].opciones = textos.map((texto, opcionIndice) => ({
+    id: String.fromCharCode(65 + opcionIndice),
+    texto,
+    puntos: opcionIndice === indiceCorrecto
+      ? puntajeMaximo
+      : opcionIndice === indiceParcial ? puntajeParcial : 0,
+  }));
+}
+
+function conCorrectaEn(textos, indiceCorrecto) {
+  const opciones = [...textos];
+  const correcta = opciones.shift();
+  opciones.splice(indiceCorrecto, 0, correcta);
+  return opciones;
+}
+
+function indiceDistractor(indiceCorrecto, numeroDistractor) {
+  const indiceOriginal = numeroDistractor - 1;
+  return indiceOriginal >= indiceCorrecto ? indiceOriginal + 1 : indiceOriginal;
+}
+
+const aptitudes = [
+  ['Q1,700.', 'Q1,850.', 'Q2,300.', 'Q2,000.'],
+  ['D-0826 frente a D-0862 y Q1,908.75 frente a Q1,980.75.', 'Solo cambia el número de documento.', 'Solo cambia el NIT.', 'No hay diferencias.'],
+  ['Abono Q210; saldo Q630.', 'Abono Q630; saldo Q210.', 'Abono Q168; saldo Q672.', 'Abono Q25; saldo Q815.'],
+  ['Factura 9:00–9:20 y conciliación 9:20–9:55.', 'Conciliación 9:00–9:35 y factura 9:35–9:55.', 'Factura 9:00–9:20 y conciliación 9:40–10:15.', 'Conciliación 9:00–9:35 y factura 9:35–9:55; ambas cumplen sus vencimientos.'],
+  ['F-14 está repetida; total único Q745.', 'F-15 está repetida; total Q985.', 'F-14 está repetida; total Q985.', 'No hay duplicados; total Q985.'],
+];
+aptitudes.forEach((textos, indice) => {
+  const indiceCorrecto = (indice + 1) % 4;
+  establecerOpciones(
+    'aptitudes',
+    indice,
+    conCorrectaEn(textos, indiceCorrecto),
+    indiceCorrecto,
+    2,
+    indiceDistractor(indiceCorrecto, 1),
+    1,
+  );
+});
+
+const conocimientos = [
+  ['Debe a clientes/cuentas por cobrar y haber a ventas.', 'Debe a ventas y haber a bancos.', 'Debe a bancos y haber a clientes.', 'Debe a inventario y haber a proveedores.'],
+  ['Debe a bancos y haber a cuentas por cobrar, aplicada a la factura correcta.', 'Debe a cuentas por cobrar y haber a bancos.', 'Debe a caja y haber a ventas.', 'Debe a bancos y haber a ingresos sin identificar.'],
+  ['Compara vencimiento con fecha de corte y confirma saldo tras abonos y notas.', 'Compara únicamente el monto original de la factura.', 'Considera vencida toda factura del mes.', 'Compara la fecha de emisión con la fecha de pago.'],
+  ['Factura, compra aprobada y recepción de mercadería.', 'Solo la cotización del proveedor.', 'Factura y correo de solicitud de pago.', 'Solo el comprobante de transferencia.'],
+  ['Lo resta del saldo bancario como partida pendiente; no duplica el asiento en libros.', 'Lo vuelve a registrar como gasto bancario.', 'Lo suma al saldo del banco.', 'Lo elimina del auxiliar contable.'],
+  ['Cuantifica y documenta la diferencia; informa para investigación antes de ajustar.', 'Repone el faltante con dinero propio sin informar.', 'Registra el vale como comprobante válido.', 'Ajusta el fondo para que coincida.'],
+  ['Gestiona nota de crédito ligada a la factura y verifica devolución y autorización.', 'Anula todas las facturas del cliente.', 'Emite una factura nueva por el monto devuelto.', 'Registra el cambio sin soporte.'],
+  ['Cruza proveedor, identificador, fecha y monto; conserva soportes para corregir con trazabilidad.', 'Borra uno de los registros sin dejar nota.', 'Compara solo los montos y paga ambos.', 'Cambia el número de factura manualmente.'],
+  ['Recuenta, revisa corte, movimientos y soportes; documenta y sujeta el ajuste a aprobación.', 'Ajusta de inmediato el sistema a 10 unidades.', 'Ignora la diferencia si es menor.', 'Solicita al proveedor que cambie el inventario registrado.'],
+  ['Registra la novedad pendiente y la remite a RR. HH. o Finanzas para validación.', 'La procesa para no retrasar nómina.', 'La autoriza en nombre de su jefatura.', 'La elimina sin conservar evidencia.'],
+];
+conocimientos.forEach((textos, indice) => {
+  const indiceCorrecto = (indice + 2) % 4;
+  establecerOpciones('conocimientos', indice, conCorrectaEn(textos, indiceCorrecto), indiceCorrecto, 2, -1, 0);
+});
+
+const practica = [
+  ['Banco ajustado Q13,400 y libros Q13,400; registra comisión Q150 y abono Q650; depósito y cheque son partidas de tiempo sin nuevo asiento.', 'Banco Q13,100 y libros Q13,400; registra también el depósito en tránsito como nuevo ingreso.', 'Banco Q14,000 y libros Q12,900; no registra la comisión ni el abono.', 'Banco Q13,400 y libros Q13,400; registra de nuevo el depósito y el cheque en el diario.'],
+  ['F-101 Q800, F-102 Q2,100, F-103 Q980; cartera Q3,880, vencido Q1,780; C-202 vence primero pero queda pendiente por falta de recepción.', 'Cartera Q4,530 y vencido Q2,430; paga C-202 aunque no tenga recepción.', 'F-101 Q1,450, cartera Q4,530; considera vencidas todas las facturas.', 'Cartera Q3,880 y vencido Q1,780; procesa C-202 sin validar recepción.'],
+  ['Respaldado Q925; faltan Q75 válidos; documenta el vale pendiente, solicita soporte e informa antes de ajustar.', 'Respaldado Q1,000; el vale firmado no requiere comprobante.', 'Respaldado Q850; repone Q150 sin reportar.', 'Respaldado Q925; registra el vale como gasto válido y cierra el arqueo.'],
+  ['Bloquea el duplicado; deja nota de crédito pendiente de autorización; avanza OS-301; solicita soporte para OS-302 y corrige OS-303 conservando acuses y bitácora.', 'Paga ambas facturas A-347 y emite la nota de crédito sin autorización.', 'Emite OS-302 sin el reporte firmado y vuelve a emitir OS-303 sin verificar la OC.', 'Detiene todas las órdenes y elimina los registros de rechazo para evitar duplicados.'],
+];
+const puntajesPractica = [15, 15, 10, 15];
+practica.forEach((textos, indice) => {
+  const indiceCorrecto = indice % 2 === 0 ? 2 : 1;
+  const numeroDistractorParcial = indice === 1 ? 3 : -1;
+  establecerOpciones(
+    'practica',
+    indice,
+    conCorrectaEn(textos, indiceCorrecto),
+    indiceCorrecto,
+    puntajesPractica[indice],
+    numeroDistractorParcial === -1 ? -1 : indiceDistractor(indiceCorrecto, numeroDistractorParcial),
+    numeroDistractorParcial === -1 ? 0 : Math.floor(puntajesPractica[indice] / 2),
+  );
+});
+
+const valores = [
+  ['Mantiene la fecha real, conserva comprobante y solicitud, e informa a Finanzas.', 'Cambia la fecha y avisa solo si alguien pregunta.', 'Corrige el archivo y elimina la evidencia inicial.', 'Pide al compañero que confirme el cambio verbalmente.'],
+  ['Detiene el cambio, valida por canal conocido, conserva evidencia y consulta a quien autoriza pagos.', 'Actualiza la cuenta usando el mensaje urgente.', 'Confirma con el mismo número indicado en el mensaje y ejecuta el cambio.', 'Rechaza el cambio pero no registra ni informa la solicitud.'],
+  ['Protege la planilla, registra la solicitud y consulta a RR. HH. para compartir solo lo autorizado y necesario.', 'Envía la planilla completa porque el cliente la pidió.', 'Comparte una captura parcial sin autorización.', 'Sube la planilla a un enlace público para agilizar el acceso.'],
+  ['Notifica el error, conserva original y corrección e informa a Finanzas y a quienes recibieron el reporte.', 'Reemplaza el archivo enviado sin avisar.', 'Espera al siguiente cierre para corregirlo.', 'Elimina el reporte anterior y no documenta el cambio.'],
+  ['Declina el obsequio, mantiene el orden de pagos, registra la oferta e informa a su jefatura.', 'Acepta el obsequio si el pago ya estaba programado.', 'Programa primero el pago y comenta la oferta informalmente.', 'Rechaza el obsequio pero altera el orden de pago para evitar conflicto.'],
+];
+valores.forEach((textos, indice) => {
+  const indiceCorrecto = (indice + 3) % 4;
+  const numeroDistractorParcial = indice === 1 || indice === 4 ? 3 : -1;
+  establecerOpciones(
+    'valores',
+    indice,
+    conCorrectaEn(textos, indiceCorrecto),
+    indiceCorrecto,
+    3,
+    numeroDistractorParcial === -1 ? -1 : indiceDistractor(indiceCorrecto, numeroDistractorParcial),
+    numeroDistractorParcial === -1 ? 0 : 1,
+  );
 });
 
 module.exports = { puestoCodigo, evaluacionAsistente };
