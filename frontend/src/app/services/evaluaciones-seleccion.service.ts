@@ -191,8 +191,30 @@ export class EvaluacionesSeleccionService {
 
   entregarPruebaCandidato(
     respuestas: Record<string, string>,
-  ): Observable<{ mensaje: string }> {
-    return this.http.post<{ mensaje: string }>(
+  ): Observable<{
+    mensaje: string;
+    resultado: {
+      numero_intento: number;
+      puntajes: Record<SeccionSeleccion, number>;
+      puntaje_total: number;
+      respuestas_correctas: number;
+      total_preguntas: number;
+      porcentaje_correctas: number;
+      decision: ResultadoSeleccion['decision'];
+    };
+  }> {
+    return this.http.post<{
+      mensaje: string;
+      resultado: {
+        numero_intento: number;
+        puntajes: Record<SeccionSeleccion, number>;
+        puntaje_total: number;
+        respuestas_correctas: number;
+        total_preguntas: number;
+        porcentaje_correctas: number;
+        decision: ResultadoSeleccion['decision'];
+      };
+    }>(
       `${this.baseUrl}/candidato/entregar`,
       { respuestas },
     );

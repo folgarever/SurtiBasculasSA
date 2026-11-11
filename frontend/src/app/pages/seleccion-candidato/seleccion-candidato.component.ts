@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import {
   EvaluacionesSeleccionService,
@@ -43,30 +44,26 @@ export class SeleccionCandidatoComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.servicio.obtenerPlantillasCandidato().subscribe({
-      next: ({ plantillas }) => {
+    forkJoin({
+      plantillas: this.servicio.obtenerPlantillasCandidato(),
+      registro: this.servicio.obtenerMiRegistroCandidato(),
+    }).subscribe({
+      next: ({ plantillas: respuestaPlantillas, registro: { candidato } }) => {
+        const plantillas = respuestaPlantillas.plantillas;
         this.plantillas.set(plantillas);
         this.puestoId.set(plantillas[0] ? String(plantillas[0].id) : '');
-        this.servicio.obtenerMiRegistroCandidato().subscribe({
-          next: ({ candidato }) => {
-            this.candidato.set(candidato);
-            if (candidato) {
-              this.nombres.set(candidato.nombres ?? '');
-              this.apellidos.set(candidato.apellidos ?? '');
-              this.fechaNacimiento.set(candidato.fecha_nacimiento ?? '');
-              this.puestoId.set(String(candidato.puesto_id ?? ''));
-              this.respuestas.set(candidato.respuestas ?? {});
-            }
-            this.cargando.set(false);
-          },
-          error: (error: HttpErrorResponse) => {
-            this.error.set(error.error?.mensaje || 'No se pudo consultar el registro del candidato.');
-            this.cargando.set(false);
-          },
-        });
+        this.candidato.set(candidato);
+        if (candidato) {
+          this.nombres.set(candidato.nombres ?? '');
+          this.apellidos.set(candidato.apellidos ?? '');
+          this.fechaNacimiento.set(candidato.fecha_nacimiento ?? '');
+          this.puestoId.set(String(candidato.puesto_id ?? ''));
+          this.respuestas.set(candidato.respuestas ?? {});
+        }
+        this.cargando.set(false);
       },
       error: (error: HttpErrorResponse) => {
-        this.error.set(error.error?.mensaje || 'No se pudieron cargar las pruebas disponibles.');
+        this.error.set(error.error?.mensaje || 'No se pudo cargar el portal de selección.');
         this.cargando.set(false);
       },
     });
@@ -135,18 +132,14 @@ export class SeleccionCandidatoComponent implements OnInit {
     this.aviso.set('');
     this.guardando.set(true);
     this.servicio.entregarPruebaCandidato(this.respuestas()).subscribe({
-      next: ({ mensaje }) => {
+      next: ({ mensaje, resultado }) => {
         this.aviso.set(mensaje);
-        this.servicio.obtenerMiRegistroCandidato().subscribe({
-          next: ({ candidato }) => {
-            this.candidato.set(candidato);
-            this.guardando.set(false);
-          },
-          error: (error: HttpErrorResponse) => {
-            this.error.set(error.error?.mensaje || 'La prueba se entregó, pero no se pudo actualizar su estado.');
-            this.guardando.set(false);
-          },
-        });
+        this.candidato.update((candidato) => candidato ? {
+          ...candidato,
+          estado: 'completada',
+          ...resultado,
+        } : candidato);
+        this.guardando.set(false);
       },
       error: (error: HttpErrorResponse) => {
         this.error.set(error.error?.mensaje || 'No se pudo entregar la prueba.');

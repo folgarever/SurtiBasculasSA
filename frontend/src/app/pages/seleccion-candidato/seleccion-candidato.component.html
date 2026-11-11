@@ -51,7 +51,7 @@
                 <div class="candidate-options">
                   @for (opcion of item.opciones; track opcion.id) {
                     <label class="candidate-option">
-                      <input type="radio" [name]="seccion.id + '-' + $index" [value]="opcion.id" [checked]="respuestas()[seccion.id + '-' + $index] === opcion.id" (change)="actualizarRespuesta(seccion.id + '-' + $index, opcion.id)">
+                      <input type="radio" [name]="'respuesta-' + seccion.id + '-' + $index" [value]="opcion.id" (change)="actualizarRespuesta(seccion.id + '-' + $index, opcion.id)">
                       <span>{{ opcion.texto }}</span>
                     </label>
                   }
