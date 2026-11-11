@@ -21,6 +21,7 @@ export class LoginComponent {
   protected readonly enviando = signal(false);
   protected readonly error = signal('');
   protected readonly mostrarContrasena = signal(false);
+  protected readonly modoCandidato = signal(false);
   protected readonly formulario = this.formBuilder.nonNullable.group({
     codigo_empleado: ['', Validators.required],
     password: ['', Validators.required],
@@ -34,6 +35,15 @@ export class LoginComponent {
     this.mostrarContrasena.update((visible) => !visible);
   }
 
+  protected cambiarModoCandidato(modoCandidato: boolean): void {
+    this.modoCandidato.set(modoCandidato);
+    this.error.set('');
+    this.formulario.reset({
+      codigo_empleado: modoCandidato ? 'candidato' : '',
+      password: '',
+    });
+  }
+
   protected ingresar(): void {
     this.error.set('');
     if (this.formulario.invalid || this.enviando()) {
@@ -43,7 +53,10 @@ export class LoginComponent {
 
     this.enviando.set(true);
     const { codigo_empleado, password } = this.formulario.getRawValue();
-    this.auth.login(codigo_empleado.trim(), password).subscribe({
+    const solicitud = this.modoCandidato()
+      ? this.auth.loginCandidato(codigo_empleado.trim(), password)
+      : this.auth.login(codigo_empleado.trim(), password);
+    solicitud.subscribe({
       next: () => this.irAlPanel(),
       error: (error: HttpErrorResponse) => {
         this.error.set(error.error?.mensaje || 'No fue posible iniciar sesión. Verifica tus datos.');
@@ -53,7 +66,9 @@ export class LoginComponent {
   }
 
   private irAlPanel(): void {
-    const ruta = this.auth.hasAdminRole()
+    const ruta = this.auth.isCandidate()
+      ? '/seleccion-candidato'
+      : this.auth.hasAdminRole()
       ? '/admin'
       : this.auth.hasRrhhRole()
         ? '/rrhh'

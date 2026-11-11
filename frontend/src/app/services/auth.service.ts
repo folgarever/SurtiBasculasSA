@@ -11,7 +11,8 @@ export interface Usuario {
   puesto: string;
   rol: string;
   rol_id: number;
-  role: 'ADMIN' | 'EMPLOYEE';
+  role: 'ADMIN' | 'EMPLOYEE' | 'CANDIDATE';
+  sesion_seleccion_id?: string;
 }
 
 interface LoginResponse {
@@ -29,6 +30,16 @@ export class AuthService {
   login(codigo_empleado: string, password: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, {
       codigo_empleado,
+      password,
+    }).pipe(tap((response) => {
+      localStorage.setItem(this.tokenKey, response.token);
+      localStorage.setItem(this.userKey, JSON.stringify(response.usuario));
+    }));
+  }
+
+  loginCandidato(usuario: string, password: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login-candidato`, {
+      usuario,
       password,
     }).pipe(tap((response) => {
       localStorage.setItem(this.tokenKey, response.token);
@@ -99,5 +110,9 @@ export class AuthService {
     const usuario = this.getPayload() ?? this.getUsuario();
     return usuario?.role === 'ADMIN'
       && ['SUR-GG-001', 'SUR-AC-002'].includes(usuario.codigo_empleado);
+  }
+
+  isCandidate(): boolean {
+    return (this.getPayload() ?? this.getUsuario())?.role === 'CANDIDATE';
   }
 }

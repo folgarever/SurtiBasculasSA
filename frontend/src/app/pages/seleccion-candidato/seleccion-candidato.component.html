@@ -1,0 +1,66 @@
+<main class="candidate-portal">
+  <header class="candidate-header">
+    <a class="candidate-brand" href="/"><img src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."><span>SURTIBÁSCULAS S.A.<small>Portal de selección</small></span></a>
+    <button class="candidate-logout" type="button" (click)="salir()">Cerrar sesión</button>
+  </header>
+
+  <section class="candidate-main">
+    @if (cargando()) {
+      <article class="candidate-card"><p>Cargando prueba de selección…</p></article>
+    } @else if (error() && !plantillas().length) {
+      <article class="candidate-card"><div class="candidate-error" role="alert">{{ error() }}</div></article>
+    } @else if (!candidato()) {
+      <article class="candidate-card">
+        <p class="candidate-eyebrow">REGISTRO DEL ASPIRANTE</p>
+        <h1>Antes de comenzar</h1>
+        <p class="candidate-intro">Ingresa tus datos para identificar tu evaluación. Tu edad se calcula automáticamente a partir de tu fecha de nacimiento.</p>
+        @if (error()) { <div class="candidate-error" role="alert">{{ error() }}</div> }
+        <form class="candidate-form" (submit)="$event.preventDefault(); iniciarPrueba()">
+          <label>Nombres<input type="text" maxlength="100" autocomplete="given-name" [value]="nombres()" (input)="actualizarNombres($event)" required></label>
+          <label>Apellidos<input type="text" maxlength="120" autocomplete="family-name" [value]="apellidos()" (input)="actualizarApellidos($event)" required></label>
+          <label>Fecha de nacimiento<input type="date" autocomplete="bday" [value]="fechaNacimiento()" (input)="actualizarFechaNacimiento($event)" required></label>
+          <p class="candidate-age">Edad calculada: <strong>{{ edadCalculada() === null ? 'Ingresa una fecha válida' : edadCalculada() + ' años' }}</strong></p>
+          <label>Puesto al que aspiras
+            <select [value]="puestoId()" (change)="actualizarPuesto($event)" required>
+              <option value="" disabled>Selecciona un puesto</option>
+              @for (plantilla of plantillas(); track plantilla.id) { <option [value]="plantilla.id">{{ plantilla.nombre_puesto }}</option> }
+            </select>
+          </label>
+          <p class="candidate-privacy">La información se utilizará para administrar este proceso de selección y vincular tus respuestas con el puesto elegido.</p>
+          <button type="submit" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar datos e iniciar prueba' }}</button>
+        </form>
+      </article>
+    } @else if (candidato()?.estado === 'registro') {
+      <article class="candidate-card candidate-exam-card">
+        <p class="candidate-eyebrow">EVALUACIÓN DE SELECCIÓN</p>
+        <h1>{{ plantillaActual()?.evaluacion?.titulo }}</h1>
+        <div class="candidate-summary"><span>{{ candidato()?.nombres }} {{ candidato()?.apellidos }}</span><span>{{ candidato()?.edad }} años</span><span>{{ plantillaActual()?.nombre_puesto }}</span></div>
+        <p class="candidate-intro">Tiempo sugerido: {{ plantillaActual()?.evaluacion?.tiempo_total_minutos }} minutos. Puedes usar calculadora y una hoja de cálculo para el caso práctico. Guarda tu trabajo y explica tus cálculos. Debes completar todas las respuestas; al entregar ya no podrás modificarlas.</p>
+        @if (error()) { <div class="candidate-error" role="alert">{{ error() }}</div> }
+        @for (seccion of plantillaActual()?.evaluacion?.secciones ?? []; track seccion.id) {
+          <section class="candidate-section">
+            <header><h2>{{ seccion.nombre }}</h2><span>{{ seccion.tiempo_minutos }} min</span></header>
+            <p>{{ seccion.instrucciones }}</p>
+            @for (item of seccion.items; track $index) {
+              <label class="candidate-question">
+                <strong>{{ item.enunciado }}</strong>
+                @if (item.detalle) { <span>{{ item.detalle }}</span> }
+                <textarea rows="4" maxlength="2500" [value]="respuestas()[seccion.id + '-' + $index] || ''" [attr.aria-label]="'Respuesta ' + item.enunciado" (input)="actualizarRespuesta(seccion.id + '-' + $index, $event)" required></textarea>
+              </label>
+            }
+          </section>
+        }
+        <button class="candidate-submit" type="button" [disabled]="guardando()" (click)="entregarPrueba()">{{ guardando() ? 'Entregando…' : 'Entregar prueba' }}</button>
+      </article>
+    } @else {
+      <article class="candidate-card candidate-complete">
+        <p class="candidate-eyebrow">PRUEBA RECIBIDA</p>
+        <h1>Gracias, {{ candidato()?.nombres }}</h1>
+        <p>{{ aviso() || 'Tus respuestas fueron entregadas y serán revisadas por el equipo de selección.' }}</p>
+        <p><strong>Puesto:</strong> {{ candidato()?.nombre_puesto || plantillaActual()?.nombre_puesto }}</p>
+        <p><strong>Edad al día de hoy:</strong> {{ candidato()?.edad }} años</p>
+        @if (error()) { <div class="candidate-error" role="alert">{{ error() }}</div> }
+      </article>
+    }
+  </section>
+</main>

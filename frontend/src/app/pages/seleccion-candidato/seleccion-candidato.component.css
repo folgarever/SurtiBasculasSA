@@ -1,0 +1,250 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #f3f6f9;
+}
+
+.candidate-portal {
+  min-height: 100vh;
+  color: #172b45;
+}
+
+.candidate-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem clamp(1rem, 5vw, 4rem);
+  border-bottom: 1px solid #dfe6ee;
+  background: #fff;
+}
+
+.candidate-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: #17365d;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.candidate-brand img {
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+}
+
+.candidate-brand small {
+  display: block;
+  margin-top: 0.15rem;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.candidate-logout {
+  padding: 0.55rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+}
+
+.candidate-main {
+  width: min(940px, calc(100% - 2rem));
+  margin: 2rem auto;
+}
+
+.candidate-card {
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  border: 1px solid #e0e7ef;
+  border-radius: 0.9rem;
+  background: #fff;
+  box-shadow: 0 12px 35px rgb(23 54 93 / 7%);
+}
+
+.candidate-eyebrow {
+  margin: 0 0 0.45rem;
+  color: #a52e36;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.candidate-card h1 {
+  margin: 0 0 0.75rem;
+  color: #17365d;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.candidate-intro {
+  color: #526174;
+  line-height: 1.65;
+}
+
+.candidate-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem 1rem;
+}
+
+.candidate-form label {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.candidate-form input,
+.candidate-form select,
+.candidate-question textarea {
+  width: 100%;
+  min-height: 2.9rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.4rem;
+  background: white;
+  color: #172b45;
+  font: inherit;
+}
+
+.candidate-form input:focus,
+.candidate-form select:focus,
+.candidate-question textarea:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #2563eb;
+}
+
+.candidate-age,
+.candidate-privacy {
+  grid-column: 1 / -1;
+  margin: 0.6rem 0 0;
+  color: #526174;
+  font-size: 0.9rem;
+}
+
+.candidate-form button,
+.candidate-submit {
+  min-height: 2.9rem;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: #a52e36;
+  color: white;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-form button {
+  grid-column: 1 / -1;
+  margin-top: 1rem;
+}
+
+.candidate-form button:disabled,
+.candidate-submit:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.candidate-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.45rem;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.candidate-section {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.candidate-section > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.candidate-section h2 {
+  margin: 0;
+  color: #17365d;
+  font-size: 1.2rem;
+}
+
+.candidate-section > header span {
+  color: #64748b;
+}
+
+.candidate-section > p {
+  color: #526174;
+  line-height: 1.6;
+}
+
+.candidate-question {
+  display: grid;
+  gap: 0.7rem;
+  margin: 1rem 0;
+  padding: 1rem 0;
+  border-top: 1px solid #f1f5f9;
+  color: #26384e;
+  line-height: 1.55;
+}
+
+.candidate-question > span {
+  color: #526174;
+}
+
+.candidate-question textarea {
+  min-height: 7rem;
+  resize: vertical;
+  font-weight: 400;
+}
+
+.candidate-submit {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.candidate-error {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.4rem;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.candidate-complete {
+  text-align: center;
+}
+
+.candidate-complete > p {
+  color: #526174;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .candidate-main {
+    width: min(100% - 1rem, 940px);
+    margin: 0.5rem auto;
+  }
+
+  .candidate-card {
+    padding: 1rem;
+  }
+
+  .candidate-form {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-header {
+    padding-inline: 1rem;
+  }
+}

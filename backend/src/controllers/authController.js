@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const pool = require('../config/db');
 const { CODIGOS_ADMINISTRADORES } = require('../config/authorization');
 
@@ -51,4 +52,40 @@ async function login(req, res, next) {
   }
 }
 
-module.exports = { login };
+function loginCandidato(req, res) {
+  const { usuario, password } = req.body || {};
+  const usuarioConfigurado = process.env.CANDIDATE_USERNAME;
+  const passwordConfigurada = process.env.CANDIDATE_PASSWORD;
+  if (!usuarioConfigurado || !passwordConfigurada) {
+    return res.status(503).json({ mensaje: 'El acceso de candidatos no está configurado en el servidor.' });
+  }
+  if (typeof usuario !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ mensaje: 'Usuario y contraseña son requeridos.' });
+  }
+
+  const hashRecibido = crypto.createHash('sha256').update(`${usuario}\0${password}`).digest();
+  const hashConfigurado = crypto.createHash('sha256')
+    .update(`${usuarioConfigurado}\0${passwordConfigurada}`)
+    .digest();
+  if (!crypto.timingSafeEqual(hashRecibido, hashConfigurado)) {
+    return res.status(401).json({ mensaje: 'Credenciales inválidas.' });
+  }
+  if (!process.env.JWT_SECRET) {
+    return res.status(500).json({ mensaje: 'La autenticación no está configurada en el servidor.' });
+  }
+
+  const perfil = {
+    id: 0,
+    codigo_empleado: 'CANDIDATO',
+    nombre: 'Candidato',
+    puesto: 'Aspirante',
+    rol: 'CANDIDATE',
+    rol_id: 0,
+    role: 'CANDIDATE',
+    sesion_seleccion_id: crypto.randomUUID(),
+  };
+  const token = jwt.sign(perfil, process.env.JWT_SECRET, { expiresIn: '8h' });
+  return res.json({ token, usuario: perfil });
+}
+
+module.exports = { login, loginCandidato };

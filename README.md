@@ -13,6 +13,7 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 - Evaluación periódica del personal, con cinco competencias generales y escala de 1 a 5.
 - Evaluación técnica y psicométrica adicional para el Jefe de Mantenimiento.
 - Evaluación mensual de conocimientos con preguntas por puesto, puntaje parcial configurable por opción, historial individual y panel administrativo con KPIs.
+- Pruebas de selección independientes de las evaluaciones mensuales, con cuadernillo por puesto, rúbrica, puntajes y resultados consultables.
 - Envío de sugerencias por parte del personal y foro administrativo con respuestas.
 - Acceso a evaluaciones limitado a Héctor Ortiz (`SUR-GG-001`) y Mafer García (`SUR-AC-002`).
 
@@ -26,8 +27,8 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 ## Configuración
 
 1. Crea la base de datos `defaultdb` en MySQL y ejecuta [`database/schema.sql`](database/schema.sql) para una instalación nueva.
-2. Para una base existente, ejecuta una sola vez [`database/migrations/2026-11-01-evaluaciones-personal.sql`](database/migrations/2026-11-01-evaluaciones-personal.sql), [`database/migrations/2026-11-02-observaciones-evaluaciones.sql`](database/migrations/2026-11-02-observaciones-evaluaciones.sql), [`database/migrations/2026-11-06-sugerencias.sql`](database/migrations/2026-11-06-sugerencias.sql), [`database/migrations/2026-11-06-evaluaciones-conocimiento.sql`](database/migrations/2026-11-06-evaluaciones-conocimiento.sql), [`database/migrations/2026-11-09-banco-preguntas-conocimiento.sql`](database/migrations/2026-11-09-banco-preguntas-conocimiento.sql) y [`database/migrations/2026-11-09-puntuacion-parcial-evaluaciones.sql`](database/migrations/2026-11-09-puntuacion-parcial-evaluaciones.sql), en ese orden. La segunda migración agrega las observaciones por criterio y se puede volver a ejecutar sin duplicar la columna. No vuelvas a ejecutar `schema.sql` sobre una base ya creada. Después, ambos administradores deben iniciar sesión nuevamente para recibir el rol actualizado en su JWT.
-3. Copia `backend/.env.example` como `backend/.env` y configura la conexión a MySQL y un secreto JWT largo y aleatorio. El nombre de base de datos debe coincidir con `defaultdb`.
+2. Para una base existente, ejecuta una sola vez [`database/migrations/2026-11-01-evaluaciones-personal.sql`](database/migrations/2026-11-01-evaluaciones-personal.sql), [`database/migrations/2026-11-02-observaciones-evaluaciones.sql`](database/migrations/2026-11-02-observaciones-evaluaciones.sql), [`database/migrations/2026-11-06-sugerencias.sql`](database/migrations/2026-11-06-sugerencias.sql), [`database/migrations/2026-11-06-evaluaciones-conocimiento.sql`](database/migrations/2026-11-06-evaluaciones-conocimiento.sql), [`database/migrations/2026-11-09-banco-preguntas-conocimiento.sql`](database/migrations/2026-11-09-banco-preguntas-conocimiento.sql), [`database/migrations/2026-11-09-puntuacion-parcial-evaluaciones.sql`](database/migrations/2026-11-09-puntuacion-parcial-evaluaciones.sql), [`database/migrations/2026-11-11-evaluaciones-seleccion.sql`](database/migrations/2026-11-11-evaluaciones-seleccion.sql) y [`database/migrations/2026-11-11-seleccion-candidatos.sql`](database/migrations/2026-11-11-seleccion-candidatos.sql), en ese orden. La segunda migración agrega las observaciones por criterio y se puede volver a ejecutar sin duplicar la columna. No vuelvas a ejecutar `schema.sql` sobre una base ya creada. Después, ambos administradores deben iniciar sesión nuevamente para recibir el rol actualizado en su JWT.
+3. Copia `backend/.env.example` como `backend/.env` y configura la conexión a MySQL, un secreto JWT largo y aleatorio y `CANDIDATE_PASSWORD` con la contraseña proporcionada por la empresa. El nombre de base de datos debe coincidir con `defaultdb`. El usuario genérico de aspirantes se define en `CANDIDATE_USERNAME`; comparte ambos datos solo con los aspirantes que deban realizar la prueba. No guardes la contraseña en archivos versionados.
 4. Instala dependencias e inicia el backend:
 
    ```powershell
@@ -83,6 +84,26 @@ El cuerpo de `POST` contiene `empleado_id`, `fecha_evaluacion` (`YYYY-MM-DD`), `
 Cada empleado puede abrir `/evaluaciones-conocimiento` para realizar una evaluación del mes asociada a su puesto activo. El servidor crea y conserva una evaluación por empleado y periodo (`YYYY-MM`), calcula la calificación sobre respuestas correctas, fija el resultado en **Aprobado** (70% o más) o **Requiere refuerzo**, y no permite modificar una entrega completada. Las respuestas correctas no se envían al empleado hasta que termina la prueba. Los bancos cubren Gerencia General, Asistente Comercial y RR. HH., Vendedor, Auxiliar Contable, Jefe de Mantenimiento, Técnico, Auxiliar Técnico, Director de Calidad, Metrológico y Auxiliar de Laboratorio.
 
 El panel `/admin/evaluaciones-conocimiento`, restringido a las cuentas administradoras autorizadas, permite administrar las preguntas, opciones, puntaje máximo por pregunta y puntaje completo, parcial o nulo de cada opción; los cambios se reflejan en las evaluaciones pendientes del mes de todos sus empleados y no alteran resultados ya completados. La nota se calcula como puntos obtenidos sobre los puntos posibles. También habilita los pendientes del mes y muestra KPIs de cumplimiento y promedio, filtros por empleado/puesto/departamento, resultados individuales, historial de respuestas y evolución mensual. Los departamentos son una clasificación asignada a los puestos (Gerencia; Comercial y Recursos Humanos; Administración y Finanzas; Mantenimiento; Calidad y Metrología) para habilitar el filtro; no sustituyen una estructura de departamentos independiente.
+
+## Pruebas de selección
+
+El panel `/admin/evaluaciones-seleccion`, restringido a las cuentas administradoras autorizadas, presenta el cuadernillo y la rúbrica interna del puesto **Asistente administrativo y contable**, registra puntajes por aptitudes, conocimientos, caso práctico y valores, calcula la decisión según los mínimos de la guía y permite consultar hasta 250 resultados recientes por puesto. La impresión del cuadernillo excluye la rúbrica. La evaluación mensual sigue en su módulo y no comparte registros con selección.
+
+Los aspirantes ingresan desde la opción **Candidato** del login con el usuario genérico configurado en el servidor. Antes de iniciar la prueba registran nombres, apellidos, fecha de nacimiento y puesto; el sistema calcula su edad, permite contestar el cuadernillo y bloquea las respuestas después de entregarlas. Administración puede revisar las respuestas y vincularlas a una calificación con la rúbrica. La contraseña genérica debe mantenerse privada y rotarse cuando sea necesario.
+
+La plantilla disponible corresponde al único perfil de selección proporcionado. Los demás puestos permanecen sin prueba de selección hasta contar con sus perfiles y responsabilidades; no se generan cuestionarios mensuales como sustituto de esos documentos.
+
+| Método | Endpoint | Acceso | Función |
+|---|---|---|---|
+| `GET` | `/api/evaluaciones-seleccion/plantillas` | Administrador autorizado | Obtener las plantillas y rúbricas habilitadas por puesto |
+| `GET` | `/api/evaluaciones-seleccion/resultados?puesto_id=<id>` | Administrador autorizado | Consultar resultados de selección, con filtro de puesto opcional |
+| `POST` | `/api/evaluaciones-seleccion/resultados` | Administrador autorizado | Registrar puntajes, evidencia y decisión calculada para un candidato |
+| `POST` | `/api/auth/login-candidato` | Usuario genérico configurado | Iniciar sesión en el portal de aspirantes |
+| `GET` | `/api/evaluaciones-seleccion/candidato/plantillas` | Candidato autenticado | Consultar las pruebas disponibles sin rúbricas internas |
+| `GET` | `/api/evaluaciones-seleccion/candidato/mi` | Candidato autenticado | Consultar el registro y estado de la prueba de su sesión |
+| `POST` | `/api/evaluaciones-seleccion/candidato/registro` | Candidato autenticado | Registrar datos personales y puesto antes de comenzar |
+| `POST` | `/api/evaluaciones-seleccion/candidato/entregar` | Candidato autenticado | Entregar respuestas y cerrar la prueba |
+| `GET` | `/api/evaluaciones-seleccion/admin/candidatos?puesto_id=<id>` | Administrador autorizado | Revisar respuestas entregadas pendientes de calificación |
 
 | Método | Endpoint | Acceso | Función |
 |---|---|---|---|

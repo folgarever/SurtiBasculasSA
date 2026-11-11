@@ -4,6 +4,7 @@ import { adminGuard } from './guards/admin.guard';
 import { evaluationGuard } from './guards/evaluation.guard';
 import { roleGuard } from './guards/role.guard';
 import { employeeGuard } from './guards/employee.guard';
+import { candidateGuard } from './guards/candidate.guard';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
 import { EmpleadosComponent } from './pages/empleados/empleados.component';
 import { EmpleadoDashboardComponent } from './pages/empleado-dashboard/empleado-dashboard.component';
@@ -15,6 +16,12 @@ import { SugerenciasAdminComponent } from './pages/sugerencias-admin/sugerencias
 
 export const routes: Routes = [
 	{ path: 'login', component: LoginComponent },
+	{
+		path: 'seleccion-candidato',
+		loadComponent: () => import('./pages/seleccion-candidato/seleccion-candidato.component')
+			.then((module) => module.SeleccionCandidatoComponent),
+		canActivate: [candidateGuard],
+	},
 	{ path: 'dashboard', component: EmpleadoDashboardComponent, canActivate: [authGuard] },
 	{ path: 'admin', component: AdminDashboardComponent, canActivate: [adminGuard] },
 	{ path: 'admin/empleados', component: EmpleadosComponent, canActivate: [adminGuard] },
@@ -30,6 +37,12 @@ export const routes: Routes = [
 		path: 'admin/evaluaciones-conocimiento',
 		loadComponent: () => import('./pages/evaluaciones-conocimiento-admin/evaluaciones-conocimiento-admin.component')
 			.then((module) => module.EvaluacionesConocimientoAdminComponent),
+		canActivate: [authGuard, evaluationGuard],
+	},
+	{
+		path: 'admin/evaluaciones-seleccion',
+		loadComponent: () => import('./pages/evaluaciones-seleccion/evaluaciones-seleccion.component')
+			.then((module) => module.EvaluacionesSeleccionComponent),
 		canActivate: [authGuard, evaluationGuard],
 	},
 	{ path: 'sugerencias', component: SugerenciasEmpleadoComponent, canActivate: [employeeGuard] },

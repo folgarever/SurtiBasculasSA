@@ -7,12 +7,13 @@ const asistenciaRoutes = require('./src/routes/asistenciaRoutes');
 const rrhhRoutes = require('./src/routes/rrhhRoutes');
 const evaluacionesRoutes = require('./src/routes/evaluacionesRoutes');
 const evaluacionesConocimientoRoutes = require('./src/routes/evaluacionesConocimientoRoutes');
+const evaluacionesSeleccionRoutes = require('./src/routes/evaluacionesSeleccionRoutes');
 const sugerenciasRoutes = require('./src/routes/sugerenciasRoutes');
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '256kb' }));
 
 app.get('/', (req, res) => {
   res.json({ estado: 'ok', servicio: 'SURTIBASCULAS API' });
@@ -23,6 +24,7 @@ app.use('/api/asistencia', asistenciaRoutes);
 app.use('/api/rrhh', rrhhRoutes);
 app.use('/api/evaluaciones', evaluacionesRoutes);
 app.use('/api/evaluaciones-conocimiento', evaluacionesConocimientoRoutes);
+app.use('/api/evaluaciones-seleccion', evaluacionesSeleccionRoutes);
 app.use('/api/sugerencias', sugerenciasRoutes);
 
 app.use((req, res) => {

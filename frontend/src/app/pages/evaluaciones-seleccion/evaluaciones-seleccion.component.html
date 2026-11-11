@@ -1,0 +1,161 @@
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a class="sidebar-brand" routerLink="/admin"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
+    <span class="sidebar-caption">MÓDULOS</span>
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+      <a class="sidebar-link" routerLink="/admin"><ng-icon name="lucideLayoutDashboard" size="18" /> Dashboard</a>
+      <a class="sidebar-link" routerLink="/admin/empleados"><ng-icon name="lucideUsers" size="18" /> Empleados</a>
+      <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideClipboardCheck" size="18" /> Control de asistencia</a>
+      <a class="sidebar-link" routerLink="/evaluaciones"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluación de personal</a>
+      <a class="sidebar-link is-active" routerLink="/admin/evaluaciones-seleccion" aria-current="page"><ng-icon name="lucideClipboardCheck" size="18" /> Pruebas de selección</a>
+      <a class="sidebar-link" routerLink="/admin/evaluaciones-conocimiento"><ng-icon name="lucideClipboardCheck" size="18" /> Evaluaciones mensuales</a>
+    </nav>
+    <a class="sidebar-link sidebar-bottom-link" routerLink="/admin/sugerencias"><ng-icon name="lucideMessageSquare" size="18" /> Sugerencias</a>
+    <div class="sidebar-footer"><span class="status-dot"></span><span>Sistema activo<small>Desarrollo del personal</small></span></div>
+  </aside>
+  <header class="topbar">
+    <div class="topbar-title"><span class="admin-label">ADMINISTRACIÓN / SELECCIÓN</span><strong>Evaluaciones de selección</strong></div>
+    <div class="topbar-actions"><span class="user-chip"><span class="avatar avatar-admin">{{ usuario?.nombre?.slice(0, 1) || 'A' }}</span><span>{{ usuario?.nombre }}</span></span><button class="icon-button" type="button" aria-label="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
+  </header>
+
+  <main class="workspace knowledge-workspace selection-workspace">
+    <div class="page-heading"><div><p class="eyebrow">ADMINISTRACIÓN / RECLUTAMIENTO</p><h1>Pruebas de selección por puesto</h1><p class="subheading">Plantilla, rúbrica y resultados de candidatos. Este módulo está separado de las evaluaciones mensuales de empleados.</p></div></div>
+    @if (error()) { <div class="alert alert-error" role="alert">{{ error() }} <button type="button" (click)="error.set('')">×</button></div> }
+    @if (aviso()) { <div class="alert alert-success" role="status">{{ aviso() }}</div> }
+
+    @if (cargando()) {
+      <section class="knowledge-panel"><div class="knowledge-empty">Cargando plantillas de selección…</div></section>
+    } @else if (!plantillas().length) {
+      <section class="knowledge-panel">
+        <h2>No hay pruebas de selección configuradas</h2>
+        <p class="knowledge-intro">Las referencias recibidas documentan el puesto de asistente administrativo y contable. Para habilitar pruebas de otros puestos se requiere su perfil y guía de funciones, responsabilidades y competencias.</p>
+      </section>
+    } @else {
+      <section class="knowledge-panel selection-template-panel">
+        <div class="section-heading">
+          <div><p class="eyebrow">CUADERNILLO Y GUÍA INTERNA</p><h2>{{ plantillaActual()?.evaluacion?.titulo }}</h2><p class="subheading">{{ plantillaActual()?.departamento }} · {{ evaluacionActual()?.tiempo_total_minutos }} minutos · {{ evaluacionActual()?.puntaje_total }} puntos</p></div>
+          <div class="selection-template-actions">
+            <button class="button button-accent selection-print-button" type="button" (click)="imprimirCuadernillo()">Imprimir cuadernillo</button>
+            <button class="details-button selection-guide-toggle" type="button" (click)="alternarGuia()">{{ mostrarGuia() ? 'Ocultar guía de calificación' : 'Mostrar guía de calificación' }}</button>
+          </div>
+        </div>
+        <div class="selection-candidate-header">
+          <span>Nombre o código ______________________________</span>
+          <span>Fecha __________________</span>
+        </div>
+        <p class="selection-candidate-instructions">Tiempo sugerido de {{ evaluacionActual()?.tiempo_total_minutos }} minutos. Use Excel o una hoja de cálculo para el caso práctico. Puede usar calculadora. Conserve sus fórmulas y explique los supuestos. Todos los datos son ficticios. Entregue este cuadernillo y su archivo de trabajo.</p>
+        <p class="selection-internal-note">Aplicar con el mismo tiempo, datos y recursos a cada candidato. La clave y las rúbricas son de uso interno; al imprimir se excluyen del cuadernillo.</p>
+        @for (seccion of evaluacionActual()?.secciones ?? []; track seccion.id) {
+          <article class="selection-section">
+            <div class="selection-section-heading"><h3>{{ seccion.nombre }}</h3><span>{{ seccion.tiempo_minutos }} min · {{ seccion.puntaje_maximo }} puntos</span></div>
+            <p class="selection-instructions">{{ seccion.instrucciones }}</p>
+            @for (item of seccion.items; track $index) {
+              <div class="selection-item">
+                <p class="selection-prompt">{{ item.enunciado }}</p>
+                @if (item.detalle) { <p class="selection-detail">{{ item.detalle }}</p> }
+                @if (seccion.id !== 'practica') { <div class="selection-response-space" aria-hidden="true"></div> }
+                @if (mostrarGuia()) {
+                  <ul class="selection-rubric">
+                    @for (criterio of item.rubrica; track $index) {
+                      <li><span>{{ criterio.criterio }}</span><strong>{{ criterio.puntos }} pt{{ criterio.puntos === 1 ? '' : 's' }}</strong></li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
+          </article>
+        }
+        <div class="selection-thresholds">
+          <strong>Criterios de decisión del perfil</strong>
+          <span>Recomendable: ≥{{ evaluacionActual()?.umbrales?.recomendable }}/100, práctica ≥{{ evaluacionActual()?.umbrales?.minimo_practica }}/55, conocimientos ≥{{ evaluacionActual()?.umbrales?.minimo_conocimientos }}/20 y valores ≥{{ evaluacionActual()?.umbrales?.minimo_valores }}/15.</span>
+          <span>Revisión adicional: 70–79 puntos con mínimos cumplidos o discrepancia por confirmar. Un riesgo de control sin aclarar, puntaje total menor de 70 o mínimo no acreditado se registra como competencia aún no demostrada.</span>
+        </div>
+        @if (mostrarGuia() && evaluacionActual()?.verificacion_en_vivo; as verificacion) {
+          <div class="selection-live-check">
+            <h3>Verificación en vivo · {{ verificacion.tiempo_minutos }} minutos adicionales</h3>
+            <p>{{ verificacion.instrucciones }}</p>
+            @for (actividad of verificacion.actividades; track $index) {
+              <div><strong>{{ actividad.solicitud }}</strong><p>Respuesta esperada: {{ actividad.respuesta_esperada }}</p></div>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="knowledge-panel selection-candidate-submissions">
+        <div class="section-heading"><div><p class="eyebrow">PRUEBAS ENTREGADAS</p><h2>Candidatos pendientes de calificación</h2><p class="subheading">Revisa sus respuestas y selecciona a la persona para registrar la rúbrica.</p></div></div>
+        @if (!candidatosPendientes().length) {
+          <div class="knowledge-empty">No hay pruebas entregadas pendientes de calificación para este puesto.</div>
+        } @else {
+          <div class="selection-results-list">
+            @for (candidato of candidatosPendientes(); track candidato.id) {
+              <article class="selection-result">
+                <div class="selection-result-heading"><div><h3>{{ candidato.nombres }} {{ candidato.apellidos }}</h3><span>{{ candidato.edad }} años · {{ candidato.nombre_puesto }} · Entregó {{ candidato.completada_en ? formatoFecha(candidato.completada_en) : '—' }}</span></div><button class="details-button" type="button" (click)="calificarCandidato(candidato)">{{ candidatoSeleccionado() === candidato.id ? 'Seleccionado' : 'Calificar' }}</button></div>
+                <details class="selection-candidate-answers">
+                  <summary>Consultar respuestas de la prueba</summary>
+                  @for (seccion of evaluacionActual()?.secciones ?? []; track seccion.id) {
+                    <h4>{{ seccion.nombre }}</h4>
+                    @for (item of seccion.items; track $index) {
+                      <div class="selection-answer">
+                        <strong>{{ item.enunciado }}</strong>
+                        @if (item.detalle) { <p>{{ item.detalle }}</p> }
+                        <p>{{ respuestaCandidato(candidato, seccion.id, $index) }}</p>
+                      </div>
+                    }
+                  }
+                </details>
+              </article>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="knowledge-panel selection-score-panel">
+        <div class="section-heading"><div><p class="eyebrow">REGISTRO DEL RESULTADO</p><h2>Calificar candidato</h2><p class="subheading">Registra los puntajes de la rúbrica aplicada y las evidencias observadas.</p></div></div>
+        <div class="selection-form-grid">
+          <label class="evaluation-field"><span>Puesto evaluado</span>
+            <select [value]="puestoSeleccionado()" (change)="seleccionarPuesto($event)">
+              @for (plantilla of plantillas(); track plantilla.id) { <option [value]="plantilla.id">{{ plantilla.nombre_puesto }}</option> }
+            </select>
+          </label>
+          <label class="evaluation-field"><span>Nombre o código del candidato</span><input type="text" maxlength="120" [value]="nombreCandidato()" (input)="actualizarCandidato($event)" [readonly]="candidatoSeleccionado() !== null"></label>
+          <label class="evaluation-field"><span>Fecha de evaluación</span><input type="date" [value]="fechaEvaluacion()" (input)="actualizarFecha($event)"></label>
+        </div>
+        <div class="selection-score-grid">
+          @for (seccion of evaluacionActual()?.secciones ?? []; track seccion.id) {
+            <label class="evaluation-field"><span>{{ seccion.nombre }} · máximo {{ seccion.puntaje_maximo }}</span><input type="number" min="0" [max]="seccion.puntaje_maximo" step="0.01" [value]="puntajes()[seccion.id]" (input)="actualizarPuntaje(seccion.id, $event)"></label>
+          }
+        </div>
+        <div class="selection-flags">
+          <label><input type="checkbox" [checked]="discrepanciaPendiente()" (change)="actualizarDiscrepancia($event)"> Discrepancia puntual entre resultado escrito y explicación pendiente de revisión.</label>
+          <label><input type="checkbox" [checked]="riesgoControlPendiente()" (change)="actualizarRiesgoControl($event)"> Riesgo de control o conducta que permanece sin aclarar.</label>
+        </div>
+        <label class="evaluation-field selection-observations"><span>Evidencia observada y puntos por confirmar</span><textarea rows="4" maxlength="4000" [value]="observaciones()" (input)="actualizarObservaciones($event)"></textarea></label>
+        <p class="selection-note">El sistema suma los puntajes y aplica los mínimos definidos en la guía. La decisión es apoyo documentado para el proceso de contratación, no una contratación automática.</p>
+        <button class="button button-accent" type="button" [disabled]="guardando()" (click)="registrarResultado()">{{ guardando() ? 'Registrando…' : 'Registrar resultado' }}</button>
+      </section>
+
+      <section class="knowledge-panel selection-results-panel">
+        <div class="section-heading"><div><p class="eyebrow">HISTORIAL</p><h2>Resultados registrados</h2><p class="subheading">Consulta por puesto los puntajes, la decisión calculada y quién realizó la evaluación.</p></div></div>
+        @if (!resultados().length) {
+          <div class="knowledge-empty">Aún no hay resultados para este puesto.</div>
+        } @else {
+          <div class="selection-results-list">
+            @for (resultado of resultados(); track resultado.id) {
+              <article class="selection-result">
+                <div class="selection-result-heading"><div><h3>{{ resultado.candidato }}</h3><span>{{ resultado.nombre_puesto }} · {{ formatoFecha(resultado.fecha_evaluacion) }}</span></div><strong>{{ resultado.puntaje_total }}/100</strong></div>
+                @if (resultado.edad !== null) { <p class="selection-result-observations">Edad registrada al consultar: {{ resultado.edad }} años · Fecha de nacimiento: {{ resultado.fecha_nacimiento }}</p> }
+                <div class="selection-result-scores"><span>Aptitudes {{ resultado.puntaje_aptitudes }}/10</span><span>Conocimientos {{ resultado.puntaje_conocimientos }}/20</span><span>Práctica {{ resultado.puntaje_practica }}/55</span><span>Valores {{ resultado.puntaje_valores }}/15</span></div>
+                <p class="selection-decision" [class.selection-decision-positive]="resultado.decision === 'recomendable'" [class.selection-decision-review]="resultado.decision === 'revision_adicional'">{{ etiquetaDecision(resultado.decision) }}</p>
+                @if (resultado.discrepancia_pendiente || resultado.riesgo_control_pendiente) {
+                  <p class="selection-pending-flags">Pendiente: {{ resultado.discrepancia_pendiente ? 'revisión de discrepancia' : '' }}{{ resultado.discrepancia_pendiente && resultado.riesgo_control_pendiente ? ' · ' : '' }}{{ resultado.riesgo_control_pendiente ? 'aclaración de riesgo de control' : '' }}</p>
+                }
+                @if (resultado.observaciones) { <p class="selection-result-observations">{{ resultado.observaciones }}</p> }
+                <small>Evaluó: {{ resultado.evaluador }}</small>
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+  </main>
+</div>

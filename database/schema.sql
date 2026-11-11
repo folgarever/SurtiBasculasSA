@@ -28,7 +28,8 @@ INSERT INTO puestos (codigo_abreviatura, nombre_puesto, departamento) VALUES
     ('AUXTEC', 'Auxiliar Técnico', 'Mantenimiento'),
     ('DC', 'Director de Calidad', 'Calidad y Metrología'),
     ('MET', 'Metrológico', 'Calidad y Metrología'),
-    ('AUXLAB', 'Auxiliar de Laboratorio', 'Calidad y Metrología');
+    ('AUXLAB', 'Auxiliar de Laboratorio', 'Calidad y Metrología'),
+    ('ASISTADM', 'Asistente administrativo y contable', 'Administración y Finanzas');
 
 CREATE TABLE horarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -200,6 +201,51 @@ CREATE TABLE evaluaciones_banco_preguntas (
     actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_banco_preguntas_puesto_orden (puesto_id, orden, id),
     FOREIGN KEY (puesto_id) REFERENCES puestos(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE candidatos_seleccion (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sesion_id CHAR(36) NOT NULL UNIQUE,
+    nombres VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(120) NOT NULL,
+    fecha_nacimiento DATE NOT NULL,
+    puesto_id INT NOT NULL,
+    respuestas JSON NULL,
+    estado ENUM('registro', 'completada', 'evaluada') NOT NULL DEFAULT 'registro',
+    creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completada_en TIMESTAMP NULL,
+    INDEX idx_candidatos_puesto_estado (puesto_id, estado, creado_en),
+    FOREIGN KEY (puesto_id) REFERENCES puestos(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE evaluaciones_seleccion (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    candidato VARCHAR(120) NOT NULL,
+    candidato_id INT NULL,
+    puesto_id INT NOT NULL,
+    fecha_evaluacion DATE NOT NULL,
+    puntaje_aptitudes DECIMAL(5, 2) NOT NULL,
+    puntaje_conocimientos DECIMAL(5, 2) NOT NULL,
+    puntaje_practica DECIMAL(5, 2) NOT NULL,
+    puntaje_valores DECIMAL(5, 2) NOT NULL,
+    puntaje_total DECIMAL(6, 2) NOT NULL,
+    discrepancia_pendiente TINYINT NOT NULL DEFAULT 0,
+    riesgo_control_pendiente TINYINT NOT NULL DEFAULT 0,
+    decision ENUM('recomendable', 'revision_adicional', 'no_demostrada') NOT NULL,
+    observaciones TEXT NULL,
+    evaluador_id INT NOT NULL,
+    creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_seleccion_aptitudes CHECK (puntaje_aptitudes BETWEEN 0 AND 10),
+    CONSTRAINT chk_seleccion_conocimientos CHECK (puntaje_conocimientos BETWEEN 0 AND 20),
+    CONSTRAINT chk_seleccion_practica CHECK (puntaje_practica BETWEEN 0 AND 55),
+    CONSTRAINT chk_seleccion_valores CHECK (puntaje_valores BETWEEN 0 AND 15),
+    CONSTRAINT chk_seleccion_total CHECK (puntaje_total BETWEEN 0 AND 100),
+    INDEX idx_seleccion_puesto_fecha (puesto_id, fecha_evaluacion),
+    INDEX idx_seleccion_fecha (fecha_evaluacion),
+    UNIQUE INDEX uq_seleccion_candidato (candidato_id),
+    FOREIGN KEY (puesto_id) REFERENCES puestos(id),
+    FOREIGN KEY (evaluador_id) REFERENCES empleados(id),
+    FOREIGN KEY (candidato_id) REFERENCES candidatos_seleccion(id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE sugerencias (
