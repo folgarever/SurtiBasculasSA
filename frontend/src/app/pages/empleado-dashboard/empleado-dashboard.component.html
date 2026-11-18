@@ -1,31 +1,18 @@
-<div class="app-shell">
-  <aside class="app-sidebar">
-    <a class="sidebar-brand" routerLink="/dashboard"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
-    <span class="sidebar-caption">ESPACIO DE TRABAJO</span>
-    <nav class="sidebar-nav" aria-label="Navegación principal">
-      <a class="sidebar-link is-active" routerLink="/dashboard" aria-current="page"><ng-icon name="lucideClipboardCheck" size="18" /> Mi jornada</a>
-      @if (puedeAccederRrhh) { <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideUsers" size="18" /> Gestión de personal</a> }
-      @if (esAdmin) { <a class="sidebar-link" routerLink="/admin"><ng-icon name="lucideLayoutDashboard" size="18" /> Administración</a> }
-      <a class="sidebar-link" routerLink="/evaluaciones-conocimiento"><ng-icon name="lucideClipboardCheck" size="18" /> Evaluación mensual</a>
-      @if (puedeEvaluar) { <a class="sidebar-link" routerLink="/evaluaciones"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluaciones</a> }
-      @if (puedeEvaluar) { <a class="sidebar-link" routerLink="/admin/evaluaciones-seleccion"><ng-icon name="lucideClipboardCheck" size="18" /> Pruebas de selección</a> }
-    </nav>
-    @if (esAdmin) {
-      <a class="sidebar-link sidebar-bottom-link" routerLink="/admin/sugerencias"><ng-icon name="lucideLightbulb" size="18" /> Sugerencias</a>
-    } @else {
-      <a class="sidebar-link sidebar-bottom-link" routerLink="/sugerencias"><ng-icon name="lucideLightbulb" size="18" /> Mis sugerencias</a>
-    }
-    <div class="sidebar-footer"><span class="status-dot"></span><span>Portal activo<small>Registro de asistencia</small></span></div>
-  </aside>
-  <header class="topbar">
-    <div class="topbar-title"><span class="admin-label">PORTAL DEL PERSONAL</span><strong>Mi jornada</strong></div>
-    <div class="topbar-actions">
-      <app-selector-tema [nombre]="usuario?.nombre || ''" [inicial]="usuario?.nombre?.slice(0, 1) || 'U'" />
-      <button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button>
-    </div>
-  </header>
-
-  <main class="workspace employee-workspace">
+<app-shell
+  inicio="/dashboard"
+  caption="ESPACIO DE TRABAJO"
+  topbarLabel="PORTAL DEL PERSONAL"
+  topbarTitle="Mi jornada"
+  workspaceClass="employee-workspace"
+  [admin]="false"
+  [nombre]="usuario?.nombre || ''"
+  [inicial]="usuario?.nombre?.slice(0, 1) || 'U'"
+  footerTitulo="Portal activo"
+  footerDetalle="Registro de asistencia"
+  [items]="navItems"
+  [bottomItems]="bottomItems"
+  bottomActive="/sugerencias"
+>
     <div class="page-heading">
       <div><p class="eyebrow">PORTAL DEL EMPLEADO</p><h1>Mi jornada</h1><p class="subheading">Hola, {{ usuario?.nombre }}. Aquí tienes el estado de tu asistencia.</p></div>
       <div class="date-stamp"><span class="status-dot"></span> {{ fechaActual() }}</div>
@@ -66,6 +53,5 @@
       </div>
       <footer class="table-footer">Se muestran tus últimas 30 marcaciones.</footer>
     </section>
-    <footer class="workspace-footer"><span>SIMET · SISTEMA DE ASISTENCIA</span><span>Los registros se procesan en hora de Guatemala</span></footer>
-  </main>
-</div>
+    <footer class="workspace-footer"><span>SURTIBÁSCULAS S.A. · GESTIÓN DE PERSONAL</span><span>Los registros se procesan en hora de Guatemala</span></footer>
+  </app-shell>

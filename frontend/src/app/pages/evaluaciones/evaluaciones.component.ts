@@ -1,9 +1,8 @@
+import { AppShellComponent } from '../../components/app-shell/app-shell.component';
+import { NAV_ADMIN, SUGERENCIAS_ADMIN } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideUsers, lucideUserRoundCog } from '@ng-icons/lucide';
 import {
   CalificacionesGenerales,
   CalificacionesJefatura,
@@ -13,7 +12,6 @@ import {
   EvaluacionesService,
 } from '../../services/evaluaciones.service';
 import { AuthService } from '../../services/auth.service';
-import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 
 type CriterioGeneral = {
   clave: keyof CalificacionesGenerales;
@@ -53,11 +51,12 @@ const CRITERIOS_JEFATURA: CriterioJefatura[] = [
 @Component({
   selector: 'app-evaluaciones',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, NgIcon, SelectorTemaComponent],
-  providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideUsers, lucideUserRoundCog })],
+  imports: [AppShellComponent, ReactiveFormsModule],
   templateUrl: './evaluaciones.component.html',
 })
 export class EvaluacionesComponent implements OnInit {
+  protected readonly navItems = NAV_ADMIN;
+  protected readonly bottomItems = [SUGERENCIAS_ADMIN];
   private readonly formBuilder = inject(FormBuilder);
   private readonly evaluacionesService = inject(EvaluacionesService);
   private readonly auth = inject(AuthService);
@@ -249,10 +248,6 @@ export class EvaluacionesComponent implements OnInit {
       year: 'numeric',
       timeZone: 'America/Guatemala',
     });
-  }
-
-  protected salir(): void {
-    this.auth.logout();
   }
 
   private cargarEmpleados(): void {

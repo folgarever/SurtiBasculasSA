@@ -1,10 +1,9 @@
+import { AppShellComponent } from '../../components/app-shell/app-shell.component';
+import { NAV_EMPLEADO, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideUsers, lucideUserRoundCog } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
-import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 import {
   EvaluacionConocimiento,
   EvaluacionesConocimientoService,
@@ -13,18 +12,16 @@ import {
 @Component({
   selector: 'app-evaluacion-conocimiento-empleado',
   standalone: true,
-  imports: [RouterLink, NgIcon, SelectorTemaComponent],
-  providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideUsers, lucideUserRoundCog })],
+  imports: [AppShellComponent, RouterLink],
   templateUrl: './evaluacion-conocimiento-empleado.component.html',
 })
 export class EvaluacionConocimientoEmpleadoComponent implements OnInit {
+  protected readonly navItems = NAV_EMPLEADO;
+  protected readonly bottomItems = [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO];
   private readonly servicio = inject(EvaluacionesConocimientoService);
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
-  protected readonly puedeAdministrar = this.auth.hasEvaluationRole();
-  protected readonly esAdmin = this.auth.hasAdminRole();
-  protected readonly puedeAccederRrhh = this.auth.hasRrhhRole();
   protected readonly evaluacion = signal<EvaluacionConocimiento | null>(null);
   protected readonly historial = signal<EvaluacionConocimiento[]>([]);
   protected readonly puesto = signal('');
@@ -95,10 +92,6 @@ export class EvaluacionConocimientoEmpleadoComponent implements OnInit {
       year: 'numeric',
       timeZone: 'America/Guatemala',
     });
-  }
-
-  protected salir(): void {
-    this.auth.logout();
   }
 
   private cargarEvaluacion(): void {

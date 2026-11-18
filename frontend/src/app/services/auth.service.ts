@@ -24,46 +24,68 @@ interface LoginResponse {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
-  private readonly tokenKey = 'simet_token';
-  private readonly userKey = 'simet_usuario';
+  private readonly tokenKey = 'surtibasculas_token';
+  private readonly userKey = 'surtibasculas_usuario';
+  private readonly legacyTokenKey = 'simet_token';
+  private readonly legacyUserKey = 'simet_usuario';
 
   login(codigo_empleado: string, password: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, {
       codigo_empleado,
       password,
-    }).pipe(tap((response) => {
-      localStorage.setItem(this.tokenKey, response.token);
-      localStorage.setItem(this.userKey, JSON.stringify(response.usuario));
-    }));
+    }).pipe(tap((response) => this.guardarSesion(response.token, response.usuario)));
   }
 
   loginCandidato(usuario: string, password: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login-candidato`, {
       usuario,
       password,
-    }).pipe(tap((response) => {
-      localStorage.setItem(this.tokenKey, response.token);
-      localStorage.setItem(this.userKey, JSON.stringify(response.usuario));
-    }));
+    }).pipe(tap((response) => this.guardarSesion(response.token, response.usuario)));
+  }
+
+  private guardarSesion(token: string, usuario: Usuario): void {
+    localStorage.setItem(this.tokenKey, token);
+    localStorage.setItem(this.userKey, JSON.stringify(usuario));
+    localStorage.removeItem(this.legacyTokenKey);
+    localStorage.removeItem(this.legacyUserKey);
   }
 
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
+    localStorage.removeItem(this.legacyTokenKey);
+    localStorage.removeItem(this.legacyUserKey);
     void this.router.navigate(['/login']);
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    const token = localStorage.getItem(this.tokenKey);
+    if (token) return token;
+
+    const anterior = localStorage.getItem(this.legacyTokenKey);
+    if (anterior) {
+      localStorage.setItem(this.tokenKey, anterior);
+      localStorage.removeItem(this.legacyTokenKey);
+    }
+    return anterior;
   }
 
   getUsuario(): Usuario | null {
-    const cached = localStorage.getItem(this.userKey);
+    let cached = localStorage.getItem(this.userKey);
+    if (!cached) {
+      const anterior = localStorage.getItem(this.legacyUserKey);
+      if (anterior) {
+        localStorage.setItem(this.userKey, anterior);
+        localStorage.removeItem(this.legacyUserKey);
+        cached = anterior;
+      }
+    }
     if (cached) {
       try {
         return JSON.parse(cached) as Usuario;
       } catch {
         localStorage.removeItem(this.userKey);
+        localStorage.removeItem(this.legacyUserKey);
       }
     }
     return this.getPayload();

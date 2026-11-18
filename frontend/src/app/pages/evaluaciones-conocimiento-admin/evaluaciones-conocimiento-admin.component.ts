@@ -1,10 +1,9 @@
+import { AppShellComponent } from '../../components/app-shell/app-shell.component';
+import { NAV_ADMIN, SUGERENCIAS_ADMIN } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideUserRoundCog, lucideUsers } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
-import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 import {
   EmpleadoConocimiento,
   EvaluacionConocimiento,
@@ -18,11 +17,12 @@ import {
 @Component({
   selector: 'app-evaluaciones-conocimiento-admin',
   standalone: true,
-  imports: [RouterLink, NgIcon, SelectorTemaComponent],
-  providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideUserRoundCog, lucideUsers })],
+  imports: [AppShellComponent, RouterLink],
   templateUrl: './evaluaciones-conocimiento-admin.component.html',
 })
 export class EvaluacionesConocimientoAdminComponent implements OnInit {
+  protected readonly navItems = NAV_ADMIN;
+  protected readonly bottomItems = [SUGERENCIAS_ADMIN];
   private readonly servicio = inject(EvaluacionesConocimientoService);
   private readonly auth = inject(AuthService);
 
@@ -303,10 +303,6 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
       year: 'numeric',
       timeZone: 'America/Guatemala',
     });
-  }
-
-  protected salir(): void {
-    this.auth.logout();
   }
 
   private cargarCatalogos(): void {

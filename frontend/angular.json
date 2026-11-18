@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "simet-frontend": {
+    "surtibasculas-frontend": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -27,7 +27,8 @@
             ],
             "styles": [
               "src/styles.css",
-              "src/brand-theme.css"
+              "src/brand-theme.css",
+              "src/brand-theme-dark.css"
             ]
           },
           "configurations": {
@@ -64,10 +65,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "simet-frontend:build:production"
+              "buildTarget": "surtibasculas-frontend:build:production"
             },
             "development": {
-              "buildTarget": "simet-frontend:build:development"
+              "buildTarget": "surtibasculas-frontend:build:development"
             }
           },
           "defaultConfiguration": "development",

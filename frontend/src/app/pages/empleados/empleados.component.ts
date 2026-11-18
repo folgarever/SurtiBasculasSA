@@ -1,3 +1,5 @@
+import { AppShellComponent } from '../../components/app-shell/app-shell.component';
+import { NAV_ADMIN, SUGERENCIAS_ADMIN } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -20,13 +22,12 @@ import {
   lucideX,
 } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
-import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 import { EmpleadoAdministracion, RrhhService, Puesto } from '../../services/rrhh.service';
 
 @Component({
   selector: 'app-empleados',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, NgIcon, SelectorTemaComponent],
+  imports: [AppShellComponent, ReactiveFormsModule, RouterLink, NgIcon],
   providers: [provideIcons({
     lucideClipboardCheck,
     lucideEye,
@@ -46,12 +47,13 @@ import { EmpleadoAdministracion, RrhhService, Puesto } from '../../services/rrhh
   templateUrl: './empleados.component.html',
 })
 export class EmpleadosComponent implements OnInit {
+  protected readonly navItems = NAV_ADMIN;
+  protected readonly bottomItems = [SUGERENCIAS_ADMIN];
   private readonly formBuilder = inject(FormBuilder);
   private readonly rrhh = inject(RrhhService);
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
-  protected readonly puedeEvaluar = this.auth.hasEvaluationRole();
   protected readonly empleados = signal<EmpleadoAdministracion[]>([]);
   protected readonly puestos = signal<Puesto[]>([]);
   protected readonly busqueda = signal('');
@@ -261,10 +263,6 @@ export class EmpleadosComponent implements OnInit {
         this.guardando.set(false);
       },
     });
-  }
-
-  protected salir(): void {
-    this.auth.logout();
   }
 
   private cargarEmpleados(): void {

@@ -1,24 +1,18 @@
-<div class="app-shell">
-  <aside class="app-sidebar">
-    <a class="sidebar-brand" routerLink="/admin"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
-    <span class="sidebar-caption">MÓDULOS</span>
-    <nav class="sidebar-nav" aria-label="Navegación principal">
-      <a class="sidebar-link" routerLink="/admin"><ng-icon name="lucideLayoutDashboard" size="18" /> Dashboard</a>
-      <a class="sidebar-link is-active" routerLink="/admin/empleados" aria-current="page"><ng-icon name="lucideUsers" size="18" /> Empleados</a>
-      <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideClipboardCheck" size="18" /> Control de asistencia</a>
-      @if (puedeEvaluar) { <a class="sidebar-link" routerLink="/evaluaciones"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluación de personal</a> }
-      @if (puedeEvaluar) { <a class="sidebar-link" routerLink="/admin/evaluaciones-conocimiento"><ng-icon name="lucideClipboardCheck" size="18" /> Evaluaciones mensuales</a> }
-      @if (puedeEvaluar) { <a class="sidebar-link" routerLink="/admin/evaluaciones-seleccion"><ng-icon name="lucideClipboardCheck" size="18" /> Pruebas de selección</a> }
-    </nav>
-    <a class="sidebar-link sidebar-bottom-link" routerLink="/admin/sugerencias"><ng-icon name="lucideMessageSquare" size="18" /> Sugerencias</a>
-    <div class="sidebar-footer"><span class="status-dot"></span><span>Sistema activo<small>Gestión de personal</small></span></div>
-  </aside>
-  <header class="topbar">
-    <div class="topbar-title"><span class="admin-label">PERSONAL / DIRECTORIO</span><strong>Gestión de empleados</strong></div>
-    <div class="topbar-actions"><app-selector-tema [admin]="true" [nombre]="usuario?.nombre || ''" [inicial]="usuario?.nombre?.slice(0, 1) || 'A'" /><button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
-  </header>
-
-  <main class="workspace employee-workspace">
+<app-shell
+  inicio="/admin"
+  caption="MÓDULOS"
+  topbarLabel="PERSONAL / DIRECTORIO"
+  topbarTitle="Gestión de empleados"
+  workspaceClass="employee-workspace"
+  [admin]="true"
+  [nombre]="usuario?.nombre || ''"
+  [inicial]="usuario?.nombre?.slice(0, 1) || 'A'"
+  footerTitulo="Sistema activo"
+  footerDetalle="Gestión de personal"
+  [items]="navItems"
+  [bottomItems]="bottomItems"
+  bottomActive="/admin/sugerencias"
+>
     <div class="page-heading employee-heading">
       <div><p class="eyebrow">ADMINISTRACIÓN / PERSONAL</p><h1>Gestión de empleados</h1><p class="subheading">Consulta el directorio y administra las altas de personal.</p></div>
       <div class="heading-actions"><button class="button button-accent" type="button" (click)="abrirFormulario()"><ng-icon name="lucidePlus" size="16" /> Agregar empleado</button></div>
@@ -78,8 +72,6 @@
       </section>
     </section>
     <footer class="workspace-footer"><span>SURTIBASCULAS S.A. · RECURSOS HUMANOS</span><a routerLink="/admin">Volver al panel de administración</a></footer>
-  </main>
-</div>
 
 @if (modal() === 'crear' || modal() === 'editar') {
   <div class="modal-backdrop" (click)="cerrarFormulario()" (keydown.escape)="cerrarFormulario()">
@@ -174,3 +166,4 @@
     </section>
   </div>
 }
+</app-shell>

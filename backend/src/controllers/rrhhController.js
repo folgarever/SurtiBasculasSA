@@ -420,7 +420,7 @@ async function exportarReporteExcel(req, res, next) {
     );
 
     const libro = new ExcelJS.Workbook();
-    libro.creator = 'SIMET';
+    libro.creator = 'SURTIBÁSCULAS S.A.';
     libro.created = new Date();
 
     const hojaAsistencias = libro.addWorksheet('Asistencias');
@@ -455,7 +455,7 @@ async function exportarReporteExcel(req, res, next) {
     hojaIncidencias.autoFilter = { from: 'A1', to: 'F1' };
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="reporte-simet.xlsx"');
+    res.setHeader('Content-Disposition', 'attachment; filename="reporte-surtibasculas.xlsx"');
     await libro.xlsx.write(res);
     return res.end();
   } catch (error) {

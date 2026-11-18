@@ -1,24 +1,18 @@
-<div class="app-shell">
-  <aside class="app-sidebar">
-    <a class="sidebar-brand" routerLink="/admin"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
-    <span class="sidebar-caption">MÓDULOS</span>
-    <nav class="sidebar-nav" aria-label="Navegación principal">
-      <a class="sidebar-link" routerLink="/admin"><ng-icon name="lucideLayoutDashboard" size="18" /> Dashboard</a>
-      <a class="sidebar-link" routerLink="/admin/empleados"><ng-icon name="lucideUsers" size="18" /> Empleados</a>
-      <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideClipboardCheck" size="18" /> Control de asistencia</a>
-      <a class="sidebar-link" routerLink="/evaluaciones"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluación de personal</a>
-      <a class="sidebar-link is-active" routerLink="/admin/evaluaciones-conocimiento" aria-current="page"><ng-icon name="lucideClipboardCheck" size="18" /> Evaluaciones mensuales</a>
-      <a class="sidebar-link" routerLink="/admin/evaluaciones-seleccion"><ng-icon name="lucideClipboardCheck" size="18" /> Pruebas de selección</a>
-    </nav>
-    <a class="sidebar-link sidebar-bottom-link" routerLink="/admin/sugerencias"><ng-icon name="lucideMessageSquare" size="18" /> Sugerencias</a>
-    <div class="sidebar-footer"><span class="status-dot"></span><span>Sistema activo<small>Desarrollo del personal</small></span></div>
-  </aside>
-  <header class="topbar">
-    <div class="topbar-title"><span class="admin-label">ADMINISTRACIÓN / PERSONAL</span><strong>Evaluación de conocimientos y desempeño</strong></div>
-    <div class="topbar-actions"><app-selector-tema [admin]="true" [nombre]="usuario?.nombre || ''" [inicial]="usuario?.nombre?.slice(0, 1) || 'A'" /><button class="icon-button" type="button" aria-label="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
-  </header>
-
-  <main class="workspace knowledge-workspace">
+<app-shell
+  inicio="/admin"
+  caption="MÓDULOS"
+  topbarLabel="ADMINISTRACIÓN / PERSONAL"
+  topbarTitle="Evaluación de conocimientos y desempeño"
+  workspaceClass="knowledge-workspace"
+  [admin]="true"
+  [nombre]="usuario?.nombre || ''"
+  [inicial]="usuario?.nombre?.slice(0, 1) || 'A'"
+  footerTitulo="Sistema activo"
+  footerDetalle="Desarrollo del personal"
+  [items]="navItems"
+  [bottomItems]="bottomItems"
+  bottomActive="/admin/sugerencias"
+>
     <div class="page-heading"><div><p class="eyebrow">ADMINISTRACIÓN / DESARROLLO</p><h1>Evaluación de conocimientos y desempeño</h1><p class="subheading">Seguimiento mensual, resultados y evolución por empleado y puesto.</p></div></div>
     @if (error()) { <div class="alert alert-error" role="alert">{{ error() }} <button type="button" (click)="error.set('')">×</button></div> }
 
@@ -205,5 +199,4 @@
       </section>
     }
     <footer class="workspace-footer"><span>SURTIBÁSCULAS S.A. · EVALUACIONES MENSUALES</span><a routerLink="/admin">Volver al panel</a></footer>
-  </main>
-</div>
+  </app-shell>

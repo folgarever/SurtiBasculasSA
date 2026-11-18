@@ -1,24 +1,18 @@
-<div class="app-shell">
-  <aside class="app-sidebar">
-    <a class="sidebar-brand" routerLink="/admin"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
-    <span class="sidebar-caption">MÓDULOS</span>
-    <nav class="sidebar-nav" aria-label="Navegación principal">
-      <a class="sidebar-link" routerLink="/admin"><ng-icon name="lucideLayoutDashboard" size="18" /> Dashboard</a>
-      <a class="sidebar-link" routerLink="/admin/empleados"><ng-icon name="lucideUsers" size="18" /> Empleados</a>
-      <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideClipboardCheck" size="18" /> Control de asistencia</a>
-      @if (puedeEvaluar) { <a class="sidebar-link" routerLink="/evaluaciones"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluación de personal</a> }
-      @if (puedeEvaluar) { <a class="sidebar-link" routerLink="/admin/evaluaciones-conocimiento"><ng-icon name="lucideClipboardCheck" size="18" /> Evaluaciones mensuales</a> }
-      @if (puedeEvaluar) { <a class="sidebar-link" routerLink="/admin/evaluaciones-seleccion"><ng-icon name="lucideClipboardCheck" size="18" /> Pruebas de selección</a> }
-    </nav>
-    <a class="sidebar-link sidebar-bottom-link is-active" routerLink="/admin/sugerencias" aria-current="page"><ng-icon name="lucideMessageSquare" size="18" /> Sugerencias</a>
-    <div class="sidebar-footer"><span class="status-dot"></span><span>Sistema activo<small>Foro de sugerencias</small></span></div>
-  </aside>
-  <header class="topbar">
-    <div class="topbar-title"><span class="admin-label">ESCUCHA DEL EQUIPO</span><strong>Sugerencias del personal</strong></div>
-    <div class="topbar-actions"><app-selector-tema [admin]="true" [nombre]="usuario?.nombre || ''" [inicial]="usuario?.nombre?.slice(0, 1) || 'A'" /><button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
-  </header>
-
-  <main class="workspace suggestions-workspace">
+<app-shell
+  inicio="/admin"
+  caption="MÓDULOS"
+  topbarLabel="ESCUCHA DEL EQUIPO"
+  topbarTitle="Sugerencias del personal"
+  workspaceClass="suggestions-workspace"
+  [admin]="true"
+  [nombre]="usuario?.nombre || ''"
+  [inicial]="usuario?.nombre?.slice(0, 1) || 'A'"
+  footerTitulo="Sistema activo"
+  footerDetalle="Foro de sugerencias"
+  [items]="navItems"
+  [bottomItems]="bottomItems"
+  bottomActive="/admin/sugerencias"
+>
     <div class="page-heading">
       <div><p class="eyebrow">ADMINISTRACIÓN / PERSONAL</p><h1>Foro de sugerencias</h1><p class="subheading">Revisa las ideas del equipo y responde cuando lo consideres oportuno.</p></div>
     </div>
@@ -64,5 +58,4 @@
       }
     </section>
     <footer class="workspace-footer"><span>SURTIBÁSCULAS S.A. · ADMINISTRACIÓN</span><a routerLink="/admin">Volver al panel</a></footer>
-  </main>
-</div>
+  </app-shell>

@@ -1,21 +1,18 @@
-<div class="app-shell">
-  <aside class="app-sidebar">
-    <a class="sidebar-brand" routerLink="/dashboard"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
-    <span class="sidebar-caption">ESPACIO DE TRABAJO</span>
-    <nav class="sidebar-nav" aria-label="Navegación principal">
-      <a class="sidebar-link" routerLink="/dashboard"><ng-icon name="lucideLayoutDashboard" size="18" /> Mi jornada</a>
-      @if (puedeAccederRrhh) { <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideUsers" size="18" /> Gestión de personal</a> }
-      <a class="sidebar-link" routerLink="/evaluaciones-conocimiento"><ng-icon name="lucideClipboardCheck" size="18" /> Evaluación mensual</a>
-    </nav>
-    <a class="sidebar-link sidebar-bottom-link is-active" routerLink="/sugerencias" aria-current="page"><ng-icon name="lucideLightbulb" size="18" /> Mis sugerencias</a>
-    <div class="sidebar-footer"><span class="status-dot"></span><span>Portal activo<small>Participación del equipo</small></span></div>
-  </aside>
-  <header class="topbar">
-    <div class="topbar-title"><span class="admin-label">PORTAL DEL PERSONAL</span><strong>Mis sugerencias</strong></div>
-    <div class="topbar-actions"><app-selector-tema [nombre]="usuario?.nombre || ''" [inicial]="usuario?.nombre?.slice(0, 1) || 'U'" /><button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
-  </header>
-
-  <main class="workspace suggestions-workspace">
+<app-shell
+  inicio="/dashboard"
+  caption="ESPACIO DE TRABAJO"
+  topbarLabel="PORTAL DEL PERSONAL"
+  topbarTitle="Mis sugerencias"
+  workspaceClass="suggestions-workspace"
+  [admin]="false"
+  [nombre]="usuario?.nombre || ''"
+  [inicial]="usuario?.nombre?.slice(0, 1) || 'U'"
+  footerTitulo="Portal activo"
+  footerDetalle="Participación del equipo"
+  [items]="navItems"
+  [bottomItems]="bottomItems"
+  bottomActive="/sugerencias"
+>
     <div class="page-heading">
       <div><p class="eyebrow">PORTAL DEL EMPLEADO</p><h1>Ideas para mejorar</h1><p class="subheading">Comparte propuestas sobre el ambiente laboral y las condiciones de trabajo.</p></div>
     </div>
@@ -60,5 +57,4 @@
       }
     </section>
     <footer class="workspace-footer"><span>SURTIBÁSCULAS S.A. · PARTICIPACIÓN DEL PERSONAL</span><a routerLink="/dashboard">Volver a mi jornada</a></footer>
-  </main>
-</div>
+  </app-shell>

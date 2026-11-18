@@ -1,7 +1,8 @@
+import { AppShellComponent } from '../../components/app-shell/app-shell.component';
+import { NAV_EMPLEADO, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideArrowRight,
@@ -15,12 +16,11 @@ import {
 import { interval } from 'rxjs';
 import { AsistenciaService, Marcacion, ResultadoMarcacion } from '../../services/asistencia.service';
 import { AuthService } from '../../services/auth.service';
-import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 
 @Component({
   selector: 'app-empleado-dashboard',
   standalone: true,
-  imports: [RouterLink, NgIcon, SelectorTemaComponent],
+  imports: [AppShellComponent, NgIcon],
   providers: [provideIcons({
     lucideArrowRight,
     lucideClipboardCheck,
@@ -33,14 +33,13 @@ import { SelectorTemaComponent } from '../../components/selector-tema/selector-t
   templateUrl: './empleado-dashboard.component.html',
 })
 export class EmpleadoDashboardComponent implements OnInit {
+  protected readonly navItems = NAV_EMPLEADO;
+  protected readonly bottomItems = [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO];
   private readonly asistencia = inject(AsistenciaService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly usuario = this.auth.getUsuario();
-  protected readonly esAdmin = this.auth.hasAdminRole();
-  protected readonly puedeAccederRrhh = this.auth.hasRrhhRole();
-  protected readonly puedeEvaluar = this.auth.hasEvaluationRole();
   protected readonly horaActual = signal('');
   protected readonly fechaActual = signal('');
   protected readonly historial = signal<Marcacion[]>([]);
@@ -71,10 +70,6 @@ export class EmpleadoDashboardComponent implements OnInit {
         this.marcando.set(false);
       },
     });
-  }
-
-  protected salir(): void {
-    this.auth.logout();
   }
 
   protected etiquetaEstado(estado: string | null): string {

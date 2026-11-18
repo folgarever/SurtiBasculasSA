@@ -1,28 +1,18 @@
-<div class="app-shell">
-  <aside class="app-sidebar">
-    <a class="sidebar-brand" [routerLink]="esAdmin ? '/admin' : '/rrhh'"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
-    <span class="sidebar-caption">MÓDULOS</span>
-    <nav class="sidebar-nav" aria-label="Navegación principal">
-      @if (esAdmin) { <a class="sidebar-link" routerLink="/admin"><ng-icon name="lucideLayoutDashboard" size="18" /> Dashboard</a> }
-      @if (esAdmin) { <a class="sidebar-link" routerLink="/admin/empleados"><ng-icon name="lucideUsers" size="18" /> Empleados</a> }
-      <a class="sidebar-link is-active" routerLink="/rrhh" aria-current="page"><ng-icon name="lucideClipboardCheck" size="18" /> Control de asistencia</a>
-      @if (puedeEvaluar) { <a class="sidebar-link" routerLink="/evaluaciones"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluación de personal</a> }
-      @if (puedeEvaluar) { <a class="sidebar-link" routerLink="/admin/evaluaciones-conocimiento"><ng-icon name="lucideClipboardCheck" size="18" /> Evaluaciones mensuales</a> }
-      @if (puedeEvaluar) { <a class="sidebar-link" routerLink="/admin/evaluaciones-seleccion"><ng-icon name="lucideClipboardCheck" size="18" /> Pruebas de selección</a> }
-    </nav>
-    @if (esAdmin) {
-      <a class="sidebar-link sidebar-bottom-link" routerLink="/admin/sugerencias"><ng-icon name="lucideMessageSquare" size="18" /> Sugerencias</a>
-    } @else {
-      <a class="sidebar-link sidebar-bottom-link" routerLink="/sugerencias"><ng-icon name="lucideMessageSquare" size="18" /> Mis sugerencias</a>
-    }
-    <div class="sidebar-footer"><span class="status-dot"></span><span>Sistema activo<small>Control de asistencia</small></span></div>
-  </aside>
-  <header class="topbar">
-    <div class="topbar-title"><span class="admin-label">ASISTENCIA / REGISTROS</span><strong>Control de asistencia</strong></div>
-    <div class="topbar-actions"><app-selector-tema [admin]="true" [nombre]="usuario?.nombre || ''" [inicial]="usuario?.nombre?.slice(0, 1) || 'R'" /><button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button></div>
-  </header>
-
-  <main class="workspace rrhh-workspace">
+<app-shell
+  [inicio]="esAdmin ? '/admin' : '/rrhh'"
+  caption="MÓDULOS"
+  topbarLabel="ASISTENCIA / REGISTROS"
+  topbarTitle="Control de asistencia"
+  workspaceClass="rrhh-workspace"
+  [admin]="true"
+  [nombre]="usuario?.nombre || ''"
+  [inicial]="usuario?.nombre?.slice(0, 1) || 'R'"
+  footerTitulo="Sistema activo"
+  footerDetalle="Control de asistencia"
+  [items]="navItems"
+  [bottomItems]="bottomItems"
+  [bottomActive]="esAdmin ? '/admin/sugerencias' : '/sugerencias'"
+>
     <div class="page-heading rrhh-heading">
       <div><p class="eyebrow">ADMINISTRACIÓN / ASISTENCIA</p><h1>Jornada del equipo</h1><p class="subheading">Consulta, corrige y documenta la jornada del equipo.</p></div>
       <div class="heading-actions"><button class="button button-outline" type="button" (click)="abrirIncidencia()"><ng-icon name="lucidePlus" size="16" /> Nueva incidencia</button><button class="button button-accent" type="button" (click)="exportar()" [disabled]="exportando()"><ng-icon name="lucideArrowDownToLine" size="16" /> {{ exportando() ? 'Preparando…' : 'Exportar Excel' }}</button></div>
@@ -80,8 +70,6 @@
       </section>
     </section>
     <footer class="workspace-footer"><span>SURTIBASCULAS S.A. · RECURSOS HUMANOS</span><span>Las correcciones quedan registradas en auditoría</span></footer>
-  </main>
-</div>
 
 @if (modal() === 'correccion') {
   <div class="modal-backdrop" (click)="cerrarModal()" (keydown.escape)="cerrarModal()">
@@ -119,3 +107,4 @@
     </section>
   </div>
 }
+</app-shell>

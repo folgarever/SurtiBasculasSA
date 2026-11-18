@@ -1,27 +1,18 @@
-<div class="app-shell">
-  <aside class="app-sidebar">
-    <a class="sidebar-brand" routerLink="/admin"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
-    <span class="sidebar-caption">MÓDULOS</span>
-    <nav class="sidebar-nav" aria-label="Navegación principal">
-      <a class="sidebar-link" routerLink="/admin"><ng-icon name="lucideLayoutDashboard" size="18" /> Dashboard</a>
-      <a class="sidebar-link" routerLink="/admin/empleados"><ng-icon name="lucideUsers" size="18" /> Empleados</a>
-      <a class="sidebar-link" routerLink="/rrhh"><ng-icon name="lucideClipboardCheck" size="18" /> Control de asistencia</a>
-      <a class="sidebar-link is-active" routerLink="/evaluaciones" aria-current="page"><ng-icon name="lucideUserRoundCog" size="18" /> Evaluación de personal</a>
-      <a class="sidebar-link" routerLink="/admin/evaluaciones-conocimiento"><ng-icon name="lucideClipboardCheck" size="18" /> Evaluaciones mensuales</a>
-      <a class="sidebar-link" routerLink="/admin/evaluaciones-seleccion"><ng-icon name="lucideClipboardCheck" size="18" /> Pruebas de selección</a>
-    </nav>
-    <a class="sidebar-link sidebar-bottom-link" routerLink="/admin/sugerencias"><ng-icon name="lucideMessageSquare" size="18" /> Sugerencias</a>
-    <div class="sidebar-footer"><span class="status-dot"></span><span>Sistema activo<small>Gestión de personal</small></span></div>
-  </aside>
-  <header class="topbar">
-    <div class="topbar-title"><span class="admin-label">PERSONAL / DESARROLLO</span><strong>Evaluación de personal</strong></div>
-    <div class="topbar-actions">
-      <app-selector-tema [admin]="true" [nombre]="usuario?.nombre || ''" [inicial]="usuario?.nombre?.slice(0, 1) || 'A'" />
-      <button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button>
-    </div>
-  </header>
-
-  <main class="workspace evaluation-workspace">
+<app-shell
+  inicio="/admin"
+  caption="MÓDULOS"
+  topbarLabel="PERSONAL / DESARROLLO"
+  topbarTitle="Evaluación de personal"
+  workspaceClass="evaluation-workspace"
+  [admin]="true"
+  [nombre]="usuario?.nombre || ''"
+  [inicial]="usuario?.nombre?.slice(0, 1) || 'A'"
+  footerTitulo="Sistema activo"
+  footerDetalle="Gestión de personal"
+  [items]="navItems"
+  [bottomItems]="bottomItems"
+  bottomActive="/admin/sugerencias"
+>
     <div class="page-heading">
       <div>
         <p class="eyebrow">ADMINISTRACIÓN / DESARROLLO</p>
@@ -214,5 +205,4 @@
       }
     </section>
     <footer class="workspace-footer"><span>SURTIBASCULAS S.A. · EVALUACIÓN DE PERSONAL</span><span>Acceso restringido a administradores autorizados</span></footer>
-  </main>
-</div>
+  </app-shell>

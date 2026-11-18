@@ -14,7 +14,17 @@ describe('EvaluacionesComponent', () => {
       imports: [EvaluacionesComponent],
       providers: [
         provideRouter([]),
-        { provide: AuthService, useValue: { getUsuario: () => null } },
+        {
+          provide: AuthService,
+          useValue: {
+            getUsuario: () => null,
+            hasAdminRole: () => true,
+            hasRrhhRole: () => true,
+            hasEvaluationRole: () => true,
+            isCandidate: () => false,
+            logout: vi.fn(),
+          },
+        },
         {
           provide: EvaluacionesService,
           useValue: {

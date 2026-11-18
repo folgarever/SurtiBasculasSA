@@ -1,0 +1,64 @@
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { AppShellComponent } from './app-shell.component';
+import { NAV_ADMIN, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from './nav-items';
+
+describe('AppShellComponent', () => {
+  const auth = {
+    hasAdminRole: vi.fn(),
+    hasRrhhRole: vi.fn(),
+    hasEvaluationRole: vi.fn(),
+    isCandidate: vi.fn(),
+    logout: vi.fn(),
+  };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    auth.hasAdminRole.mockReturnValue(false);
+    auth.hasRrhhRole.mockReturnValue(false);
+    auth.hasEvaluationRole.mockReturnValue(false);
+    auth.isCandidate.mockReturnValue(false);
+    await TestBed.configureTestingModule({
+      imports: [AppShellComponent],
+      providers: [provideRouter([]), { provide: AuthService, useValue: auth }],
+    }).compileComponents();
+  });
+
+  function crear() {
+    const fixture = TestBed.createComponent(AppShellComponent);
+    fixture.componentRef.setInput('items', NAV_ADMIN);
+    fixture.componentRef.setInput('bottomItems', [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO]);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  function enlaces(fixture: ReturnType<typeof crear>): string[] {
+    const root = fixture.nativeElement as HTMLElement;
+    return Array.from(root.querySelectorAll<HTMLAnchorElement>('.sidebar-link'))
+      .map((enlace) => enlace.textContent?.trim() ?? '');
+  }
+
+  it('oculta los módulos de evaluación cuando el rol no los permite', () => {
+    auth.hasEvaluationRole.mockReturnValue(true);
+    expect(enlaces(crear())).toContain('Evaluación de personal');
+
+    auth.hasEvaluationRole.mockReturnValue(false);
+    expect(enlaces(crear())).not.toContain('Evaluación de personal');
+  });
+
+  it('muestra el foro correcto según el rol', () => {
+    auth.hasAdminRole.mockReturnValue(true);
+    expect(enlaces(crear())).toContain('Sugerencias');
+
+    auth.hasAdminRole.mockReturnValue(false);
+    expect(enlaces(crear())).toContain('Mis sugerencias');
+  });
+
+  it('cierra sesión desde la barra superior', () => {
+    const fixture = crear();
+    const root = fixture.nativeElement as HTMLElement;
+    root.querySelector<HTMLButtonElement>('button[aria-label="Cerrar sesión"]')!.click();
+    expect(auth.logout).toHaveBeenCalledOnce();
+  });
+});

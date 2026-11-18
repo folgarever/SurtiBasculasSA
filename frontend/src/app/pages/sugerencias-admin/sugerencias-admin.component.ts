@@ -1,10 +1,11 @@
+import { AppShellComponent } from '../../components/app-shell/app-shell.component';
+import { NAV_ADMIN, SUGERENCIAS_ADMIN } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideSend, lucideUserRoundCog, lucideUsers } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
-import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 import { Sugerencia, SugerenciasService } from '../../services/sugerencias.service';
 
 type FiltroSugerencias = 'todas' | 'pendientes' | 'respondidas';
@@ -12,16 +13,17 @@ type FiltroSugerencias = 'todas' | 'pendientes' | 'respondidas';
 @Component({
   selector: 'app-sugerencias-admin',
   standalone: true,
-  imports: [RouterLink, NgIcon, SelectorTemaComponent],
+  imports: [AppShellComponent, RouterLink, NgIcon],
   providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideSend, lucideUserRoundCog, lucideUsers })],
   templateUrl: './sugerencias-admin.component.html',
 })
 export class SugerenciasAdminComponent implements OnInit {
+  protected readonly navItems = NAV_ADMIN;
+  protected readonly bottomItems = [SUGERENCIAS_ADMIN];
   private readonly servicio = inject(SugerenciasService);
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
-  protected readonly puedeEvaluar = this.auth.hasEvaluationRole();
   protected readonly sugerencias = signal<Sugerencia[]>([]);
   protected readonly respuestas = signal<Record<number, string>>({});
   protected readonly filtro = signal<FiltroSugerencias>('todas');
@@ -79,10 +81,6 @@ export class SugerenciasAdminComponent implements OnInit {
       timeStyle: 'short',
       timeZone: 'America/Guatemala',
     });
-  }
-
-  protected salir(): void {
-    this.auth.logout();
   }
 
   private cargarSugerencias(): void {

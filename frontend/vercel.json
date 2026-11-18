@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/simet-frontend/browser",
+  "outputDirectory": "dist/surtibasculas-frontend/browser",
   "rewrites": [
     {
       "source": "/api/(.*)",

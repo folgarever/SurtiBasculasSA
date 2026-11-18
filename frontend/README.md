@@ -17,7 +17,9 @@ La aplicación queda disponible en `http://localhost:4200`. En desarrollo, `prox
 
 `public/config.js` usa `/api` bajo el mismo origen. En Vercel, `vercel.json` reenvía `/api/*` al backend, por lo que no hace falta fijar una URL absoluta ni abrir CORS a otros dominios.
 
-Si el frontend se sirve en un dominio distinto al del backend, define `window.SURTIBASCULAS_CONFIG = { apiUrl: 'https://TU-API.example.com/api' }` antes de cargar `config.js` (o `window.API_URL`) e incluye el dominio del frontend en `CORS_ORIGINS` del backend.
+Si el frontend se sirve en un dominio distinto al del backend, define `window.SURTIBASCULAS_CONFIG = { apiUrl: 'https://TU-API.example.com/api' }` antes de cargar `config.js` (o `window.API_URL` / `window.SURTIBASCULAS_API_URL`) e incluye el dominio del frontend en `CORS_ORIGINS` del backend. `SIMET_API_URL` y las claves `simet_*` de `localStorage` siguen funcionando solo como compatibilidad con despliegues anteriores.
+
+El proyecto Angular se llama `surtibasculas-frontend`; el resultado de producción queda en `dist/surtibasculas-frontend/browser`, que es lo que usa `vercel.json`.
 
 ## Comandos
 

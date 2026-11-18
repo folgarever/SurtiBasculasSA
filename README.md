@@ -185,7 +185,7 @@ El mismo conjunto se ejecuta automáticamente en GitHub Actions para pushes y pu
 │   ├── public/                config.js, favicon y logo corporativo
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── components/    selector-tema
+│   │   │   ├── components/    app-shell (layout compartido) y selector-tema
 │   │   │   ├── guards/        6 guards (auth, admin, role, evaluation, employee, candidate)
 │   │   │   ├── interceptors/  auth.interceptor.ts
 │   │   │   ├── pages/         12 páginas (dashboards, empleados, evaluaciones, sugerencias, candidato)
@@ -195,7 +195,8 @@ El mismo conjunto se ejecuta automáticamente en GitHub Actions para pushes y pu
 │   │   │   ├── app.spec.ts
 │   │   │   └── app.ts
 │   │   ├── environments/      environment.ts y environment.prod.ts
-│   │   ├── brand-theme.css    Tokens corporativos y tema oscuro
+│   │   ├── brand-theme.css    Tokens y estilos corporativos
+│   │   ├── brand-theme-dark.css Tema oscuro
 │   │   ├── index.html
 │   │   ├── main.ts
 │   │   └── styles.css
@@ -208,3 +209,5 @@ El mismo conjunto se ejecuta automáticamente en GitHub Actions para pushes y pu
 ```
 
 Las carpetas de vistas contienen sus archivos TypeScript y HTML. Las dependencias (`node_modules`), compilaciones (`dist`) y cachés no se versionan; se generan localmente al instalar o compilar el proyecto.
+
+El proyecto Angular se llama `surtibasculas-frontend` y Vercel publica `dist/surtibasculas-frontend/browser`. El sidebar, la barra superior, el selector de tema y el cierre de sesión viven en `app-shell`; las páginas solo aportan su contenido. Por compatibilidad se conservan el override `SIMET_API_URL` y las claves antiguas de `localStorage`, pero el código nuevo usa `SURTIBASCULAS_API_URL` y `surtibasculas_*`.

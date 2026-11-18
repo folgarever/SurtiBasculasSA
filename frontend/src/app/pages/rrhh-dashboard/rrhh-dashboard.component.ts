@@ -1,7 +1,8 @@
+import { AppShellComponent } from '../../components/app-shell/app-shell.component';
+import { NAV_ADMIN, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideArrowDownToLine,
@@ -18,7 +19,6 @@ import {
 } from '@ng-icons/lucide';
 import { Marcacion } from '../../services/asistencia.service';
 import { AuthService } from '../../services/auth.service';
-import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 import { DatosCorreccion, DatosIncidencia, EmpleadoRrhh, FiltrosAsistencia, RrhhService } from '../../services/rrhh.service';
 
 interface EmpleadoOpcion {
@@ -30,7 +30,7 @@ interface EmpleadoOpcion {
 @Component({
   selector: 'app-rrhh-dashboard',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, NgIcon, SelectorTemaComponent],
+  imports: [AppShellComponent, ReactiveFormsModule, NgIcon],
   providers: [provideIcons({
     lucideArrowDownToLine,
     lucideArrowRight,
@@ -47,13 +47,14 @@ interface EmpleadoOpcion {
   templateUrl: './rrhh-dashboard.component.html',
 })
 export class RrhhDashboardComponent implements OnInit {
+  protected readonly navItems = NAV_ADMIN;
+  protected readonly bottomItems = [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO];
   private readonly formBuilder = inject(FormBuilder);
   private readonly rrhh = inject(RrhhService);
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
   protected readonly esAdmin = this.auth.hasAdminRole();
-  protected readonly puedeEvaluar = this.auth.hasEvaluationRole();
   protected readonly asistencias = signal<Marcacion[]>([]);
   protected readonly empleados = signal<EmpleadoRrhh[]>([]);
   protected readonly cargando = signal(false);
@@ -169,7 +170,7 @@ export class RrhhDashboardComponent implements OnInit {
         const url = URL.createObjectURL(archivo);
         const enlace = document.createElement('a');
         enlace.href = url;
-        enlace.download = 'reporte-simet.xlsx';
+        enlace.download = 'reporte-surtibasculas.xlsx';
         enlace.click();
         URL.revokeObjectURL(url);
         this.exportando.set(false);
@@ -191,10 +192,6 @@ export class RrhhDashboardComponent implements OnInit {
   protected etiquetaEstado(estado: string | null): string {
     const etiquetas: Record<string, string> = { puntual: 'Puntual', atraso: 'Atraso', normal: 'Normal', anticipada: 'Anticipada' };
     return estado ? etiquetas[estado] || estado : 'Pendiente';
-  }
-
-  protected salir(): void {
-    this.auth.logout();
   }
 
   private obtenerFiltros(): FiltrosAsistencia {

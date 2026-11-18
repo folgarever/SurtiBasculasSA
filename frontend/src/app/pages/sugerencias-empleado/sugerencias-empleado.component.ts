@@ -1,3 +1,5 @@
+import { AppShellComponent } from '../../components/app-shell/app-shell.component';
+import { NAV_EMPLEADO, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
@@ -5,7 +7,6 @@ import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideSend, lucideUsers } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
-import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 import { Sugerencia, SugerenciasService } from '../../services/sugerencias.service';
 
 function longitudRecortada(minimo: number, maximo: number): ValidatorFn {
@@ -20,17 +21,18 @@ function longitudRecortada(minimo: number, maximo: number): ValidatorFn {
 @Component({
   selector: 'app-sugerencias-empleado',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, NgIcon, SelectorTemaComponent],
+  imports: [AppShellComponent, ReactiveFormsModule, RouterLink, NgIcon],
   providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideSend, lucideUsers })],
   templateUrl: './sugerencias-empleado.component.html',
 })
 export class SugerenciasEmpleadoComponent implements OnInit {
+  protected readonly navItems = NAV_EMPLEADO;
+  protected readonly bottomItems = [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO];
   private readonly formBuilder = inject(FormBuilder);
   private readonly servicio = inject(SugerenciasService);
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
-  protected readonly puedeAccederRrhh = this.auth.hasRrhhRole();
   protected readonly sugerencias = signal<Sugerencia[]>([]);
   protected readonly cargando = signal(true);
   protected readonly enviando = signal(false);
@@ -66,10 +68,6 @@ export class SugerenciasEmpleadoComponent implements OnInit {
         this.enviando.set(false);
       },
     });
-  }
-
-  protected salir(): void {
-    this.auth.logout();
   }
 
   protected formatoFecha(fecha: string): string {
