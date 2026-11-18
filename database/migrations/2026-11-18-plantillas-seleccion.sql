@@ -62,7 +62,7 @@ BEGIN
             ORDER BY FIELD(v.estado, 'publicada', 'archivada', 'borrador'), v.numero DESC
             LIMIT 1
         )
-        WHERE p.definicion IS NULL;
+        WHERE p.id > 0 AND p.definicion IS NULL;
     END IF;
 
     IF NOT EXISTS (
@@ -87,7 +87,7 @@ BEGIN
         UPDATE candidatos_seleccion_intentos i
         INNER JOIN seleccion_plantilla_versiones v ON v.id = i.plantilla_version_id
         SET i.definicion_snapshot = v.definicion
-        WHERE i.definicion_snapshot IS NULL;
+        WHERE i.id > 0 AND i.definicion_snapshot IS NULL;
     END IF;
 
     OPEN cursor_fk_version;
