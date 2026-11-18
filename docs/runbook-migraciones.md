@@ -33,6 +33,9 @@ Ejecuta **una sola vez**, en este orden, las migraciones que falten:
 9. `2026-11-11-codigos-acceso-candidatos.sql`
 10. `2026-11-11-cuentas-candidatos-curriculum.sql`
 11. `2026-11-12-resultados-automaticos-seleccion.sql`
+12. `2026-11-18-plantillas-seleccion-versionadas.sql`
+
+La migración 12 crea `seleccion_plantillas`, `seleccion_plantilla_versiones` y agrega `plantilla_version_id` a `candidatos_seleccion_intentos`. También agrega `activo` a las cuentas de candidato y los campos de archivado/auditoría a `candidatos_seleccion`. Los intentos anteriores quedan con ese campo en `NULL` y siguen usando el resultado ya calculado. Las cuentas existentes quedan activas. Después de aplicarla, las plantillas se generan desde el config actual la primera vez que se editan desde Administración; no hay que cargarlas a mano.
 
 Antes de cada una, comprueba con `SHOW TABLES;` y `SHOW COLUMNS FROM <tabla>;` si ya fue aplicada. Varias migraciones usan `CREATE TABLE` o `ALTER TABLE` directos y no son idempotentes.
 

@@ -73,7 +73,7 @@ async function loginCandidato(req, res, next) {
 
   try {
     const [cuentas] = await pool.execute(
-      `SELECT id, usuario, password_hash
+      `SELECT id, usuario, password_hash, activo
        FROM candidatos_seleccion_accesos
        WHERE usuario = ?
        LIMIT 1`,
@@ -82,6 +82,9 @@ async function loginCandidato(req, res, next) {
     const cuenta = cuentas[0];
     if (!cuenta || !(await bcrypt.compare(password, cuenta.password_hash))) {
       return res.status(401).json({ mensaje: 'Credenciales inválidas.' });
+    }
+    if (cuenta.activo === 0) {
+      return res.status(403).json({ mensaje: 'Esta cuenta de candidato fue dada de baja. Contacta a Reclutamiento.' });
     }
 
     const perfil = {

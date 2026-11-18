@@ -211,6 +211,151 @@
   user-select: all;
 }
 
+.selection-editor-panel,
+.selection-editor {
+  display: grid;
+  gap: 1rem;
+}
+
+.selection-editor {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.selection-editor-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.selection-editor-heading h3,
+.selection-editor-section-heading h4,
+.selection-inline-form h3 {
+  margin: 0;
+  color: #17365d;
+}
+
+.selection-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.75rem;
+}
+
+.selection-editor-grid label,
+.selection-inline-form label {
+  display: grid;
+  gap: 0.35rem;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.selection-editor-grid input,
+.selection-editor-grid select,
+.selection-editor-grid textarea,
+.selection-inline-form textarea {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #1e293b;
+  font: inherit;
+}
+
+.selection-editor-wide {
+  grid-column: 1 / -1;
+}
+
+.selection-editor-section,
+.selection-inline-form {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+}
+
+.selection-editor-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.selection-editor-section-heading small {
+  color: #64748b;
+}
+
+.selection-editor-item {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.6rem;
+  background: #fff;
+}
+
+.selection-editor-item-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: #334155;
+}
+
+.selection-editor-label {
+  margin: 0.35rem 0 0;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.selection-editor-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 90px auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.selection-version-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.selection-version-row span:nth-child(3) {
+  flex: 1 1 180px;
+}
+
+.details-button-danger {
+  color: #9f1239;
+}
+
+.details-button-danger:hover:not(:disabled) {
+  border-color: #9f1239;
+  background: #fff1f2;
+}
+
+.selection-inline-form {
+  margin-top: 1rem;
+  background: #f1f5f9;
+}
+
+.selection-editor input[type='radio'] {
+  accent-color: #17365d;
+}
+
 @media (max-width: 720px) {
   .selection-section-heading {
     flex-direction: column;

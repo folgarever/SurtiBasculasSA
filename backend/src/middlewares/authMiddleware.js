@@ -23,10 +23,10 @@ async function verificarToken(req, res, next) {
   try {
     if (claims.role === 'CANDIDATE') {
       const [cuentas] = await pool.execute(
-        'SELECT id FROM candidatos_seleccion_accesos WHERE id = ? LIMIT 1',
+        'SELECT id, activo FROM candidatos_seleccion_accesos WHERE id = ? LIMIT 1',
         [claims.candidato_acceso_id]
       );
-      if (!cuentas[0]) {
+      if (!cuentas[0] || cuentas[0].activo === 0) {
         return res.status(401).json({ mensaje: 'La cuenta de candidato ya no está disponible.' });
       }
       req.usuario = claims;

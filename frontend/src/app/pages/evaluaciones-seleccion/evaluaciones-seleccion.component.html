@@ -13,15 +13,131 @@
   [bottomItems]="bottomItems"
   bottomActive="/admin/sugerencias"
 >
-    <div class="page-heading"><div><p class="eyebrow">ADMINISTRACIÓN / RECLUTAMIENTO</p><h1>Pruebas de selección por puesto</h1><p class="subheading">Cuentas, seguimiento, calificación automática e historial. Este proceso es independiente de las evaluaciones mensuales de empleados.</p></div></div>
+    <div class="page-heading"><div><p class="eyebrow">ADMINISTRACIÓN / RECLUTAMIENTO</p><h1>Pruebas de selección por puesto</h1><p class="subheading">Configuración versionada, cuentas de candidato, seguimiento, calificación automática e historial. Este proceso es independiente de las evaluaciones mensuales de empleados.</p></div></div>
     @if (error()) { <div class="alert alert-error" role="alert">{{ error() }} <button type="button" (click)="error.set('')">×</button></div> }
     @if (aviso()) { <div class="alert alert-success" role="status">{{ aviso() }}</div> }
 
     @if (cargando()) {
       <section class="knowledge-panel"><div class="knowledge-empty">Cargando pruebas de selección…</div></section>
     } @else {
+      <section class="knowledge-panel selection-editor-panel">
+        <div class="section-heading"><div><p class="eyebrow">1. CONFIGURACIÓN DE PRUEBAS</p><h2>Plantillas versionadas</h2><p class="subheading">Edita preguntas, opciones, puntajes, rúbricas y umbrales. Publicar crea una versión nueva: los intentos anteriores conservan la versión con la que fueron calificados.</p></div></div>
+        @if (!resumenesPlantillas().length) {
+          <div class="knowledge-empty">No hay plantillas configuradas. Aplica la migración de plantillas versionadas para habilitar el editor.</div>
+        } @else {
+          <div class="selection-table-wrap">
+            <table class="selection-table">
+              <thead><tr><th>Puesto</th><th>Origen</th><th>Versión publicada</th><th>Estado</th><th>Acción</th></tr></thead>
+              <tbody>
+                @for (resumen of resumenesPlantillas(); track resumen.puesto_id) {
+                  <tr>
+                    <td><strong>{{ resumen.nombre }}</strong><small>{{ resumen.codigo }} · {{ resumen.departamento }}</small></td>
+                    <td>{{ resumen.origen === 'bd' ? 'Editable' : 'Configuración base' }}</td>
+                    <td>{{ resumen.version_publicada ? 'V' + resumen.version_publicada.numero : 'Sin publicar' }}<small>{{ resumen.total_versiones }} versión(es)</small></td>
+                    <td><span class="selection-status">{{ resumen.activa ? 'Activa' : 'Inactiva' }}</span></td>
+                    <td><button class="details-button" type="button" [disabled]="guardandoPlantilla()" (click)="abrirEditor(resumen)">{{ resumen.plantilla_id ? 'Editar' : 'Crear borrador editable' }}</button></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        @if (detallePlantilla(); as detalle) {
+          @if (definicionEditada(); as definicion) {
+            <div class="selection-editor">
+              <div class="selection-editor-heading">
+                <div><h3>{{ detalle.nombre }}</h3><p class="subheading">Editando la última versión guardada. Los cambios no afectan a los candidatos hasta publicar.</p></div>
+                <div class="selection-template-actions">
+                  <button class="details-button" type="button" [disabled]="guardandoPlantilla()" (click)="guardarBorrador()">Guardar borrador</button>
+                  <button class="button button-accent" type="button" [disabled]="guardandoPlantilla()" (click)="publicarPlantilla()">Publicar versión</button>
+                  <button class="details-button" type="button" [disabled]="guardandoPlantilla()" (click)="alternarActivaPlantilla()">{{ detalle.activa ? 'Desactivar' : 'Activar' }}</button>
+                </div>
+              </div>
+
+              <div class="selection-editor-grid">
+                <label><span>Título</span><input type="text" [value]="definicion.titulo" (input)="actualizarDefinicionCampo('titulo', $event)"></label>
+                <label><span>Tiempo total (min)</span><input type="number" min="1" [value]="definicion.tiempo_total_minutos" (input)="actualizarDefinicionCampo('tiempo_total_minutos', $event)"></label>
+                <label><span>Puntaje total</span><input type="number" min="1" [value]="definicion.puntaje_total" (input)="actualizarDefinicionCampo('puntaje_total', $event)"></label>
+                <label><span>Notas de la versión</span><input type="text" maxlength="500" [value]="notasVersion()" (input)="notasVersion.set($any($event.target).value)"></label>
+                @for (umbral of clavesUmbral; track umbral) {
+                  <label><span>{{ umbral.replace('_', ' ') }}</span><input type="number" min="0" [value]="definicion.umbrales[umbral]" (input)="actualizarUmbral(umbral, $event)"></label>
+                }
+              </div>
+
+              @for (seccion of definicion.secciones; track seccion.id; let seccionIndice = $index) {
+                <article class="selection-editor-section">
+                  <div class="selection-editor-section-heading"><h4>{{ seccion.nombre }}</h4><button class="details-button details-button-danger" type="button" (click)="eliminarPregunta(seccionIndice, 0)" [disabled]="seccion.items.length <= 1">Quitar primera pregunta</button></div>
+                  <div class="selection-editor-grid">
+                    <label><span>Nombre</span><input type="text" [value]="seccion.nombre" (input)="actualizarSeccion(seccionIndice, 'nombre', $event)"></label>
+                    <label><span>Minutos</span><input type="number" min="0" [value]="seccion.tiempo_minutos" (input)="actualizarSeccion(seccionIndice, 'tiempo_minutos', $event)"></label>
+                    <label><span>Puntaje máximo</span><input type="number" min="0" [value]="seccion.puntaje_maximo" (input)="actualizarSeccion(seccionIndice, 'puntaje_maximo', $event)"></label>
+                    <label class="selection-editor-wide"><span>Instrucciones</span><input type="text" [value]="seccion.instrucciones" (input)="actualizarSeccion(seccionIndice, 'instrucciones', $event)"></label>
+                  </div>
+
+                  @for (item of seccion.items; track $index; let itemIndice = $index) {
+                    <div class="selection-editor-item">
+                      <div class="selection-editor-item-heading"><strong>Pregunta {{ itemIndice + 1 }}</strong><button class="details-button details-button-danger" type="button" (click)="eliminarPregunta(seccionIndice, itemIndice)" [disabled]="seccion.items.length <= 1">Eliminar pregunta</button></div>
+                      <label class="selection-editor-wide"><span>Enunciado</span><textarea rows="2" [value]="item.enunciado" (input)="actualizarItem(seccionIndice, itemIndice, 'enunciado', $event)"></textarea></label>
+                      @if (item.detalle !== undefined) { <label class="selection-editor-wide"><span>Detalle</span><textarea rows="2" [value]="item.detalle" (input)="actualizarItem(seccionIndice, itemIndice, 'detalle', $event)"></textarea></label> }
+
+                      <p class="selection-editor-label">Opciones</p>
+                      @for (opcion of item.opciones ?? []; track opcion.id + '-' + $index; let opcionIndice = $index) {
+                        <div class="selection-editor-option">
+                          <input type="radio" [name]="'correcta-' + seccionIndice + '-' + itemIndice" [checked]="opcion.correcta" (change)="marcarCorrecta(seccionIndice, itemIndice, opcionIndice)" [attr.aria-label]="'Marcar opción ' + opcion.id + ' como correcta'">
+                          <input type="text" [value]="opcion.texto" (input)="actualizarOpcion(seccionIndice, itemIndice, opcionIndice, 'texto', $event)">
+                          <input type="number" min="0" step="0.01" [value]="opcion.puntos" (input)="actualizarOpcion(seccionIndice, itemIndice, opcionIndice, 'puntos', $event)">
+                          <button class="details-button details-button-danger" type="button" (click)="eliminarOpcion(seccionIndice, itemIndice, opcionIndice)" [disabled]="(item.opciones?.length ?? 0) <= 2">×</button>
+                        </div>
+                      }
+                      <button class="details-button" type="button" (click)="agregarOpcion(seccionIndice, itemIndice)">+ Opción</button>
+
+                      <p class="selection-editor-label">Rúbrica de calificación</p>
+                      @for (criterio of item.rubrica; track $index; let criterioIndice = $index) {
+                        <div class="selection-editor-option">
+                          <input type="text" [value]="criterio.criterio" (input)="actualizarRubrica(seccionIndice, itemIndice, criterioIndice, 'criterio', $event)">
+                          <input type="number" min="0" step="0.01" [value]="criterio.puntos" (input)="actualizarRubrica(seccionIndice, itemIndice, criterioIndice, 'puntos', $event)">
+                          <button class="details-button details-button-danger" type="button" (click)="eliminarRubrica(seccionIndice, itemIndice, criterioIndice)">×</button>
+                        </div>
+                      }
+                      <button class="details-button" type="button" (click)="agregarRubrica(seccionIndice, itemIndice)">+ Criterio</button>
+                    </div>
+                  }
+                  <button class="details-button" type="button" (click)="agregarPregunta(seccionIndice)">+ Pregunta en {{ seccion.id }}</button>
+                </article>
+              }
+
+              <article class="selection-editor-section">
+                <div class="selection-editor-section-heading"><h4>Verificación en vivo</h4><small>No suma puntos al total.</small></div>
+                @for (actividad of definicion.verificacion_en_vivo.actividades; track $index; let actividadIndice = $index) {
+                  <div class="selection-editor-option">
+                    <input type="text" [value]="actividad.solicitud" (input)="actualizarActividad(actividadIndice, 'solicitud', $event)">
+                    <input type="text" [value]="actividad.respuesta_esperada" (input)="actualizarActividad(actividadIndice, 'respuesta_esperada', $event)">
+                    <button class="details-button details-button-danger" type="button" (click)="eliminarActividad(actividadIndice)">×</button>
+                  </div>
+                }
+                <button class="details-button" type="button" (click)="agregarActividad()">+ Actividad</button>
+              </article>
+
+              <article class="selection-editor-section">
+                <div class="selection-editor-section-heading"><h4>Historial de versiones</h4></div>
+                @for (version of detalle.versiones; track version.id) {
+                  <div class="selection-version-row">
+                    <strong>V{{ version.numero }}</strong>
+                    <span class="selection-status">{{ version.estado }}</span>
+                    <span>{{ version.notas || 'Sin notas' }}</span>
+                    <button class="details-button" type="button" (click)="cargarVersionEnEditor(version)">Cargar en editor</button>
+                    @if (version.estado !== 'borrador') { <button class="details-button" type="button" (click)="restaurarVersion(version)">Restaurar</button> }
+                  </div>
+                }
+              </article>
+            </div>
+          }
+        }
+      </section>
+
       <section class="knowledge-panel selection-candidate-registration selection-admin-only-panel">
-        <div class="section-heading"><div><p class="eyebrow">1. ACCESO DE ASPIRANTES</p><h2>Crear cuenta de candidato</h2><p class="subheading">Asigna el puesto al crear la cuenta. El candidato ingresará para completar sus datos y realizar únicamente la evaluación correspondiente.</p></div></div>
+        <div class="section-heading"><div><p class="eyebrow">2. ACCESO DE ASPIRANTES</p><h2>Crear cuenta de candidato</h2><p class="subheading">Asigna el puesto al crear la cuenta. El candidato ingresará para completar sus datos y realizar únicamente la evaluación correspondiente.</p></div></div>
         <label class="selection-position-picker"><span>Puesto al que aspira</span><select [value]="puestoParaCuenta()" (change)="seleccionarPuestoCuenta($event)">@for (plantilla of plantillas(); track plantilla.id) { <option [value]="plantilla.id">{{ plantilla.nombre_puesto }}</option> }</select></label>
         <button class="button button-accent" type="button" [disabled]="guardando()" (click)="registrarCandidato()">{{ guardando() ? 'Generando cuenta…' : 'Crear cuenta y contraseña' }}</button>
         @if (cuentaCreada(); as cuenta) {
@@ -35,7 +151,7 @@
       </section>
 
       <section class="knowledge-panel selection-admin-only-panel">
-        <div class="section-heading"><div><p class="eyebrow">2. SEGUIMIENTO DE ASPIRANTES</p><h2>Cuentas y pruebas pendientes</h2><p class="subheading">Candidatos registrados que todavía no han entregado una prueba. Se muestran las cuentas creadas y los perfiles completados.</p></div><span class="selection-count">{{ candidatosPendientes().length }} pendientes</span></div>
+        <div class="section-heading"><div><p class="eyebrow">3. SEGUIMIENTO DE ASPIRANTES</p><h2>Cuentas y pruebas pendientes</h2><p class="subheading">Edita perfiles, aplica baja lógica, elimina cuentas sin historial y autoriza reintentos con motivo registrado.</p></div><span class="selection-count">{{ candidatosPendientes().length }} pendientes</span></div>
         @if (!candidatosPendientes().length) {
           <div class="knowledge-empty">No hay cuentas ni pruebas pendientes.</div>
         } @else {
@@ -48,25 +164,66 @@
                     <td><strong>{{ candidato.nombres ? candidato.nombres + ' ' + candidato.apellidos : 'Perfil pendiente' }}</strong><small>{{ candidato.usuario }}</small></td>
                     <td>{{ candidato.nombre_puesto || 'Por seleccionar' }}</td>
                     <td>{{ candidato.edad === null ? '—' : candidato.edad + ' años' }}</td>
-                    <td><span class="selection-status">{{ candidato.estado === 'pendiente_perfil' ? 'Pendiente de datos' : 'Prueba pendiente' }}</span></td>
+                    <td>
+                      <span class="selection-status">{{ candidato.activo === false ? 'Dada de baja' : candidato.estado === 'pendiente_perfil' ? 'Pendiente de datos' : 'Prueba pendiente' }}</span>
+                      @if (candidato.estado === 'registro' && candidato.completada_en) { <small>Con reintento autorizado</small> }
+                    </td>
                     <td>{{ candidato.completada_en ? formatoFecha(candidato.completada_en) : candidato.creado_en ? formatoFecha(candidato.creado_en) : '—' }}</td>
-                    <td>@if (candidato.curriculum_nombre) { <button class="details-button" type="button" (click)="descargarCurriculum(candidato)">Descargar CV</button> } @else { <span>—</span> }</td>
+                    <td class="selection-actions">
+                      @if (candidato.id !== null) {
+                        <button class="details-button" type="button" (click)="editarPerfil(candidato)">Editar</button>
+                        <button class="details-button" type="button" (click)="solicitarReintento(candidato.id, candidato.nombres ? candidato.nombres + ' ' + candidato.apellidos : candidato.usuario || '')">Reintento</button>
+                      }
+                      @if (candidato.curriculum_nombre) { <button class="details-button" type="button" (click)="descargarCurriculum(candidato)">CV</button> }
+                      @if (candidato.acceso_id !== undefined) {
+                        <button class="details-button" type="button" [disabled]="guardando()" (click)="cambiarActivoCuenta(candidato)">{{ candidato.activo === false ? 'Reactivar' : 'Dar de baja' }}</button>
+                        <button class="details-button details-button-danger" type="button" [disabled]="guardando()" (click)="eliminarCuenta(candidato)">Eliminar</button>
+                      }
+                    </td>
                   </tr>
                 }
               </tbody>
             </table>
           </div>
+
+          @if (reintentoCandidatoId() !== null) {
+            <div class="selection-inline-form">
+              <h3>Autorizar reintento · {{ reintentoNombre() }}</h3>
+              <label><span>Motivo registrado (1–500 caracteres)</span><textarea rows="3" maxlength="500" [value]="motivoReintento()" (input)="motivoReintento.set($any($event.target).value)"></textarea></label>
+              <div class="selection-template-actions">
+                <button class="button button-accent" type="button" [disabled]="guardando()" (click)="confirmarReintento()">Confirmar reintento</button>
+                <button class="details-button" type="button" (click)="cancelarReintento()">Cancelar</button>
+              </div>
+            </div>
+          }
+
+          @if (editandoPerfilId() !== null) {
+            <div class="selection-inline-form">
+              <h3>Editar perfil del candidato</h3>
+              <div class="selection-editor-grid">
+                <label><span>Nombres</span><input type="text" maxlength="100" [value]="perfilEdicion().nombres" (input)="actualizarPerfilEdicion('nombres', $event)"></label>
+                <label><span>Apellidos</span><input type="text" maxlength="120" [value]="perfilEdicion().apellidos" (input)="actualizarPerfilEdicion('apellidos', $event)"></label>
+                <label><span>Fecha de nacimiento</span><input type="date" [value]="perfilEdicion().fecha_nacimiento" (input)="actualizarPerfilEdicion('fecha_nacimiento', $event)"></label>
+                <label><span>Puesto</span><select [value]="perfilEdicion().puesto_id" (input)="actualizarPerfilEdicion('puesto_id', $event)">@for (plantilla of plantillas(); track plantilla.id) { <option [value]="plantilla.id">{{ plantilla.nombre_puesto }}</option> }</select></label>
+                <label class="selection-editor-wide"><span>Reemplazar currículum (opcional, PDF ≤ 5 MB)</span><input type="file" accept="application/pdf" (change)="seleccionarCurriculumAdmin($event)"></label>
+              </div>
+              <div class="selection-template-actions">
+                <button class="button button-accent" type="button" [disabled]="guardando()" (click)="guardarPerfil()">Guardar perfil</button>
+                <button class="details-button" type="button" (click)="cancelarEdicionPerfil()">Cancelar</button>
+              </div>
+            </div>
+          }
         }
       </section>
 
       <section class="knowledge-panel selection-admin-only-panel">
-        <div class="section-heading"><div><p class="eyebrow">3. HISTORIAL</p><h2>Resultados registrados</h2><p class="subheading">Los intentos se califican y guardan automáticamente al entregar la prueba.</p></div><span class="selection-count">{{ resultados().length }} resultados</span></div>
+        <div class="section-heading"><div><p class="eyebrow">4. HISTORIAL</p><h2>Resultados registrados</h2><p class="subheading">Los intentos se califican y guardan automáticamente al entregar la prueba, con la versión de plantilla utilizada.</p></div><span class="selection-count">{{ resultados().length }} resultados</span></div>
         @if (!resultados().length) {
           <div class="knowledge-empty">Aún no hay resultados registrados.</div>
         } @else {
           <div class="selection-table-wrap">
             <table class="selection-table">
-              <thead><tr><th>Candidato</th><th>Puesto</th><th>Fecha</th><th>Calificación</th><th>Respuestas correctas</th><th>Resultado</th><th>Intento</th><th>Acción</th></tr></thead>
+              <thead><tr><th>Candidato</th><th>Puesto</th><th>Fecha</th><th>Calificación</th><th>Respuestas correctas</th><th>Resultado</th><th>Intento / versión</th><th>Acción</th></tr></thead>
               <tbody>
                 @for (resultado of resultados(); track resultado.origen + '-' + resultado.id + '-' + resultado.numero_intento) {
                   <tr>
@@ -76,7 +233,11 @@
                     <td><strong>{{ resultado.puntaje_total | number:'1.0-2' }}/100</strong></td>
                     <td>{{ resultado.porcentaje_correctas === null ? 'Dato no disponible' : resultado.respuestas_correctas + '/' + resultado.total_preguntas + ' (' + (resultado.porcentaje_correctas | number:'1.0-2') + '%)' }}</td>
                     <td><span class="selection-status">{{ etiquetaDecision(resultado.decision) }}</span></td>
-                    <td>{{ resultado.numero_intento === null ? 'Anterior' : '#' + resultado.numero_intento }}@if (resultado.reintento_motivo) { <small>Reintento: {{ resultado.reintento_motivo }}</small> }</td>
+                    <td>
+                      {{ resultado.numero_intento === null ? 'Anterior' : '#' + resultado.numero_intento }}
+                      @if (resultado.plantilla_version_numero) { <small>Plantilla V{{ resultado.plantilla_version_numero }}</small> }
+                      @if (resultado.reintento_motivo) { <small>Reintento: {{ resultado.reintento_motivo }}</small> }
+                    </td>
                     <td>
                       @if (puedeAutorizarReintento(resultado)) {
                         <button class="details-button" type="button" [disabled]="guardando()" (click)="autorizarReintentoResultado(resultado)">Autorizar reintento</button>
@@ -92,7 +253,7 @@
 
       <section class="knowledge-panel selection-template-panel">
         <div class="section-heading">
-          <div><p class="eyebrow">4. CUADERNILLO Y GUÍA INTERNA</p><h2>Evaluaciones de selección por puesto</h2><p class="subheading">Consulta e imprime la prueba y su guía de calificación sin crear una cuenta de candidato.</p></div>
+          <div><p class="eyebrow">5. CUADERNILLO Y GUÍA INTERNA</p><h2>Evaluaciones de selección por puesto</h2><p class="subheading">Consulta e imprime la prueba y su guía de calificación sin crear una cuenta de candidato.</p></div>
           <div class="selection-template-actions">
             <label class="selection-position-picker"><span>Puesto</span><select [value]="puestoSeleccionado()" (change)="seleccionarPuesto($event)">@for (plantilla of plantillas(); track plantilla.id) { <option [value]="plantilla.id">{{ plantilla.nombre_puesto }}</option> }</select></label>
             <button class="button button-accent selection-print-button" type="button" (click)="imprimirCuadernillo()">Imprimir</button>
@@ -101,7 +262,7 @@
         </div>
         @if (plantillaActual(); as plantilla) {
           <h3>{{ plantilla.evaluacion.titulo }}</h3>
-          <p class="subheading">{{ plantilla.departamento }} · {{ plantilla.evaluacion.tiempo_total_minutos }} minutos · {{ plantilla.evaluacion.puntaje_total }} puntos</p>
+          <p class="subheading">{{ plantilla.departamento }} · {{ plantilla.evaluacion.tiempo_total_minutos }} minutos · {{ plantilla.evaluacion.puntaje_total }} puntos @if (plantilla.version?.numero) { · Versión {{ plantilla.version?.numero }} }</p>
           <div class="selection-candidate-header"><span>Nombre ______________________________</span><span>Fecha __________________</span></div>
           <p class="selection-candidate-instructions">Responde todas las preguntas y selecciona una alternativa. La calificación se realiza automáticamente al entregar la prueba en el portal.</p>
           <p class="selection-internal-note">Aplica las mismas condiciones a cada candidato. Las claves y rúbricas son de uso interno.</p>
@@ -122,7 +283,7 @@
           <div class="selection-thresholds">
             <strong>Criterios de decisión</strong>
             <span>Recomendable: ≥{{ plantilla.evaluacion.umbrales.recomendable }}/100, práctica ≥{{ plantilla.evaluacion.umbrales.minimo_practica }}/55, conocimientos ≥{{ plantilla.evaluacion.umbrales.minimo_conocimientos }}/20 y valores ≥{{ plantilla.evaluacion.umbrales.minimo_valores }}/15.</span>
-            <span>Revisión adicional: 70–79 puntos con mínimos cumplidos. Un puntaje menor de 70 o mínimo no acreditado se registra como competencia aún no demostrada.</span>
+            <span>Revisión adicional: {{ plantilla.evaluacion.umbrales.revision_adicional }}–{{ plantilla.evaluacion.umbrales.recomendable - 1 }} puntos con mínimos cumplidos. Un puntaje menor o un mínimo no acreditado se registra como competencia aún no demostrada.</span>
           </div>
           @if (mostrarGuia()) {
             <div class="selection-live-check">

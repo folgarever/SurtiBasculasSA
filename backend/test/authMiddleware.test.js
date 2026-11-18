@@ -85,6 +85,20 @@ test('verificarToken rechaza cuentas de candidato eliminadas', async () => {
   assert.equal(res.codigo, 401);
 });
 
+test('verificarToken rechaza cuentas de candidato dadas de baja', async () => {
+  jwt.verify = () => ({ role: 'CANDIDATE', candidato_acceso_id: 99 });
+  pool.execute = async () => [[{ id: 99, activo: 0 }]];
+
+  const req = { headers: { authorization: 'Bearer token' } };
+  const res = crearRespuesta();
+  let paso = false;
+
+  await verificarToken(req, res, () => { paso = true; });
+
+  assert.equal(paso, false);
+  assert.equal(res.codigo, 401);
+});
+
 test('permitirEvaluaciones exige ADMIN y código autorizado', () => {
   const res = crearRespuesta();
   let paso = false;

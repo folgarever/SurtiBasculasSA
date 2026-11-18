@@ -2,10 +2,8 @@ const pool = require('../config/db');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { evaluacionAsistente, puestoCodigo } = require('../config/evaluacionesSeleccion');
-const {
-  obtenerEvaluacion,
-  codigosPuestosConPrueba,
-} = require('../config/evaluacionesSeleccionPuestos');
+const { codigosPuestosConPrueba } = require('../config/evaluacionesSeleccionPuestos');
+const plantillasService = require('../services/seleccionPlantillasService');
 
 function fechaValida(fecha) {
   if (typeof fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return false;
@@ -30,6 +28,52 @@ function codigosPuestosEvaluables() {
   return [puestoCodigo, ...codigosPuestosConPrueba()];
 }
 
+function errorHttp(status, mensaje) {
+  const error = new Error(mensaje);
+  error.status = status;
+  return error;
+}
+
+function responderErrorService(error, res, next) {
+  if (error?.status) {
+    return res.status(error.status).json({ mensaje: error.message });
+  }
+  return next(error);
+}
+
+function metadatosVersion(resultado) {
+  if (!resultado) return null;
+  return {
+    id: resultado.versionId ?? null,
+    numero: resultado.numero ?? null,
+    origen: resultado.origen ?? 'codigo',
+  };
+}
+
+async function resolverDefinicion(codigo, ejecutor = pool, versionId = null) {
+  if (versionId !== null && versionId !== undefined && versionId !== '') {
+    if (!/^\d+$/.test(String(versionId)) || Number(versionId) < 1) {
+      throw errorHttp(400, 'La versión de la prueba indicada no es válida.');
+    }
+    const version = await plantillasService.obtenerDefinicionPorVersion(Number(versionId), ejecutor);
+    if (version.codigo !== codigo) {
+      throw errorHttp(400, 'La versión indicada no pertenece a la prueba del puesto.');
+    }
+    if (version.estado === 'borrador' || !version.activa) {
+      throw errorHttp(409, 'La versión indicada no está disponible. Carga de nuevo la prueba antes de entregarla.');
+    }
+    return {
+      definicion: version.definicion,
+      versionId: version.id,
+      numero: version.numero,
+      origen: 'version',
+    };
+  }
+  const publicada = await plantillasService.obtenerDefinicionPublicada(codigo, ejecutor);
+  if (!publicada) throw errorHttp(409, 'No hay una prueba de selección configurada para este puesto.');
+  return publicada;
+}
+
 function mezclarOpciones(opciones) {
   const resultado = [...opciones];
   for (let indice = resultado.length - 1; indice > 0; indice -= 1) {
@@ -39,9 +83,10 @@ function mezclarOpciones(opciones) {
   return resultado;
 }
 
-function plantillaPublica(puesto, incluirRubrica = true, evaluacion = evaluacionAsistente) {
+function plantillaPublica(puesto, incluirRubrica = true, evaluacion = evaluacionAsistente, version = null) {
   return {
     ...puesto,
+    ...(version ? { version } : {}),
     evaluacion: {
       ...evaluacion,
       secciones: evaluacion.secciones.map(({ rubrica, ...seccion }) => ({
@@ -86,16 +131,18 @@ async function obtenerPlantillas(req, res, next) {
        ORDER BY nombre_puesto`,
       codigos
     );
-    const plantillas = puestos.map((puesto) => plantillaPublica(
+    const definiciones = await Promise.all(puestos.map((puesto) => (
+      resolverDefinicion(puesto.codigo_abreviatura)
+    )));
+    const plantillas = puestos.map((puesto, indice) => plantillaPublica(
       puesto,
       true,
-      puesto.codigo_abreviatura === puestoCodigo
-        ? evaluacionAsistente
-        : obtenerEvaluacion(puesto.codigo_abreviatura),
+      definiciones[indice].definicion,
+      metadatosVersion(definiciones[indice]),
     ));
     return res.json({ plantillas });
   } catch (error) {
-    return next(error);
+    return responderErrorService(error, res, next);
   }
 }
 
@@ -111,11 +158,10 @@ async function obtenerPlantillasCandidato(req, res, next) {
     );
     if (candidatos[0]) {
       const puesto = candidatos[0];
-      const evaluacion = puesto.codigo_abreviatura === puestoCodigo
-        ? evaluacionAsistente
-        : obtenerEvaluacion(puesto.codigo_abreviatura);
-      if (!evaluacion) return res.json({ plantillas: [] });
-      return res.json({ plantillas: [plantillaPublica(puesto, false, evaluacion)] });
+      const definicion = await resolverDefinicion(puesto.codigo_abreviatura);
+      return res.json({
+        plantillas: [plantillaPublica(puesto, false, definicion.definicion, metadatosVersion(definicion))],
+      });
     }
 
     const codigos = codigosPuestosEvaluables();
@@ -126,17 +172,19 @@ async function obtenerPlantillasCandidato(req, res, next) {
        ORDER BY nombre_puesto`,
       codigos
     );
+    const definiciones = await Promise.all(puestos.map((puesto) => (
+      resolverDefinicion(puesto.codigo_abreviatura)
+    )));
     return res.json({
-      plantillas: puestos.map((puesto) => plantillaPublica(
+      plantillas: puestos.map((puesto, indice) => plantillaPublica(
         puesto,
         false,
-        puesto.codigo_abreviatura === puestoCodigo
-          ? evaluacionAsistente
-          : obtenerEvaluacion(puesto.codigo_abreviatura),
+        definiciones[indice].definicion,
+        metadatosVersion(definiciones[indice]),
       )),
     });
   } catch (error) {
-    return next(error);
+    return responderErrorService(error, res, next);
   }
 }
 
@@ -372,6 +420,7 @@ async function descargarCurriculumCandidato(req, res, next) {
 
 async function entregarPruebaCandidato(req, res, next) {
   const respuestas = req.body?.respuestas;
+  const plantillaVersionId = req.body?.plantilla_version_id ?? null;
   if (!respuestas || typeof respuestas !== 'object' || Array.isArray(respuestas)) {
     return res.status(400).json({ mensaje: 'Debes completar las respuestas de la prueba.' });
   }
@@ -398,13 +447,8 @@ async function entregarPruebaCandidato(req, res, next) {
       await connection.rollback();
       return res.status(409).json({ mensaje: 'Completa tu perfil y adjunta tu currículum antes de iniciar la evaluación.' });
     }
-    const evaluacion = perfil.codigo_abreviatura === puestoCodigo
-      ? evaluacionAsistente
-      : obtenerEvaluacion(perfil.codigo_abreviatura);
-    if (!evaluacion) {
-      await connection.rollback();
-      return res.status(409).json({ mensaje: 'No hay una prueba de selección configurada para este puesto.' });
-    }
+    const definicion = await resolverDefinicion(perfil.codigo_abreviatura, connection, plantillaVersionId);
+    const evaluacion = definicion.definicion;
 
     const ids = evaluacion.secciones.flatMap((seccion) => (
     seccion.items.map((item, indice) => `${seccion.id}-${indice}`)
@@ -446,8 +490,8 @@ async function entregarPruebaCandidato(req, res, next) {
        (candidato_id, numero_intento, puesto_id, fecha_evaluacion, respuestas,
         puntaje_aptitudes, puntaje_conocimientos, puntaje_practica, puntaje_valores,
         puntaje_total, respuestas_correctas, total_preguntas, porcentaje_correctas,
-       decision, reintento_autorizado_por, reintento_motivo)
-       VALUES (?, ?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       decision, plantilla_version_id, reintento_autorizado_por, reintento_motivo)
+       VALUES (?, ?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         perfil.id,
         numeroIntento,
@@ -462,6 +506,7 @@ async function entregarPruebaCandidato(req, res, next) {
         totalPreguntas,
         porcentajeCorrectas,
         decision,
+        definicion.versionId,
         perfil.reintento_autorizado_por,
         perfil.reintento_motivo,
       ]
@@ -488,10 +533,14 @@ async function entregarPruebaCandidato(req, res, next) {
         total_preguntas: totalPreguntas,
         porcentaje_correctas: porcentajeCorrectas,
         decision,
+        plantilla_version_id: definicion.versionId,
       },
     });
   } catch (error) {
     if (connection) await connection.rollback();
+    if (error?.status) {
+      return res.status(error.status).json({ mensaje: error.message });
+    }
     return next(error);
   } finally {
     if (connection) connection.release();
@@ -531,10 +580,10 @@ async function listarCandidatosPendientes(req, res, next) {
       parametros.push(Number(puestoId));
     }
     const [candidatos] = await pool.execute(
-      `SELECT c.id, a.id AS acceso_id, a.usuario, c.nombres, c.apellidos,
+      `SELECT c.id, a.id AS acceso_id, a.usuario, a.activo, c.nombres, c.apellidos,
               c.fecha_nacimiento, c.puesto_id, p.nombre_puesto, c.respuestas,
               c.estado, c.curriculum_nombre, a.creado_en,
-              c.completada_en,
+              c.completada_en, c.archivado_en,
               TIMESTAMPDIFF(YEAR, c.fecha_nacimiento, CURDATE()) AS edad
        FROM candidatos_seleccion_accesos a
        LEFT JOIN candidatos_seleccion c ON c.acceso_id = a.id
@@ -551,14 +600,9 @@ async function listarCandidatosPendientes(req, res, next) {
         fecha_nacimiento: candidato.fecha_nacimiento
           ? String(candidato.fecha_nacimiento).slice(0, 10)
           : null,
-        respuestas: candidato.estado === 'completada'
-          ? (typeof candidato.respuestas === 'string' ? JSON.parse(candidato.respuestas) : candidato.respuestas)
-          : null,
-        puntajes_automaticos: candidato.estado === 'completada'
-          ? puntajesAutomaticos(
-            typeof candidato.respuestas === 'string' ? JSON.parse(candidato.respuestas) : candidato.respuestas
-          )
-          : null,
+        activo: candidato.activo === undefined ? true : Boolean(candidato.activo),
+        respuestas: null,
+        puntajes_automaticos: null,
       })),
     });
   } catch (error) {
@@ -604,6 +648,7 @@ async function listarResultados(req, res, next) {
               i.puntaje_conocimientos, i.puntaje_practica, i.puntaje_valores,
               i.puntaje_total, i.respuestas_correctas, i.total_preguntas,
               i.porcentaje_correctas, i.decision, i.creado_en, i.reintento_motivo,
+              i.plantilla_version_id, pv.numero AS plantilla_version_numero,
               c.nombres, c.apellidos, c.fecha_nacimiento,
               c.estado AS estado_candidato,
               TIMESTAMPDIFF(YEAR, c.fecha_nacimiento, CURDATE()) AS edad,
@@ -612,6 +657,7 @@ async function listarResultados(req, res, next) {
        INNER JOIN candidatos_seleccion c ON c.id = i.candidato_id
        INNER JOIN candidatos_seleccion_accesos a ON a.id = c.acceso_id
        INNER JOIN puestos p ON p.id = i.puesto_id
+       LEFT JOIN seleccion_plantilla_versiones pv ON pv.id = i.plantilla_version_id
        ${filtroIntentos}
        ORDER BY i.fecha_evaluacion DESC, i.id DESC
        LIMIT 250`,
@@ -691,6 +737,284 @@ async function autorizarReintentoCandidato(req, res, next) {
   }
 }
 
+function idValido(valor) {
+  return /^\d+$/.test(String(valor)) && Number(valor) > 0;
+}
+
+function notasValidas(notas) {
+  return notas === undefined || (typeof notas === 'string' && notas.length <= 500);
+}
+
+function fechaPerfilValida(fecha) {
+  if (!fechaValida(fecha)) return false;
+  const hoy = new Date();
+  const fechaActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+  return fecha <= fechaActual;
+}
+
+async function listarPlantillasAdmin(req, res, next) {
+  try {
+    return res.json({ plantillas: await plantillasService.listar() });
+  } catch (error) {
+    return responderErrorService(error, res, next);
+  }
+}
+
+async function obtenerPlantillaAdmin(req, res, next) {
+  if (!idValido(req.params.id)) {
+    return res.status(400).json({ mensaje: 'La plantilla seleccionada no es válida.' });
+  }
+  try {
+    return res.json({ plantilla: await plantillasService.obtenerDetalle(Number(req.params.id)) });
+  } catch (error) {
+    return responderErrorService(error, res, next);
+  }
+}
+
+async function crearPlantillaAdmin(req, res, next) {
+  const puestoId = req.body?.puesto_id;
+  const notas = req.body?.notas;
+  if (!idValido(puestoId) || !notasValidas(notas)) {
+    return res.status(400).json({ mensaje: 'Selecciona un puesto válido e indica notas de hasta 500 caracteres.' });
+  }
+  try {
+    const plantilla = await plantillasService.crear(
+      Number(puestoId),
+      req.body?.definicion,
+      notas,
+      req.usuario?.id,
+    );
+    return res.status(201).json({ plantilla });
+  } catch (error) {
+    return responderErrorService(error, res, next);
+  }
+}
+
+async function actualizarPlantillaAdmin(req, res, next) {
+  if (!idValido(req.params.id) || !notasValidas(req.body?.notas)) {
+    return res.status(400).json({ mensaje: 'La plantilla o las notas no son válidas.' });
+  }
+  try {
+    const plantilla = await plantillasService.actualizarBorrador(
+      Number(req.params.id),
+      req.body?.definicion,
+      req.body?.notas,
+      req.usuario?.id,
+    );
+    return res.json({ plantilla });
+  } catch (error) {
+    return responderErrorService(error, res, next);
+  }
+}
+
+async function publicarPlantillaAdmin(req, res, next) {
+  if (!idValido(req.params.id)) {
+    return res.status(400).json({ mensaje: 'La plantilla seleccionada no es válida.' });
+  }
+  try {
+    return res.json({ plantilla: await plantillasService.publicar(Number(req.params.id), req.usuario?.id) });
+  } catch (error) {
+    return responderErrorService(error, res, next);
+  }
+}
+
+async function activarPlantillaAdmin(req, res, next) {
+  if (!idValido(req.params.id) || typeof req.body?.activa !== 'boolean') {
+    return res.status(400).json({ mensaje: 'Indica si la plantilla debe estar activa o no.' });
+  }
+  try {
+    return res.json({
+      plantilla: await plantillasService.cambiarActiva(Number(req.params.id), req.body.activa, req.usuario?.id),
+    });
+  } catch (error) {
+    return responderErrorService(error, res, next);
+  }
+}
+
+async function restaurarVersionPlantillaAdmin(req, res, next) {
+  if (!idValido(req.params.id) || !idValido(req.params.versionId)) {
+    return res.status(400).json({ mensaje: 'La plantilla o la versión seleccionada no son válidas.' });
+  }
+  try {
+    return res.json({
+      plantilla: await plantillasService.restaurarVersion(
+        Number(req.params.id),
+        Number(req.params.versionId),
+        req.usuario?.id,
+      ),
+    });
+  } catch (error) {
+    return responderErrorService(error, res, next);
+  }
+}
+
+async function actualizarPerfilCandidatoAdmin(req, res, next) {
+  const candidatoId = req.params.id;
+  const { nombres, apellidos, fecha_nacimiento: fechaNacimiento, puesto_id: puestoId } = req.body || {};
+  if (
+    !idValido(candidatoId)
+    || typeof nombres !== 'string' || !nombres.trim() || nombres.trim().length > 100
+    || typeof apellidos !== 'string' || !apellidos.trim() || apellidos.trim().length > 120
+    || !fechaPerfilValida(fechaNacimiento)
+    || (puestoId !== undefined && !idValido(puestoId))
+  ) {
+    return res.status(400).json({ mensaje: 'Revisa los datos del candidato: nombre, apellidos, fecha y puesto deben ser válidos.' });
+  }
+  if (
+    req.file
+    && (req.file.mimetype !== 'application/pdf' || !req.file.buffer.subarray(0, 5).equals(Buffer.from('%PDF-')))
+  ) {
+    return res.status(400).json({ mensaje: 'El currículum debe ser un PDF válido de máximo 5 MB.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    const [candidatos] = await connection.execute(
+      `SELECT c.id, c.puesto_id,
+              (SELECT COUNT(*) FROM candidatos_seleccion_intentos i WHERE i.candidato_id = c.id) AS total_intentos
+       FROM candidatos_seleccion c WHERE c.id = ? LIMIT 1 FOR UPDATE`,
+      [Number(candidatoId)]
+    );
+    const candidato = candidatos[0];
+    if (!candidato) {
+      await connection.rollback();
+      return res.status(404).json({ mensaje: 'El candidato seleccionado no existe.' });
+    }
+
+    const puestoFinal = puestoId === undefined ? Number(candidato.puesto_id) : Number(puestoId);
+    if (!idValido(puestoFinal)) {
+      await connection.rollback();
+      return res.status(400).json({ mensaje: 'El candidato no tiene un puesto asignado.' });
+    }
+    if (puestoId !== undefined && Number(candidato.total_intentos) > 0 && puestoFinal !== Number(candidato.puesto_id)) {
+      await connection.rollback();
+      return res.status(409).json({ mensaje: 'No se puede cambiar el puesto después de registrar un intento.' });
+    }
+    const [puestos] = await connection.execute(
+      `SELECT id FROM puestos
+       WHERE id = ? AND codigo_abreviatura IN (${codigosPuestosEvaluables().map(() => '?').join(', ')})
+       LIMIT 1`,
+      [puestoFinal, ...codigosPuestosEvaluables()]
+    );
+    if (!puestos[0]) {
+      await connection.rollback();
+      return res.status(400).json({ mensaje: 'El puesto indicado no tiene una prueba de selección.' });
+    }
+
+    let consulta = `UPDATE candidatos_seleccion
+                    SET nombres = ?, apellidos = ?, fecha_nacimiento = ?, puesto_id = ?`;
+    const valores = [nombres.trim(), apellidos.trim(), fechaNacimiento, puestoFinal];
+    if (req.file) {
+      consulta += ", curriculum_nombre = 'curriculum.pdf', curriculum_contenido = ?";
+      valores.push(req.file.buffer);
+    }
+    consulta += ', perfil_actualizado_en = CURRENT_TIMESTAMP, perfil_actualizado_por = ? WHERE id = ?';
+    valores.push(req.usuario?.id ?? null, Number(candidatoId));
+    await connection.execute(consulta, valores);
+    await connection.commit();
+    return res.json({
+      candidato: {
+        id: Number(candidatoId),
+        nombres: nombres.trim(),
+        apellidos: apellidos.trim(),
+        fecha_nacimiento: fechaNacimiento,
+        puesto_id: puestoFinal,
+        curriculum_nombre: req.file ? 'curriculum.pdf' : undefined,
+      },
+    });
+  } catch (error) {
+    if (connection) await connection.rollback();
+    return next(error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function cambiarActivoCuentaCandidatoAdmin(req, res, next) {
+  const accesoId = req.params.accesoId;
+  if (!idValido(accesoId) || typeof req.body?.activo !== 'boolean') {
+    return res.status(400).json({ mensaje: 'Indica una cuenta válida y si debe quedar activa.' });
+  }
+  const activo = req.body.activo;
+  try {
+    const [cuentas] = await pool.execute(
+      'SELECT id FROM candidatos_seleccion_accesos WHERE id = ? LIMIT 1',
+      [Number(accesoId)]
+    );
+    if (!cuentas[0]) return res.status(404).json({ mensaje: 'La cuenta de candidato no existe.' });
+    await pool.execute(
+      'UPDATE candidatos_seleccion_accesos SET activo = ? WHERE id = ?',
+      [activo ? 1 : 0, Number(accesoId)]
+    );
+    await pool.execute(
+      `UPDATE candidatos_seleccion
+       SET archivado_en = CASE WHEN ? = 1 THEN NULL ELSE CURRENT_TIMESTAMP END,
+           archivado_por = CASE WHEN ? = 1 THEN NULL ELSE ? END
+       WHERE acceso_id = ?`,
+      [activo ? 1 : 0, activo ? 1 : 0, req.usuario?.id ?? null, Number(accesoId)]
+    );
+    return res.json({
+      mensaje: activo
+        ? 'La cuenta de candidato fue reactivada.'
+        : 'La cuenta de candidato quedó dada de baja; su historial se conserva.',
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function eliminarCuentaCandidatoAdmin(req, res, next) {
+  const accesoId = req.params.accesoId;
+  if (!idValido(accesoId)) {
+    return res.status(400).json({ mensaje: 'La cuenta de candidato no es válida.' });
+  }
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    const [cuentas] = await connection.execute(
+      'SELECT id FROM candidatos_seleccion_accesos WHERE id = ? LIMIT 1 FOR UPDATE',
+      [Number(accesoId)]
+    );
+    if (!cuentas[0]) {
+      await connection.rollback();
+      return res.status(404).json({ mensaje: 'La cuenta de candidato no existe.' });
+    }
+    const [candidatos] = await connection.execute(
+      'SELECT id FROM candidatos_seleccion WHERE acceso_id = ? LIMIT 1 FOR UPDATE',
+      [Number(accesoId)]
+    );
+    const candidato = candidatos[0];
+    if (candidato) {
+      const [intentos] = await connection.execute(
+        'SELECT COUNT(*) AS total FROM candidatos_seleccion_intentos WHERE candidato_id = ?',
+        [candidato.id]
+      );
+      const [resultados] = await connection.execute(
+        'SELECT COUNT(*) AS total FROM evaluaciones_seleccion WHERE candidato_id = ?',
+        [candidato.id]
+      );
+      if (Number(intentos[0].total) > 0 || Number(resultados[0].total) > 0) {
+        await connection.rollback();
+        return res.status(409).json({
+          mensaje: 'Esta cuenta tiene intentos o resultados registrados. Use la baja lógica para conservar la auditoría.',
+        });
+      }
+      await connection.execute('DELETE FROM candidatos_seleccion WHERE id = ?', [candidato.id]);
+    }
+    await connection.execute('DELETE FROM candidatos_seleccion_accesos WHERE id = ?', [Number(accesoId)]);
+    await connection.commit();
+    return res.json({ mensaje: 'La cuenta y su perfil fueron eliminados.' });
+  } catch (error) {
+    if (connection) await connection.rollback();
+    return next(error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
 module.exports = {
   obtenerPlantillas,
   obtenerPlantillasCandidato,
@@ -702,4 +1026,14 @@ module.exports = {
   listarCandidatosPendientes,
   listarResultados,
   autorizarReintentoCandidato,
+  listarPlantillasAdmin,
+  obtenerPlantillaAdmin,
+  crearPlantillaAdmin,
+  actualizarPlantillaAdmin,
+  publicarPlantillaAdmin,
+  activarPlantillaAdmin,
+  restaurarVersionPlantillaAdmin,
+  actualizarPerfilCandidatoAdmin,
+  cambiarActivoCuentaCandidatoAdmin,
+  eliminarCuentaCandidatoAdmin,
 };

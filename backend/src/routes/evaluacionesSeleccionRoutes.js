@@ -16,6 +16,16 @@ const {
   listarCandidatosPendientes,
   listarResultados,
   autorizarReintentoCandidato,
+  listarPlantillasAdmin,
+  obtenerPlantillaAdmin,
+  crearPlantillaAdmin,
+  actualizarPlantillaAdmin,
+  publicarPlantillaAdmin,
+  activarPlantillaAdmin,
+  restaurarVersionPlantillaAdmin,
+  actualizarPerfilCandidatoAdmin,
+  cambiarActivoCuentaCandidatoAdmin,
+  eliminarCuentaCandidatoAdmin,
 } = require('../controllers/evaluacionesSeleccionController');
 
 const router = express.Router();
@@ -46,6 +56,20 @@ router.get('/admin/candidatos', permitirEvaluaciones, listarCandidatosPendientes
 router.post('/admin/candidatos', permitirEvaluaciones, registrarCandidatoAdmin);
 router.get('/admin/candidatos/:id/curriculum', permitirEvaluaciones, descargarCurriculumCandidato);
 router.post('/admin/candidatos/:id/reintentar', permitirEvaluaciones, autorizarReintentoCandidato);
+router.put('/admin/candidatos/:id/perfil', permitirEvaluaciones, validarCargaCurriculum, actualizarPerfilCandidatoAdmin);
+router.post('/admin/candidatos/acceso/:accesoId/estado', permitirEvaluaciones, cambiarActivoCuentaCandidatoAdmin);
+router.delete('/admin/candidatos/acceso/:accesoId', permitirEvaluaciones, eliminarCuentaCandidatoAdmin);
+router.get('/admin/plantillas', permitirEvaluaciones, listarPlantillasAdmin);
+router.post('/admin/plantillas', permitirEvaluaciones, crearPlantillaAdmin);
+router.get('/admin/plantillas/:id', permitirEvaluaciones, obtenerPlantillaAdmin);
+router.put('/admin/plantillas/:id', permitirEvaluaciones, actualizarPlantillaAdmin);
+router.post('/admin/plantillas/:id/publicar', permitirEvaluaciones, publicarPlantillaAdmin);
+router.post('/admin/plantillas/:id/activa', permitirEvaluaciones, activarPlantillaAdmin);
+router.post(
+  '/admin/plantillas/:id/versiones/:versionId/restaurar',
+  permitirEvaluaciones,
+  restaurarVersionPlantillaAdmin,
+);
 router.get('/plantillas', permitirEvaluaciones, obtenerPlantillas);
 router.get('/resultados', permitirEvaluaciones, listarResultados);
 
