@@ -28,7 +28,8 @@
             "styles": [
               "src/styles.css",
               "src/brand-theme.css",
-              "src/brand-theme-dark.css"
+              "src/brand-theme-dark.css",
+              "src/workspace-theme.css"
             ]
           },
           "configurations": {

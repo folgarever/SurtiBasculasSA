@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { AppShellComponent } from './app-shell.component';
 import { NAV_ADMIN, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from './nav-items';
@@ -60,5 +60,24 @@ describe('AppShellComponent', () => {
     const root = fixture.nativeElement as HTMLElement;
     root.querySelector<HTMLButtonElement>('button[aria-label="Cerrar sesión"]')!.click();
     expect(auth.logout).toHaveBeenCalledOnce();
+  });
+
+  it('solo marca el enlace inferior como activo en su propia ruta', () => {
+    auth.hasAdminRole.mockReturnValue(true);
+    const url = vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/admin');
+    const fixture = crear();
+    fixture.componentRef.setInput('bottomActive', SUGERENCIAS_ADMIN.route);
+    fixture.detectChanges();
+    const enlace = fixture.nativeElement.querySelector('.sidebar-bottom-link') as HTMLAnchorElement;
+    expect(enlace.classList.contains('is-active')).toBe(false);
+    expect(enlace.getAttribute('aria-current')).toBeNull();
+
+    url.mockReturnValue(SUGERENCIAS_ADMIN.route);
+    const activo = crear();
+    activo.componentRef.setInput('bottomActive', SUGERENCIAS_ADMIN.route);
+    activo.detectChanges();
+    const enlaceActivo = activo.nativeElement.querySelector('.sidebar-bottom-link') as HTMLAnchorElement;
+    expect(enlaceActivo.classList.contains('is-active')).toBe(true);
+    expect(enlaceActivo.getAttribute('aria-current')).toBe('page');
   });
 });

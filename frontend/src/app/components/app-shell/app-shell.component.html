@@ -14,7 +14,7 @@
     </nav>
     @for (item of bottomItems; track item.route) {
       @if (visible(item)) {
-        <a class="sidebar-link sidebar-bottom-link" [class.is-active]="bottomActive === item.route" [attr.aria-current]="bottomActive === item.route ? 'page' : null" [routerLink]="item.route">
+        <a class="sidebar-link sidebar-bottom-link" [class.is-active]="bottomActive === item.route && esActivo(item.route)" [attr.aria-current]="bottomActive === item.route && esActivo(item.route) ? 'page' : null" [routerLink]="item.route">
           @if (item.icon) { <ng-icon [name]="item.icon" size="18" /> }
           {{ item.label }}
         </a>

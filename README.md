@@ -26,6 +26,8 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 
 La interfaz utiliza la paleta corporativa navy y roja, superficies claras y componentes adaptables a equipos de escritorio y móviles. Los tokens visuales compartidos se definen en `frontend/src/brand-theme.css`.
 
+Los estilos de las áreas internas y del portal de candidatos se complementan en `frontend/src/workspace-theme.css`; están limitados a esas áreas para no modificar la pantalla de inicio de sesión.
+
 El selector de apariencia permite usar el tema claro, oscuro o el del dispositivo. Para abrirlo, toca el logotipo en el inicio de sesión o el perfil dentro de la aplicación. La elección se guarda en el navegador.
 
 ## Configuración

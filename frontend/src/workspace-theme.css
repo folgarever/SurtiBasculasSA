@@ -1,0 +1,347 @@
+@media screen {
+  .app-shell,
+  .candidate-portal {
+    --workspace-canvas: #f1f4f8;
+    --workspace-surface: #ffffff;
+    --workspace-soft: #f5f7fa;
+    --workspace-border: #dce3ec;
+    --workspace-text: #1b2a43;
+    --workspace-muted: #56677d;
+    --workspace-accent: #a51f25;
+    --workspace-shadow: 0 8px 26px rgba(27, 42, 67, .06), 0 1px 3px rgba(27, 42, 67, .04);
+    color: var(--workspace-text);
+    background: var(--workspace-canvas);
+  }
+
+  .app-shell {
+    background-image: radial-gradient(ellipse at 90% 0, rgba(210, 221, 235, .45), transparent 34rem);
+  }
+
+  .app-shell .app-sidebar {
+    padding: 24px 16px 18px;
+    border-color: #263c59;
+    background: linear-gradient(165deg, #16253d 0%, #1c304c 70%, #192b44 100%);
+  }
+
+  .app-shell .sidebar-brand {
+    padding-bottom: 22px;
+    border-color: rgba(255, 255, 255, .13);
+    color: #fff;
+  }
+
+  .app-shell .sidebar-caption {
+    margin-top: 28px;
+    color: #aab9cc;
+  }
+
+  .app-shell .sidebar-link {
+    min-height: 44px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: #d5deeb;
+    font-weight: 550;
+  }
+
+  .app-shell .sidebar-link ng-icon { color: #adbed2; }
+  .app-shell .sidebar-link:hover { background: rgba(255, 255, 255, .09); color: #fff; }
+  .app-shell .sidebar-link.is-active,
+  .app-shell .sidebar-link.is-active:hover {
+    border-color: rgba(255, 255, 255, .15);
+    background: #ad252b;
+    color: #fff;
+    box-shadow: 0 5px 14px rgba(0, 0, 0, .14);
+  }
+  .app-shell .sidebar-link.is-active ng-icon { color: #fff; }
+
+  .app-shell .topbar {
+    border-bottom: 1px solid var(--workspace-border);
+    background: var(--workspace-surface);
+    box-shadow: 0 3px 14px rgba(27, 42, 67, .035);
+  }
+  .app-shell .topbar-title > strong { color: var(--workspace-text); font-weight: 700; }
+  .app-shell .topbar-title .admin-label { color: var(--workspace-muted); }
+  .app-shell .workspace { padding-top: 38px; }
+  .app-shell .admin-workspace { display: flex; flex-direction: column; gap: 20px; }
+
+  .app-shell .page-heading { gap: 20px; margin-bottom: 30px; }
+  .app-shell .page-heading h1 {
+    margin: 8px 0;
+    color: var(--workspace-text);
+    font-size: clamp(1.7rem, 2.5vw, 2.25rem);
+    font-weight: 700;
+    line-height: 1.15;
+  }
+  .app-shell .page-heading .subheading { max-width: 760px; line-height: 1.6; }
+  .app-shell .eyebrow { letter-spacing: .1em; }
+
+  .app-shell .admin-welcome {
+    overflow: hidden;
+    margin-bottom: 0;
+    border: 1px solid #334d6b;
+    border-radius: 22px;
+    background: linear-gradient(120deg, #182a44, #294868);
+    box-shadow: 0 12px 28px rgba(24, 42, 68, .16);
+  }
+  .app-shell .admin-welcome::after {
+    width: 5px;
+    background: #d34b4c;
+  }
+  .app-shell .admin-welcome h1 { color: #fff; }
+  .app-shell .admin-welcome > div:first-child > p:last-child { color: #dce5ef; line-height: 1.5; }
+  .app-shell .admin-welcome .date-chip {
+    border-color: rgba(255, 255, 255, .18);
+    background: rgba(255, 255, 255, .1);
+    color: #fff;
+  }
+  .app-shell .admin-welcome .button-ghost {
+    border: 1px solid rgba(255, 255, 255, .3);
+    background: rgba(255, 255, 255, .1);
+    color: #fff;
+  }
+  .app-shell .admin-welcome .button-ghost:hover { background: rgba(255, 255, 255, .2); }
+
+  .app-shell :is(.panel-card, .summary-card, .module-card, .records-section, .table-frame,
+    .summary-strip, .evaluation-panel, .evaluation-detail, .knowledge-panel, .knowledge-history,
+    .knowledge-kpi, .suggestion-form-card, .suggestion-card, .modal-panel) {
+    border-color: var(--workspace-border);
+    border-radius: 18px;
+    background-color: var(--workspace-surface);
+    box-shadow: var(--workspace-shadow);
+  }
+  .app-shell .records-section .table-frame,
+  .app-shell .knowledge-history .table-frame { box-shadow: none; }
+  .app-shell .resumen-grid { box-shadow: none; }
+  .app-shell :is(.summary-card, .knowledge-kpi) {
+    border-left: 1px solid var(--workspace-border);
+    border-top: 3px solid var(--workspace-accent);
+  }
+  .app-shell .summary-card { min-height: 150px; }
+  .app-shell .summary-card .summary-note { margin-left: 0; }
+  .app-shell :is(.summary-number, .knowledge-kpi strong, .panel-header h2, .section-heading h2,
+    .evaluation-section-heading h2, .employee-name, .modal-header h2) { color: var(--workspace-text); }
+  .app-shell :is(.subheading, .summary-label, .summary-note, .knowledge-kpi small,
+    .knowledge-kpi > span, .record-count, .table-footer) { color: var(--workspace-muted); }
+
+  .app-shell .module-card {
+    min-height: 165px;
+    border-top: 1px solid var(--workspace-border);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .app-shell .module-card:hover {
+    transform: translateY(-3px);
+    border-color: #b7c5d5;
+    box-shadow: 0 14px 28px rgba(27, 42, 67, .12);
+  }
+  .app-shell .module-card > strong { color: var(--workspace-text); }
+  .app-shell :is(.module-description, .module-eyebrow) { color: var(--workspace-muted); }
+  .app-shell .module-link { color: var(--workspace-text); }
+  .app-shell .module-card::before { background: var(--workspace-accent); }
+  .app-shell .pending-item {
+    border-color: var(--workspace-border);
+    border-radius: 12px;
+    background: var(--workspace-soft);
+    color: var(--workspace-text);
+  }
+
+  .app-shell :is(.table-frame, .selection-table-wrap) { overflow-x: auto; }
+  .app-shell :is(th, .employee-table-frame th, .selection-table th) {
+    background: var(--workspace-soft);
+    color: var(--workspace-muted);
+    font-size: .68rem;
+    letter-spacing: .06em;
+  }
+  .app-shell :is(td, .selection-table td) {
+    border-color: var(--workspace-border);
+    color: var(--workspace-text);
+  }
+  .app-shell tbody tr:hover { background: var(--workspace-soft); }
+  .app-shell :is(.state-pill, .selection-status, .record-count) {
+    border-radius: 999px;
+    font-weight: 650;
+  }
+
+  .app-shell :is(.button, .details-button, .icon-button),
+  .candidate-portal :is(.candidate-submit, .candidate-logout) {
+    border-radius: 11px;
+    font-weight: 650;
+  }
+  .app-shell .details-button { min-height: 36px; padding: 7px 12px; }
+  .app-shell :is(.button, .details-button, .icon-button):focus-visible,
+  .app-shell :is(a, input, select, textarea, summary):focus-visible,
+  .candidate-portal :is(button, a, input, select):focus-visible {
+    outline: 3px solid #4d83bf;
+    outline-offset: 3px;
+  }
+  .app-shell .sidebar-link:focus-visible,
+  .app-shell .sidebar-brand:focus-visible { outline-color: #fff; }
+
+  .app-shell :is(.search-field, .date-filter, .employee-search),
+  .app-shell :is(.modal-panel, .evaluation-field, .suggestion-form, .suggestion-reply,
+    .knowledge-filters, .question-editor, .selection-editor, .selection-inline-form)
+    :is(input:not([type="radio"]):not([type="checkbox"]), select, textarea) {
+    border: 1px solid var(--workspace-border);
+    border-radius: 10px;
+    background: var(--workspace-soft);
+    color: var(--workspace-text);
+  }
+  .app-shell :is(.search-field, .date-filter, .employee-search) input {
+    border: 0;
+    background: transparent;
+  }
+  .app-shell :is(.knowledge-question, .question-editor, .criteria-section, .specialized-section,
+    .knowledge-empty, .selection-editor-section, .selection-inline-form) {
+    border-color: var(--workspace-border);
+    border-radius: 14px;
+    background: var(--workspace-soft);
+  }
+  .app-shell :is(.knowledge-option, .selection-editor-item) {
+    border-color: var(--workspace-border);
+    border-radius: 12px;
+    background: var(--workspace-surface);
+  }
+  .app-shell .knowledge-option { color: var(--workspace-text); }
+  .app-shell .knowledge-option:has(input:checked) {
+    border-color: var(--workspace-accent);
+    background: var(--color-primary-soft);
+  }
+
+  .app-shell .selection-workspace :is(.selection-editor-section, .selection-inline-form) {
+    border-color: var(--workspace-border);
+    background: var(--workspace-soft);
+  }
+  .app-shell .selection-workspace .selection-editor-item {
+    border-color: var(--workspace-border);
+    background: var(--workspace-surface);
+  }
+  html .app-shell .selection-workspace :is(.selection-editor-section-heading h4, .selection-editor-section-heading h5,
+    .selection-editor-item-heading, .selection-editor-grid label, .selection-inline-form label,
+    .selection-editor-label, .selection-correct-option, .selection-points-field) { color: var(--workspace-text); }
+  html .app-shell .selection-workspace :is(.selection-editor-item-heading span, .selection-editor-section-heading small,
+    .selection-editor-section > small, .selection-count, .selection-version-row) { color: var(--workspace-muted); }
+  .app-shell .selection-workspace :is(.selection-editor-section, .selection-editor-item) > summary::after {
+    color: var(--workspace-text);
+  }
+  .app-shell .selection-editor-help {
+    border-color: #c9d8e9;
+    border-radius: 14px;
+    background: #edf4fb;
+    color: #263d59;
+  }
+  .app-shell .selection-editor-help p { color: #455e78; }
+  .app-shell .selection-question-editor { display: grid; gap: .75rem; }
+  .app-shell .selection-editor-item-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    color: var(--workspace-muted);
+    font-size: .8rem;
+  }
+  .app-shell .selection-points-field { display: grid; gap: .2rem; font-size: .72rem; }
+  .app-shell .selection-rubric-editor-option { grid-template-columns: minmax(0, 1fr) 100px auto; }
+  .app-shell .selection-editor-section > .selection-editor-option {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  }
+  .app-shell .selection-validation {
+    border-color: #efb4b5;
+    background: #fff0f0;
+    color: #8d2027;
+  }
+  .app-shell .selection-unsaved-note { color: #81500a; }
+  .app-shell .details-button-danger { color: #a3212a; }
+
+  .candidate-portal {
+    background-image: radial-gradient(ellipse at 50% 0, #e1eaf4, transparent 38rem);
+  }
+  .candidate-portal .candidate-header {
+    border-color: var(--workspace-border);
+    background: var(--workspace-surface);
+    box-shadow: 0 3px 14px rgba(27, 42, 67, .04);
+  }
+  .candidate-portal .candidate-brand { color: var(--workspace-text); }
+  .candidate-portal .candidate-brand img {
+    padding: .25rem;
+    border-radius: 9px;
+    background: #fff;
+  }
+  .candidate-portal .candidate-main { margin-top: 2.5rem; margin-bottom: 3rem; }
+  .candidate-portal .candidate-card {
+    border-color: var(--workspace-border);
+    border-radius: 20px;
+    background: var(--workspace-surface);
+    box-shadow: var(--workspace-shadow);
+  }
+  .candidate-portal :is(.candidate-card h1, .candidate-section h2, .candidate-question) { color: var(--workspace-text); }
+  .candidate-portal :is(.candidate-intro, .candidate-section > p, .candidate-version,
+    .candidate-profile-age, .candidate-complete > p) { color: var(--workspace-muted); }
+  .candidate-portal :is(.candidate-summary, .candidate-profile-form input, .candidate-profile-form select) {
+    border-color: var(--workspace-border);
+    border-radius: 10px;
+    background: var(--workspace-soft);
+    color: var(--workspace-text);
+  }
+  .candidate-portal .candidate-option {
+    border-color: var(--workspace-border);
+    border-radius: 12px;
+    background: var(--workspace-surface);
+    transition: border-color .15s ease, background-color .15s ease;
+  }
+  .candidate-portal .candidate-option span { color: var(--workspace-text); }
+  .candidate-portal .candidate-option:hover { border-color: #93a8c0; }
+  .candidate-portal .candidate-option:has(input:checked) {
+    border-color: var(--workspace-accent);
+    background: var(--color-primary-soft);
+  }
+  .candidate-portal .candidate-submit {
+    min-height: 46px;
+    background: #a51f25;
+    color: #fff;
+  }
+  .candidate-portal .candidate-submit:hover:not(:disabled) { background: #851920; }
+
+  html[data-theme="dark"] :is(.app-shell, .candidate-portal) {
+    --workspace-canvas: #101827;
+    --workspace-surface: #192437;
+    --workspace-soft: #243248;
+    --workspace-border: #394a61;
+    --workspace-text: #edf3fa;
+    --workspace-muted: #b8c8d9;
+    --workspace-accent: #ef7777;
+    --workspace-shadow: 0 8px 26px rgba(0, 0, 0, .18);
+  }
+  html[data-theme="dark"] .app-shell { background-image: none; }
+  html[data-theme="dark"] .candidate-portal { background-image: none; }
+  html[data-theme="dark"] .app-shell .module-card:hover { border-color: #7893b3; }
+  html[data-theme="dark"] .app-shell .selection-editor-help {
+    border-color: #496785;
+    background: #21374f;
+    color: #e1edf9;
+  }
+  html[data-theme="dark"] .app-shell .selection-editor-help p { color: #c0d0e1; }
+  html[data-theme="dark"] .app-shell .selection-validation {
+    border-color: #a95860;
+    background: #482a30;
+    color: #ffd2d2;
+  }
+  html[data-theme="dark"] .app-shell .selection-unsaved-note { color: #ffe2a3; }
+  html[data-theme="dark"] .app-shell .details-button-danger { color: #ffb4b4; }
+
+  @media (max-width: 760px) {
+    .app-shell .app-sidebar { padding: 10px 12px; }
+    .app-shell .sidebar-brand { padding: 0 10px 0 0; border: 0; }
+    .app-shell .sidebar-link { min-height: 40px; }
+    .app-shell .workspace { padding-top: 24px; }
+    .app-shell .page-heading { align-items: flex-start; }
+    .app-shell :is(.records-section, .evaluation-panel, .evaluation-detail,
+      .knowledge-panel, .knowledge-history, .panel-card) { border-radius: 15px; }
+    .app-shell .selection-editor-item-heading span { white-space: normal; }
+    .app-shell .selection-editor-section > .selection-editor-option,
+    .app-shell .selection-rubric-editor-option { grid-template-columns: minmax(0, 1fr) 90px; }
+    .candidate-portal .candidate-main { margin-top: 1rem; margin-bottom: 1.5rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app-shell .module-card,
+    .candidate-portal .candidate-option { transition: none; }
+  }
+}
