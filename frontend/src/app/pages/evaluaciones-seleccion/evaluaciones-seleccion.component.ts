@@ -8,6 +8,7 @@ import {
   CuentaCandidato,
   DetallePlantillaSeleccion,
   EvaluacionesSeleccionService,
+  ItemPlantillaSeleccion,
   PerfilCandidatoAdminInput,
   PlantillaEvaluacionSeleccion,
   PuestoPlantillaSeleccion,
@@ -15,7 +16,6 @@ import {
   ResumenPlantillaSeleccion,
   ResultadoSeleccion,
   SeccionSeleccion,
-  VersionDetallePlantilla,
 } from '../../services/evaluaciones-seleccion.service';
 
 type UmbralPlantilla = keyof PlantillaEvaluacionSeleccion['umbrales'];
@@ -24,6 +24,8 @@ type CampoItem = 'enunciado' | 'detalle';
 type CampoOpcion = 'texto' | 'puntos';
 type CampoRubrica = 'criterio' | 'puntos';
 type CampoActividad = 'solicitud' | 'respuesta_esperada';
+type TipoOpcionEditor = 'correcta' | 'intermedia' | 'incorrecta';
+type ReferenciaPreguntaEditor = { seccionIndice: number; itemIndice: number };
 
 @Component({
   selector: 'app-evaluaciones-seleccion',
@@ -75,8 +77,10 @@ export class EvaluacionesSeleccionComponent implements OnInit {
 
   protected readonly detallePlantilla = signal<DetallePlantillaSeleccion | null>(null);
   protected readonly definicionEditada = signal<PlantillaEvaluacionSeleccion | null>(null);
-  protected readonly notasVersion = signal('');
   protected readonly guardandoPlantilla = signal(false);
+  protected readonly editandoPregunta = signal<ReferenciaPreguntaEditor | null>(null);
+  protected readonly maximoPregunta = signal(1);
+  protected readonly porcentajesOpciones = signal<Record<string, number>>({});
   protected readonly erroresDefinicion = computed(() => {
     const definicion = this.definicionEditada();
     return definicion ? this.validarDefinicion(definicion) : [];
@@ -88,18 +92,10 @@ export class EvaluacionesSeleccionComponent implements OnInit {
     const plantilla = this.detallePlantilla();
     const definicion = this.definicionEditada();
     if (!plantilla || !definicion) return false;
-    const versionActual = [...plantilla.versiones].sort((a, b) => b.numero - a.numero)[0];
-    return JSON.stringify(definicion) !== JSON.stringify(versionActual?.definicion)
-      || this.notasVersion() !== (versionActual?.notas ?? '');
+    return JSON.stringify(definicion) !== JSON.stringify(plantilla.definicion);
   });
-  protected readonly puedeGuardar = computed(() => {
-    const tieneBorrador = this.detallePlantilla()?.versiones.some((version) => version.estado === 'borrador') === true;
-    return this.erroresDefinicion().length === 0 && (this.hayCambiosSinGuardar() || !tieneBorrador);
-  });
-  protected readonly puedePublicar = computed(
-    () => this.detallePlantilla()?.versiones.some((version) => version.estado === 'borrador') === true
-      && !this.hayCambiosSinGuardar()
-      && this.erroresDefinicion().length === 0,
+  protected readonly puedeGuardar = computed(
+    () => this.erroresDefinicion().length === 0 && this.hayCambiosSinGuardar(),
   );
 
   protected readonly editandoPerfilId = signal<number | null>(null);
@@ -269,17 +265,17 @@ export class EvaluacionesSeleccionComponent implements OnInit {
     window.print();
   }
 
-  // Configuración de pruebas versionadas
+  // Configuración de pruebas por puesto
 
   protected abrirEditor(resumen: ResumenPlantillaSeleccion): void {
     this.limpiarMensajes();
     if (resumen.plantilla_id === null) {
       this.guardandoPlantilla.set(true);
-      this.servicio.crearPlantilla(resumen.puesto_id, undefined, 'Creada desde Administración').subscribe({
+      this.servicio.crearPlantilla(resumen.puesto_id).subscribe({
         next: ({ plantilla }) => {
           this.aplicarDetalle(plantilla);
           this.guardandoPlantilla.set(false);
-          this.aviso.set('Se creó un borrador editable a partir de la prueba actual.');
+          this.aviso.set('Se creó la prueba editable a partir de la configuración actual.');
           this.cargarResumenesPlantillas();
           this.cargarPlantillas();
         },
@@ -301,7 +297,7 @@ export class EvaluacionesSeleccionComponent implements OnInit {
     if (this.hayCambiosSinGuardar() && !window.confirm('Hay cambios sin guardar. ¿Deseas cerrar y descartarlos?')) return;
     this.detallePlantilla.set(null);
     this.definicionEditada.set(null);
-    this.notasVersion.set('');
+    this.cerrarEditorPregunta();
   }
 
   protected actualizarDefinicionCampo(campo: 'titulo' | 'tiempo_total_minutos' | 'puntaje_total', event: Event): void {
@@ -350,12 +346,121 @@ export class EvaluacionesSeleccionComponent implements OnInit {
     });
   }
 
-  protected marcarCorrecta(seccionIndice: number, itemIndice: number, opcionIndice: number): void {
+  protected abrirEditorPregunta(seccionIndice: number, itemIndice: number): void {
+    const item = this.definicionEditada()?.secciones[seccionIndice]?.items[itemIndice];
+    if (!item) return;
+    const maximo = this.maximoItem(item);
+    const porcentajes: Record<string, number> = {};
+    (item.opciones ?? []).forEach((opcion, opcionIndice) => {
+      if (!opcion.correcta && opcion.puntos > 0) {
+        porcentajes[this.claveOpcion(seccionIndice, itemIndice, opcionIndice)] = Math.min(
+          99,
+          Math.max(1, Math.round((opcion.puntos / maximo) * 100)),
+        );
+      }
+    });
+    this.maximoPregunta.set(maximo);
+    this.porcentajesOpciones.set(porcentajes);
+    this.editandoPregunta.set({ seccionIndice, itemIndice });
+  }
+
+  protected cerrarEditorPregunta(): void {
+    this.editandoPregunta.set(null);
+    this.porcentajesOpciones.set({});
+  }
+
+  protected maximoItem(item: ItemPlantillaSeleccion): number {
+    return Number(Math.max(1, ...(item.opciones ?? []).map((opcion) => Number(opcion.puntos) || 0)).toFixed(2));
+  }
+
+  protected tipoOpcion(opcion: { correcta?: boolean; puntos: number }): TipoOpcionEditor {
+    if (opcion.correcta === true) return 'correcta';
+    return opcion.puntos > 0 ? 'intermedia' : 'incorrecta';
+  }
+
+  protected etiquetaTipoOpcion(tipo: TipoOpcionEditor): string {
+    if (tipo === 'correcta') return 'Correcta';
+    if (tipo === 'intermedia') return 'Intermedia';
+    return 'Incorrecta';
+  }
+
+  protected porcentajeOpcion(seccionIndice: number, itemIndice: number, opcionIndice: number): number {
+    const guardado = this.porcentajesOpciones()[this.claveOpcion(seccionIndice, itemIndice, opcionIndice)];
+    if (guardado !== undefined) return guardado;
+    const opcion = this.definicionEditada()?.secciones[seccionIndice]?.items[itemIndice]?.opciones?.[opcionIndice];
+    const maximo = this.maximoPregunta() || 1;
+    if (opcion && !opcion.correcta && opcion.puntos > 0) {
+      return Math.min(99, Math.max(1, Math.round((opcion.puntos / maximo) * 100)));
+    }
+    return 50;
+  }
+
+  protected puntosOpcion(tipo: TipoOpcionEditor, porcentaje: number, maximo: number): number {
+    if (tipo === 'correcta') return Number(maximo.toFixed(2));
+    if (tipo === 'intermedia') return Number((maximo * porcentaje / 100).toFixed(2));
+    return 0;
+  }
+
+  protected actualizarMaximoPregunta(event: Event): void {
+    const maximo = Number(this.valorTexto(event));
+    if (!Number.isFinite(maximo) || maximo <= 0) return;
+    this.maximoPregunta.set(maximo);
+    const referencia = this.editandoPregunta();
+    if (!referencia) return;
+    const porcentajes = this.porcentajesOpciones();
+    this.mutarDefinicion((definicion) => {
+      const opciones = definicion.secciones[referencia.seccionIndice]?.items[referencia.itemIndice]?.opciones ?? [];
+      opciones.forEach((opcion, opcionIndice) => {
+        opcion.puntos = this.puntosOpcion(
+          this.tipoOpcion(opcion),
+          porcentajes[this.claveOpcion(referencia.seccionIndice, referencia.itemIndice, opcionIndice)] ?? 50,
+          maximo,
+        );
+      });
+    });
+  }
+
+  protected actualizarTipoOpcion(
+    seccionIndice: number,
+    itemIndice: number,
+    opcionIndice: number,
+    event: Event,
+  ): void {
+    const valor = this.valorTexto(event);
+    if (valor !== 'correcta' && valor !== 'intermedia' && valor !== 'incorrecta') return;
+    const tipo = valor as TipoOpcionEditor;
+    const maximo = this.maximoPregunta();
     this.mutarDefinicion((definicion) => {
       const opciones = definicion.secciones[seccionIndice]?.items[itemIndice]?.opciones ?? [];
-      opciones.forEach((opcion, indice) => {
-        opcion.correcta = indice === opcionIndice;
-      });
+      if (!opciones[opcionIndice]) return;
+      if (tipo === 'correcta') {
+        opciones.forEach((opcion, indice) => {
+          if (indice !== opcionIndice && opcion.correcta) {
+            opcion.correcta = false;
+            opcion.puntos = 0;
+          }
+        });
+      }
+      const opcion = opciones[opcionIndice];
+      opcion.correcta = tipo === 'correcta';
+      opcion.puntos = this.puntosOpcion(tipo, this.porcentajeOpcion(seccionIndice, itemIndice, opcionIndice), maximo);
+    });
+  }
+
+  protected actualizarPorcentajeOpcion(
+    seccionIndice: number,
+    itemIndice: number,
+    opcionIndice: number,
+    event: Event,
+  ): void {
+    const porcentaje = Math.min(99, Math.max(1, Number(this.valorTexto(event)) || 1));
+    this.porcentajesOpciones.update((porcentajes) => ({
+      ...porcentajes,
+      [this.claveOpcion(seccionIndice, itemIndice, opcionIndice)]: porcentaje,
+    }));
+    this.mutarDefinicion((definicion) => {
+      const opcion = definicion.secciones[seccionIndice]?.items[itemIndice]?.opciones?.[opcionIndice];
+      if (opcion) opcion.puntos = this.puntosOpcion('intermedia', porcentaje, this.maximoPregunta());
     });
   }
 
@@ -364,7 +469,7 @@ export class EvaluacionesSeleccionComponent implements OnInit {
       const opciones = definicion.secciones[seccionIndice]?.items[itemIndice]?.opciones;
       if (!opciones) return;
       const id = String.fromCharCode(65 + opciones.length);
-      opciones.push({ id, texto: `Nueva opción ${id}`, puntos: 0, correcta: false });
+      opciones.push({ id, texto: '', puntos: 0, correcta: false });
     });
   }
 
@@ -380,24 +485,31 @@ export class EvaluacionesSeleccionComponent implements OnInit {
   }
 
   protected agregarPregunta(seccionIndice: number): void {
+    let itemIndice = -1;
     this.mutarDefinicion((definicion) => {
       const seccion = definicion.secciones[seccionIndice];
       if (!seccion) return;
+      itemIndice = seccion.items.length;
       seccion.items.push({
-        enunciado: `Nueva pregunta ${seccion.items.length + 1}`,
+        enunciado: '',
         rubrica: [{ criterio: 'Criterio de calificación', puntos: 1 }],
         opciones: [
-          { id: 'A', texto: 'Opción A', puntos: 1, correcta: true },
-          { id: 'B', texto: 'Opción B', puntos: 0, correcta: false },
+          { id: 'A', texto: '', puntos: 1, correcta: true },
+          { id: 'B', texto: '', puntos: 0, correcta: false },
         ],
       });
     });
+    if (itemIndice >= 0) this.abrirEditorPregunta(seccionIndice, itemIndice);
   }
 
   protected eliminarPregunta(seccionIndice: number, itemIndice: number): void {
     const seccion = this.definicionEditada()?.secciones[seccionIndice];
     if (!seccion || seccion.items.length <= 1) return;
-    if (!window.confirm(`¿Eliminar la pregunta ${itemIndice + 1}? El cambio se aplicará cuando guardes el borrador.`)) return;
+    if (!window.confirm(`¿Eliminar la pregunta ${itemIndice + 1}? El cambio se aplicará cuando guardes los cambios.`)) return;
+    const editando = this.editandoPregunta();
+    if (editando?.seccionIndice === seccionIndice && editando.itemIndice === itemIndice) {
+      this.cerrarEditorPregunta();
+    }
     this.mutarDefinicion((definicion) => {
       definicion.secciones[seccionIndice]?.items.splice(itemIndice, 1);
     });
@@ -454,38 +566,21 @@ export class EvaluacionesSeleccionComponent implements OnInit {
     });
   }
 
-  protected guardarBorrador(): void {
+  protected guardarCambios(): void {
     const plantilla = this.detallePlantilla();
     const definicion = this.definicionEditada();
     if (!plantilla || !definicion) return;
     this.limpiarMensajes();
     this.guardandoPlantilla.set(true);
-    this.servicio.actualizarPlantilla(plantilla.id, definicion, this.notasVersion()).subscribe({
+    this.servicio.actualizarPlantilla(plantilla.id, definicion).subscribe({
       next: ({ plantilla: actualizada }) => {
         this.aplicarDetalle(actualizada);
         this.guardandoPlantilla.set(false);
-        this.aviso.set('Borrador guardado. La versión publicada sigue sin cambios.');
-        this.cargarResumenesPlantillas();
-      },
-      error: (error: HttpErrorResponse) => this.fallarPlantilla(error, 'No se pudo guardar el borrador.'),
-    });
-  }
-
-  protected publicarPlantilla(): void {
-    const plantilla = this.detallePlantilla();
-    if (!plantilla) return;
-    if (!window.confirm('¿Publicar esta versión? Los nuevos intentos usarán esta prueba; los resultados anteriores no cambiarán.')) return;
-    this.limpiarMensajes();
-    this.guardandoPlantilla.set(true);
-    this.servicio.publicarPlantilla(plantilla.id).subscribe({
-      next: ({ plantilla: publicada }) => {
-        this.aplicarDetalle(publicada);
-        this.guardandoPlantilla.set(false);
-        this.aviso.set('La nueva versión ya está publicada y la usarán los nuevos intentos.');
+        this.aviso.set('Cambios guardados. Los nuevos intentos usarán esta prueba.');
         this.cargarResumenesPlantillas();
         this.cargarPlantillas();
       },
-      error: (error: HttpErrorResponse) => this.fallarPlantilla(error, 'No se pudo publicar la plantilla.'),
+      error: (error: HttpErrorResponse) => this.fallarPlantilla(error, 'No se pudieron guardar los cambios.'),
     });
   }
 
@@ -506,28 +601,6 @@ export class EvaluacionesSeleccionComponent implements OnInit {
         this.cargarPlantillas();
       },
       error: (error: HttpErrorResponse) => this.fallarPlantilla(error, 'No se pudo cambiar el estado de la plantilla.'),
-    });
-  }
-
-  protected cargarVersionEnEditor(version: VersionDetallePlantilla): void {
-    this.definicionEditada.set(this.clonar(version.definicion));
-    this.notasVersion.set(`Basada en la versión ${version.numero}`);
-    this.aviso.set(`Versión ${version.numero} cargada en el editor. Guárdala como borrador para conservarla.`);
-  }
-
-  protected restaurarVersion(version: VersionDetallePlantilla): void {
-    const plantilla = this.detallePlantilla();
-    if (!plantilla) return;
-    this.limpiarMensajes();
-    this.guardandoPlantilla.set(true);
-    this.servicio.restaurarVersionPlantilla(plantilla.id, version.id).subscribe({
-      next: ({ plantilla: restaurada }) => {
-        this.aplicarDetalle(restaurada);
-        this.guardandoPlantilla.set(false);
-        this.aviso.set(`La versión ${version.numero} se cargó como nuevo borrador. Revísala y publícala.`);
-        this.cargarResumenesPlantillas();
-      },
-      error: (error: HttpErrorResponse) => this.fallarPlantilla(error, 'No se pudo restaurar la versión.'),
     });
   }
 
@@ -666,10 +739,9 @@ export class EvaluacionesSeleccionComponent implements OnInit {
   }
 
   private aplicarDetalle(plantilla: DetallePlantillaSeleccion): void {
+    this.cerrarEditorPregunta();
     this.detallePlantilla.set(plantilla);
-    const version = [...plantilla.versiones].sort((a, b) => b.numero - a.numero)[0] ?? null;
-    this.definicionEditada.set(version ? this.clonar(version.definicion) : null);
-    this.notasVersion.set(version?.notas ?? '');
+    this.definicionEditada.set(this.clonar(plantilla.definicion));
   }
 
   private validarDefinicion(definicion: PlantillaEvaluacionSeleccion): string[] {
@@ -734,6 +806,10 @@ export class EvaluacionesSeleccionComponent implements OnInit {
 
   private clonar<T>(valor: T): T {
     return JSON.parse(JSON.stringify(valor)) as T;
+  }
+
+  private claveOpcion(seccionIndice: number, itemIndice: number, opcionIndice: number): string {
+    return `${seccionIndice}-${itemIndice}-${opcionIndice}`;
   }
 
   private valorTexto(event: Event): string {

@@ -34,6 +34,10 @@ function errorHttp(status, mensaje) {
   return error;
 }
 
+function escaparDefinicion(definicion) {
+  return JSON.stringify(definicion);
+}
+
 function responderErrorService(error, res, next) {
   if (error?.status) {
     return res.status(error.status).json({ mensaje: error.message });
@@ -41,37 +45,10 @@ function responderErrorService(error, res, next) {
   return next(error);
 }
 
-function metadatosVersion(resultado) {
-  if (!resultado) return null;
-  return {
-    id: resultado.versionId ?? null,
-    numero: resultado.numero ?? null,
-    origen: resultado.origen ?? 'codigo',
-  };
-}
-
-async function resolverDefinicion(codigo, ejecutor = pool, versionId = null) {
-  if (versionId !== null && versionId !== undefined && versionId !== '') {
-    if (!/^\d+$/.test(String(versionId)) || Number(versionId) < 1) {
-      throw errorHttp(400, 'La versión de la prueba indicada no es válida.');
-    }
-    const version = await plantillasService.obtenerDefinicionPorVersion(Number(versionId), ejecutor);
-    if (version.codigo !== codigo) {
-      throw errorHttp(400, 'La versión indicada no pertenece a la prueba del puesto.');
-    }
-    if (version.estado === 'borrador' || !version.activa) {
-      throw errorHttp(409, 'La versión indicada no está disponible. Carga de nuevo la prueba antes de entregarla.');
-    }
-    return {
-      definicion: version.definicion,
-      versionId: version.id,
-      numero: version.numero,
-      origen: 'version',
-    };
-  }
-  const publicada = await plantillasService.obtenerDefinicionPublicada(codigo, ejecutor);
-  if (!publicada) throw errorHttp(409, 'No hay una prueba de selección configurada para este puesto.');
-  return publicada;
+async function resolverDefinicion(codigo, ejecutor = pool) {
+  const vigente = await plantillasService.obtenerDefinicionVigente(codigo, ejecutor);
+  if (!vigente) throw errorHttp(409, 'No hay una prueba de selección configurada para este puesto.');
+  return vigente;
 }
 
 function mezclarOpciones(opciones) {
@@ -83,10 +60,9 @@ function mezclarOpciones(opciones) {
   return resultado;
 }
 
-function plantillaPublica(puesto, incluirRubrica = true, evaluacion = evaluacionAsistente, version = null) {
+function plantillaPublica(puesto, incluirRubrica = true, evaluacion = evaluacionAsistente) {
   return {
     ...puesto,
-    ...(version ? { version } : {}),
     evaluacion: {
       ...evaluacion,
       secciones: evaluacion.secciones.map(({ rubrica, ...seccion }) => ({
@@ -138,7 +114,6 @@ async function obtenerPlantillas(req, res, next) {
       puesto,
       true,
       definiciones[indice].definicion,
-      metadatosVersion(definiciones[indice]),
     ));
     return res.json({ plantillas });
   } catch (error) {
@@ -160,7 +135,7 @@ async function obtenerPlantillasCandidato(req, res, next) {
       const puesto = candidatos[0];
       const definicion = await resolverDefinicion(puesto.codigo_abreviatura);
       return res.json({
-        plantillas: [plantillaPublica(puesto, false, definicion.definicion, metadatosVersion(definicion))],
+        plantillas: [plantillaPublica(puesto, false, definicion.definicion)],
       });
     }
 
@@ -180,7 +155,6 @@ async function obtenerPlantillasCandidato(req, res, next) {
         puesto,
         false,
         definiciones[indice].definicion,
-        metadatosVersion(definiciones[indice]),
       )),
     });
   } catch (error) {
@@ -420,7 +394,6 @@ async function descargarCurriculumCandidato(req, res, next) {
 
 async function entregarPruebaCandidato(req, res, next) {
   const respuestas = req.body?.respuestas;
-  const plantillaVersionId = req.body?.plantilla_version_id ?? null;
   if (!respuestas || typeof respuestas !== 'object' || Array.isArray(respuestas)) {
     return res.status(400).json({ mensaje: 'Debes completar las respuestas de la prueba.' });
   }
@@ -447,7 +420,7 @@ async function entregarPruebaCandidato(req, res, next) {
       await connection.rollback();
       return res.status(409).json({ mensaje: 'Completa tu perfil y adjunta tu currículum antes de iniciar la evaluación.' });
     }
-    const definicion = await resolverDefinicion(perfil.codigo_abreviatura, connection, plantillaVersionId);
+    const definicion = await resolverDefinicion(perfil.codigo_abreviatura, connection);
     const evaluacion = definicion.definicion;
 
     const ids = evaluacion.secciones.flatMap((seccion) => (
@@ -490,7 +463,7 @@ async function entregarPruebaCandidato(req, res, next) {
        (candidato_id, numero_intento, puesto_id, fecha_evaluacion, respuestas,
         puntaje_aptitudes, puntaje_conocimientos, puntaje_practica, puntaje_valores,
         puntaje_total, respuestas_correctas, total_preguntas, porcentaje_correctas,
-       decision, plantilla_version_id, reintento_autorizado_por, reintento_motivo)
+         decision, definicion_snapshot, reintento_autorizado_por, reintento_motivo)
        VALUES (?, ?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         perfil.id,
@@ -506,7 +479,7 @@ async function entregarPruebaCandidato(req, res, next) {
         totalPreguntas,
         porcentajeCorrectas,
         decision,
-        definicion.versionId,
+        escaparDefinicion(evaluacion),
         perfil.reintento_autorizado_por,
         perfil.reintento_motivo,
       ]
@@ -533,7 +506,6 @@ async function entregarPruebaCandidato(req, res, next) {
         total_preguntas: totalPreguntas,
         porcentaje_correctas: porcentajeCorrectas,
         decision,
-        plantilla_version_id: definicion.versionId,
       },
     });
   } catch (error) {
@@ -648,7 +620,7 @@ async function listarResultados(req, res, next) {
               i.puntaje_conocimientos, i.puntaje_practica, i.puntaje_valores,
               i.puntaje_total, i.respuestas_correctas, i.total_preguntas,
               i.porcentaje_correctas, i.decision, i.creado_en, i.reintento_motivo,
-              i.plantilla_version_id, pv.numero AS plantilla_version_numero,
+              i.definicion_snapshot,
               c.nombres, c.apellidos, c.fecha_nacimiento,
               c.estado AS estado_candidato,
               TIMESTAMPDIFF(YEAR, c.fecha_nacimiento, CURDATE()) AS edad,
@@ -657,7 +629,7 @@ async function listarResultados(req, res, next) {
        INNER JOIN candidatos_seleccion c ON c.id = i.candidato_id
        INNER JOIN candidatos_seleccion_accesos a ON a.id = c.acceso_id
        INNER JOIN puestos p ON p.id = i.puesto_id
-       LEFT JOIN seleccion_plantilla_versiones pv ON pv.id = i.plantilla_version_id
+
        ${filtroIntentos}
        ORDER BY i.fecha_evaluacion DESC, i.id DESC
        LIMIT 250`,
@@ -741,10 +713,6 @@ function idValido(valor) {
   return /^\d+$/.test(String(valor)) && Number(valor) > 0;
 }
 
-function notasValidas(notas) {
-  return notas === undefined || (typeof notas === 'string' && notas.length <= 500);
-}
-
 function fechaPerfilValida(fecha) {
   if (!fechaValida(fecha)) return false;
   const hoy = new Date();
@@ -773,15 +741,13 @@ async function obtenerPlantillaAdmin(req, res, next) {
 
 async function crearPlantillaAdmin(req, res, next) {
   const puestoId = req.body?.puesto_id;
-  const notas = req.body?.notas;
-  if (!idValido(puestoId) || !notasValidas(notas)) {
-    return res.status(400).json({ mensaje: 'Selecciona un puesto válido e indica notas de hasta 500 caracteres.' });
+  if (!idValido(puestoId)) {
+    return res.status(400).json({ mensaje: 'Selecciona un puesto válido.' });
   }
   try {
     const plantilla = await plantillasService.crear(
       Number(puestoId),
       req.body?.definicion,
-      notas,
       req.usuario?.id,
     );
     return res.status(201).json({ plantilla });
@@ -791,28 +757,16 @@ async function crearPlantillaAdmin(req, res, next) {
 }
 
 async function actualizarPlantillaAdmin(req, res, next) {
-  if (!idValido(req.params.id) || !notasValidas(req.body?.notas)) {
-    return res.status(400).json({ mensaje: 'La plantilla o las notas no son válidas.' });
-  }
-  try {
-    const plantilla = await plantillasService.actualizarBorrador(
-      Number(req.params.id),
-      req.body?.definicion,
-      req.body?.notas,
-      req.usuario?.id,
-    );
-    return res.json({ plantilla });
-  } catch (error) {
-    return responderErrorService(error, res, next);
-  }
-}
-
-async function publicarPlantillaAdmin(req, res, next) {
   if (!idValido(req.params.id)) {
     return res.status(400).json({ mensaje: 'La plantilla seleccionada no es válida.' });
   }
   try {
-    return res.json({ plantilla: await plantillasService.publicar(Number(req.params.id), req.usuario?.id) });
+    const plantilla = await plantillasService.actualizar(
+      Number(req.params.id),
+      req.body?.definicion,
+      req.usuario?.id,
+    );
+    return res.json({ plantilla });
   } catch (error) {
     return responderErrorService(error, res, next);
   }
@@ -825,23 +779,6 @@ async function activarPlantillaAdmin(req, res, next) {
   try {
     return res.json({
       plantilla: await plantillasService.cambiarActiva(Number(req.params.id), req.body.activa, req.usuario?.id),
-    });
-  } catch (error) {
-    return responderErrorService(error, res, next);
-  }
-}
-
-async function restaurarVersionPlantillaAdmin(req, res, next) {
-  if (!idValido(req.params.id) || !idValido(req.params.versionId)) {
-    return res.status(400).json({ mensaje: 'La plantilla o la versión seleccionada no son válidas.' });
-  }
-  try {
-    return res.json({
-      plantilla: await plantillasService.restaurarVersion(
-        Number(req.params.id),
-        Number(req.params.versionId),
-        req.usuario?.id,
-      ),
     });
   } catch (error) {
     return responderErrorService(error, res, next);
@@ -1030,9 +967,7 @@ module.exports = {
   obtenerPlantillaAdmin,
   crearPlantillaAdmin,
   actualizarPlantillaAdmin,
-  publicarPlantillaAdmin,
   activarPlantillaAdmin,
-  restaurarVersionPlantillaAdmin,
   actualizarPerfilCandidatoAdmin,
   cambiarActivoCuentaCandidatoAdmin,
   eliminarCuentaCandidatoAdmin,

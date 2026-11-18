@@ -254,23 +254,11 @@ CREATE TABLE seleccion_plantillas (
     codigo VARCHAR(20) NOT NULL UNIQUE,
     nombre VARCHAR(120) NOT NULL,
     activa TINYINT(1) NOT NULL DEFAULT 1,
-    creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (puesto_id) REFERENCES puestos(id)
-) ENGINE=InnoDB;
-
-CREATE TABLE seleccion_plantilla_versiones (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    plantilla_id INT NOT NULL,
-    numero INT NOT NULL,
-    estado ENUM('borrador', 'publicada', 'archivada') NOT NULL DEFAULT 'borrador',
-    definicion JSON NOT NULL,
-    notas VARCHAR(500) NULL,
+    definicion JSON NULL,
     creado_por INT NULL,
     creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    publicada_en TIMESTAMP NULL,
-    UNIQUE KEY uq_seleccion_plantilla_version (plantilla_id, numero),
-    FOREIGN KEY (plantilla_id) REFERENCES seleccion_plantillas(id) ON DELETE CASCADE,
+    actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (puesto_id) REFERENCES puestos(id),
     FOREIGN KEY (creado_por) REFERENCES empleados(id)
 ) ENGINE=InnoDB;
 
@@ -290,16 +278,14 @@ CREATE TABLE candidatos_seleccion_intentos (
     total_preguntas SMALLINT UNSIGNED NOT NULL,
     porcentaje_correctas DECIMAL(5, 2) NOT NULL,
     decision ENUM('recomendable', 'revision_adicional', 'no_demostrada') NOT NULL,
-    plantilla_version_id INT NULL,
+    definicion_snapshot JSON NULL,
     reintento_autorizado_por INT NULL,
     reintento_motivo VARCHAR(500) NULL,
     creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE INDEX uq_candidatos_intento (candidato_id, numero_intento),
     INDEX idx_candidatos_intento_puesto_fecha (puesto_id, fecha_evaluacion),
-    INDEX idx_seleccion_intento_version (plantilla_version_id),
     FOREIGN KEY (candidato_id) REFERENCES candidatos_seleccion(id),
     FOREIGN KEY (puesto_id) REFERENCES puestos(id),
-    FOREIGN KEY (plantilla_version_id) REFERENCES seleccion_plantilla_versiones(id),
     FOREIGN KEY (reintento_autorizado_por) REFERENCES empleados(id)
 ) ENGINE=InnoDB;
 

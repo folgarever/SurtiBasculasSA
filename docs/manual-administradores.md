@@ -1,7 +1,7 @@
 # Manual de usuario · Administradores
 
 **Sistema:** SURTIBÁSCULAS S.A. · Plataforma de gestión  
-**Versión:** Noviembre 2026 · commit `57a1a6d`  
+**Versión:** Noviembre 2026 · plantillas vigentes sin versionado
 **Público objetivo:** cuentas con rol `ADMIN`, especialmente `SUR-GG-001` y `SUR-AC-002`.
 
 Este manual describe cómo usar la plataforma desde una cuenta administradora. Las capturas muestran datos genéricos de demostración para que se aprecie cada pantalla completa; no corresponden a información real del personal. Las operaciones que afectan a evaluaciones, selección de personal y datos de empleados deben realizarse con criterio confidencial: la información de currículums, resultados y credenciales es de uso interno.
@@ -51,7 +51,7 @@ La barra lateral izquierda reúne los módulos disponibles para tu cuenta:
 | Control de asistencia | `/rrhh` | Marcaciones, incidencias y reportes |
 | Evaluación de personal | `/evaluaciones` | Evaluaciones generales del personal |
 | Evaluaciones mensuales | `/admin/evaluaciones-conocimiento` | Banco de preguntas y resultados mensuales |
-| Pruebas de selección | `/admin/evaluaciones-seleccion` | Candidatos, plantillas versionadas y resultados |
+| Pruebas de selección | `/admin/evaluaciones-seleccion` | Candidatos, plantillas editables y resultados |
 | Sugerencias | `/admin/sugerencias` | Buzón de sugerencias del personal |
 
 La barra superior identifica el módulo actual y muestra el nombre del usuario. Los mensajes de éxito, error y advertencia aparecen como alertas dentro de la página; léelos antes de repetir una acción.
@@ -272,43 +272,42 @@ Disponible solo para `SUR-GG-001` y `SUR-AC-002`. Este módulo es independiente 
 
 | Concepto | Significado |
 |---|---|
-| Plantilla | Configuración editable de la prueba de un puesto |
-| Versión | Copia numerada de una plantilla; puede estar `borrador`, `publicada` o `archivada` |
-| Publicar | Dejar una versión disponible para nuevos intentos |
+| Plantilla | Configuración editable y vigente de la prueba de un puesto |
+| Guardar cambios | Actualizar la plantilla vigente; la usarán los nuevos intentos |
 | Activar/desactivar | Permitir o suspender el uso de la plantilla editable |
-| Intento | Entrega realizada por un candidato; guarda la versión usada |
+| Intento | Entrega realizada por un candidato; guarda una copia de la prueba usada |
 | Baja lógica | Desactivar una cuenta conservando su historial |
 | Reintento | Nueva oportunidad autorizada por ADMIN y con motivo registrado |
 
 ### Orden recomendado de trabajo
 
-1. Verificar que la plantilla del puesto esté publicada y disponible. Si solo existe la prueba base, el candidato usará esa configuración.
+1. Verificar que la plantilla del puesto esté disponible. Si solo existe la prueba base, el candidato usará esa configuración.
 2. Crear la cuenta del candidato y asignarle el puesto.
 3. Entregar las credenciales al candidato por un canal privado.
 4. El candidato completa su perfil, adjunta el currículum PDF de máximo 5 MB y entrega la prueba.
 5. Revisa pendientes, resultados y, si procede, autoriza un reintento.
 
-### 8.1 Configuración de pruebas versionadas
+### 8.1 Configuración de pruebas por puesto
 
-En la sección **1. Configuración de pruebas** hay una fila por puesto con su configuración, última versión publicada y estado (`Disponible` o `Desactivada`).
+En la sección **1. Configuración de pruebas** hay una fila por puesto con su configuración, fecha de actualización y estado (`Disponible` o `Desactivada`).
 
 **Crear la plantilla editable:**
 
 1. Localiza el puesto en la tabla.
 2. Si en **Configuración** aparece `Prueba base del sistema`, pulsa **Personalizar prueba**.
-3. El sistema copia la prueba vigente a una versión `borrador` numerada como V1.
+3. El sistema copia la configuración vigente a una plantilla editable.
 4. Verifica que los datos coincidan con la prueba anterior antes de editar.
 5. Si ya existe una plantilla, pulsa **Administrar prueba** para abrir el editor.
 
 **Editar una plantilla:**
 
-1. Modifica los campos generales: título, duración total en minutos, puntaje máximo total y nota de esta versión, de hasta 500 caracteres.
+1. Modifica los campos generales: título, duración total en minutos y puntaje máximo total.
 2. Ajusta los umbrales `recomendable`, `revision_adicional`, `minimo_practica`, `minimo_conocimientos` y `minimo_valores`.
 3. Por cada sección ajusta nombre, tiempo asignado, puntaje máximo e instrucciones para el candidato.
-4. Por cada pregunta ajusta enunciado, información adicional, opciones, puntos y la opción marcada como **Correcta**.
+4. Por cada pregunta ajusta enunciado, información adicional, opciones, puntaje máximo y tipo de respuesta: **Correcta**, **Intermedia** o **Incorrecta**. Las opciones intermedias permiten indicar el porcentaje del puntaje que otorgan.
 5. Revisa la rúbrica interna de calificación de cada pregunta.
 6. Modifica las actividades de verificación en vivo si aplica. No suman puntos al total.
-7. Pulsa **Guardar borrador**.
+7. Pulsa **Guardar cambios**.
 
 **Reglas de validación:**
 
@@ -319,29 +318,20 @@ En la sección **1. Configuración de pruebas** hay una fila por puesto con su c
 - Los umbrales deben estar entre 0 y el puntaje total.
 - El umbral `recomendable` no puede ser menor que `revision_adicional`.
 
-Solo puedes guardar o publicar si no hay errores de validación ni cambios sin guardar. Al cerrar el editor se descartan los cambios pendientes.
+Solo puedes guardar si no hay errores de validación ni cambios sin guardar. Al cerrar el editor se descartan los cambios pendientes.
 
-**Publicar una versión:**
+**Aplicar los cambios:**
 
-1. Termina y guarda el borrador.
+1. Termina de editar y pulsa **Guardar cambios**.
 2. Revisa el cuadernillo en la sección **5. Cuadernillo y guía interna**.
-3. Pulsa **Publicar para nuevas pruebas** y confirma.
+3. No hay publicación por pasos: desde ese momento los nuevos intentos usan la prueba guardada.
 
-Al publicar, la versión anterior pasa a `archivada`, la nueva queda como `publicada` y la plantilla se marca como disponible. Esto solo afecta a **nuevos intentos**: los resultados ya calificados conservan el `plantilla_version_id` con el que se entregaron.
+Los intentos ya entregados conservan en su registro una copia de la definición con la que se calificaron; un cambio posterior no modifica esos resultados.
 
 **Activar o desactivar:**
 
 - Pulsa **Desactivar prueba** para suspender temporalmente la plantilla personalizada. Los candidatos volverán a usar la configuración base del puesto.
-- Pulsa **Activar prueba** para volver a usar la versión publicada. No se puede activar una plantilla sin versión publicada.
-
-**Historial y restauración:**
-
-En **Historial de versiones** puedes:
-
-- **Revisar esta versión:** copia una versión antigua al editor sin publicarla.
-- **Crear borrador desde aquí:** reemplaza el borrador actual por una copia de esa versión. Debes revisarla y publicarla expresamente.
-
-Cada fila muestra el número de versión, su estado (`Borrador`, `Publicada` o `Archivada`) y las notas guardadas. No elimines versiones publicadas ni intentes editar una entrega antigua: el historial es la auditoría del proceso.
+- Pulsa **Activar prueba** para volver a usar la plantilla editable.
 
 ### 8.2 Crear cuentas de candidato
 
@@ -397,7 +387,7 @@ El motivo queda en el historial. No autorices reintentos sin una razón document
 
 En la sección **4. Historial** se listan hasta los 250 resultados más recientes: automáticos y anteriores registrados manualmente. Se puede filtrar por puesto.
 
-Cada fila muestra candidato y edad, puesto, fecha, calificación sobre 100, aciertos y porcentaje, decisión, número de intento, versión de plantilla usada y motivo de reintento, si aplica. Las evaluaciones manuales antiguas aparecen como intento «Anterior» y no tienen conteo de aciertos.
+Cada fila muestra candidato y edad, puesto, fecha, calificación sobre 100, aciertos y porcentaje, decisión, número de intento y motivo de reintento, si aplica. Las evaluaciones manuales antiguas aparecen como intento «Anterior» y no tienen conteo de aciertos.
 
 | Decisión | Criterio general |
 |---|---|
@@ -411,7 +401,7 @@ Desde aquí también puedes pulsar **Autorizar reintento** si el resultado es au
 
 En la sección **5. Cuadernillo y guía interna**:
 
-1. Selecciona un puesto. Se muestra la definición resuelta: versión publicada activa o configuración base.
+1. Selecciona un puesto. Se muestra la definición vigente: plantilla editable activa o configuración base.
 2. Revisa título, duración, puntaje, preguntas, opciones y criterios de decisión.
 3. Pulsa **Mostrar guía de calificación** si necesitas ver respuestas esperadas, rúbricas, umbrales y verificación en vivo. Pulsa **Ocultar guía** después.
 4. Pulsa **Imprimir** para generar el cuadernillo.
@@ -420,7 +410,7 @@ La impresión oculta navegación, paneles ADMIN, guía, claves, rúbricas y veri
 
 ### 8.6 Requisito técnico previo
 
-El editor versionado, la baja lógica de cuentas y la auditoría de perfil requieren la migración `2026-11-18-plantillas-seleccion-versionadas.sql`. Consulta el [runbook de migraciones](runbook-migraciones.md) antes de ejecutarla en producción. La migración se aplica **una sola vez**; no vuelvas a ejecutar `schema.sql` sobre una base existente.
+El editor de plantillas vigentes, la baja lógica de cuentas y la auditoría de perfil requieren la migración `2026-11-18-plantillas-seleccion.sql`. Consulta el [runbook de migraciones](runbook-migraciones.md) antes de ejecutarla en producción. La migración se aplica **una sola vez**; no vuelvas a ejecutar `schema.sql` sobre una base existente.
 
 ---
 
@@ -449,15 +439,14 @@ La respuesta queda visible de inmediato para el empleado y se registra con tu us
 - La contraseña de un candidato se muestra una sola vez al crear la cuenta.
 - Los currículums, resultados y motivaciones de reintento son información confidencial.
 
-### Antes de publicar cambios
+### Antes de guardar cambios
 
-1. Guarda el borrador.
-2. Revisa el cuadernillo con la guía.
-3. Confirma umbrales y opción correcta de cada pregunta.
-4. Publica solo cuando la versión esté lista.
-5. Comunica a los candidatos activos que deben recargar la página si cambias la prueba.
+1. Revisa el cuadernillo con la guía.
+2. Confirma umbrales y opción correcta de cada pregunta.
+3. Guarda los cambios desde el editor.
+4. Comunica a los candidatos activos que deben recargar la página si cambias la prueba; la nueva configuración se usa a partir del guardado.
 
-**Consejo:** revisa el cuadernillo con la guía antes de publicar; así confirmas que la opción correcta y los umbrales siguen siendo los esperados.
+**Consejo:** revisa el cuadernillo con la guía antes de guardar; así confirmas que la opción correcta y los umbrales siguen siendo los esperados.
 
 ### Problemas frecuentes
 
@@ -465,10 +454,10 @@ La respuesta queda visible de inmediato para el empleado y se registra con tu us
 |---|---|
 | El login responde «Error interno del servidor» | Verifica `/api/health`; si responde error de base de datos, contacta a TI |
 | El candidato no ve el puesto asignado | Revisa su perfil en seguimiento y que la cuenta esté activa |
-| El candidato dice que la prueba cambió | Pídele recargar la página; los intentos entregados conservan su versión |
+| El candidato dice que la prueba cambió | Pídele recargar la página; los intentos entregados conservan la configuración con la que se calificaron |
 | No aparece el editor de plantillas | Aplica la migración 12 y vuelve a iniciar sesión |
 | No se puede eliminar una cuenta | Tiene intentos o resultados; usa baja lógica |
-| Un cambio de plantilla no se refleja | Publica la versión y verifica que la plantilla esté activa |
+| Un cambio de plantilla no se refleja | Guarda los cambios y verifica que la plantilla esté activa |
 
 ---
 

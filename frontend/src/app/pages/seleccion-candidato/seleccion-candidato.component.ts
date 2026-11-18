@@ -133,10 +133,7 @@ export class SeleccionCandidatoComponent implements OnInit {
     this.error.set('');
     this.aviso.set('');
     this.guardando.set(true);
-    this.servicio.entregarPruebaCandidato(
-      this.respuestas(),
-      this.plantillaActual()?.version?.id ?? null,
-    ).subscribe({
+    this.servicio.entregarPruebaCandidato(this.respuestas()).subscribe({
       next: ({ mensaje, resultado }) => {
         this.aviso.set(mensaje);
         this.candidato.update((candidato) => candidato ? {

@@ -290,14 +290,12 @@
   background: #f8fafc;
 }
 
-.selection-editor-section > summary,
-.selection-editor-item > summary {
+.selection-editor-section > summary {
   list-style: none;
   cursor: pointer;
 }
 
-.selection-editor-section > summary::-webkit-details-marker,
-.selection-editor-item > summary::-webkit-details-marker {
+.selection-editor-section > summary::-webkit-details-marker {
   display: none;
 }
 
@@ -308,66 +306,15 @@
   gap: 0.75rem;
 }
 
-.selection-editor-section > summary::after,
-.selection-editor-item > summary::after {
+.selection-editor-section > summary::after {
   flex: 0 0 auto;
   color: #17365d;
   font-weight: 800;
-}
-
-.selection-editor-section > summary::after {
   content: '+';
 }
 
 .selection-editor-section[open] > summary::after {
   content: '-';
-}
-
-.selection-editor-item > summary::after {
-  content: '+';
-}
-
-.selection-editor-item[open] > summary::after {
-  content: '-';
-}
-
-.selection-editor-section-heading small {
-  color: #64748b;
-}
-
-.selection-editor-section-heading h5 {
-  margin: 0;
-  color: #17365d;
-}
-
-.selection-editor-item {
-  display: grid;
-  gap: 0.6rem;
-  padding: 0.85rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.6rem;
-  background: #fff;
-}
-
-.selection-editor-item-heading {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.75rem;
-  color: #334155;
-}
-
-.selection-editor-item-heading span {
-  overflow: hidden;
-  color: #64748b;
-  font-size: 0.85rem;
-  font-weight: 400;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.selection-add-question {
-  justify-self: start;
 }
 
 .selection-validation {
@@ -439,21 +386,6 @@
   width: 100%;
 }
 
-.selection-version-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid #e2e8f0;
-  color: #475569;
-  font-size: 0.85rem;
-}
-
-.selection-version-row span:nth-child(3) {
-  flex: 1 1 180px;
-}
-
 .details-button-danger {
   color: #9f1239;
 }
@@ -470,6 +402,61 @@
 
 .selection-editor input[type='radio'] {
   accent-color: #17365d;
+}
+
+.selection-section-settings,
+.selection-rubric-editor {
+  padding: 0.6rem 0.8rem;
+  border: 1px dashed var(--color-border, #cbd5e1);
+  border-radius: 0.5rem;
+  background: var(--color-surface-alt, #f8fafc);
+}
+
+.selection-section-settings {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.selection-rubric-editor {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.selection-section-settings > summary,
+.selection-rubric-editor > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  list-style: none;
+  color: var(--workspace-text, #475569);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.selection-section-settings > summary::-webkit-details-marker,
+.selection-rubric-editor > summary::-webkit-details-marker {
+  display: none;
+}
+
+.selection-section-settings > summary::after,
+.selection-rubric-editor > summary::after {
+  color: var(--workspace-text, #17365d);
+  font-weight: 800;
+  content: '+';
+}
+
+.selection-section-settings[open] > summary::after,
+.selection-rubric-editor[open] > summary::after {
+  content: '-';
+}
+
+.selection-edit-note {
+  margin: 0;
+  color: var(--workspace-muted, #64748b);
+  font-size: 0.75rem;
+  line-height: 1.5;
 }
 
 @media (max-width: 720px) {

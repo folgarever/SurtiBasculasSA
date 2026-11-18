@@ -38,7 +38,6 @@
         <h1>{{ plantillaActual()?.evaluacion?.titulo }}</h1>
         <div class="candidate-summary"><span>{{ candidato()?.nombres }} {{ candidato()?.apellidos }}</span><span>{{ candidato()?.edad }} años</span><span>{{ plantillaActual()?.nombre_puesto }}</span></div>
         <p class="candidate-intro">Tiempo sugerido: {{ plantillaActual()?.evaluacion?.tiempo_total_minutos }} minutos. Lee cada caso y selecciona una respuesta. Puedes usar calculadora u hoja de cálculo para los cálculos. Debes contestar todas las preguntas; al entregar ya no podrás modificarlas.</p>
-        @if (plantillaActual()?.version?.numero) { <p class="candidate-version">Versión de la prueba: {{ plantillaActual()?.version?.numero }}</p> }
         @if (aviso()) { <div class="candidate-notice" role="status">{{ aviso() }}</div> }
         @if (error()) { <div class="candidate-error" role="alert">{{ error() }}</div> }
         @for (seccion of plantillaActual()?.evaluacion?.secciones ?? []; track seccion.id) {

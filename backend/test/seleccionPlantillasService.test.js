@@ -32,34 +32,51 @@ test('la validación rechaza umbrales fuera del puntaje total', () => {
   assert.ok(errores.some((mensaje) => mensaje.includes('umbral recomendable')));
 });
 
-test('obtenerDefinicionPublicada usa la versión publicada en base de datos', async () => {
+test('obtenerDefinicionVigente usa la definición guardada en base de datos', async () => {
   const definicion = service.definicionEstatica('ASISTADM');
   pool.execute = async (sql, valores) => {
-    assert.match(sql, /INNER JOIN seleccion_plantilla_versiones/);
+    assert.match(sql, /FROM seleccion_plantillas/);
     assert.deepEqual(valores, ['ASISTADM']);
     return [[{
       id: 42,
-      numero: 3,
+      activa: 1,
       definicion: JSON.stringify({ ...definicion, titulo: 'Prueba editada' }),
     }]];
   };
 
-  const resultado = await service.obtenerDefinicionPublicada('ASISTADM');
+  const resultado = await service.obtenerDefinicionVigente('ASISTADM');
   assert.equal(resultado.origen, 'bd');
-  assert.equal(resultado.versionId, 42);
-  assert.equal(resultado.numero, 3);
+  assert.equal(resultado.plantillaId, 42);
   assert.equal(resultado.definicion.titulo, 'Prueba editada');
 });
 
-test('obtenerDefinicionPublicada usa el config si la tabla aún no existe', async () => {
+test('obtenerDefinicionVigente usa el config si la tabla aún no existe', async () => {
   const error = new Error('Tabla inexistente');
   error.code = 'ER_NO_SUCH_TABLE';
   pool.execute = async () => {
     throw error;
   };
 
-  const resultado = await service.obtenerDefinicionPublicada('ASISTADM');
+  const resultado = await service.obtenerDefinicionVigente('ASISTADM');
   assert.equal(resultado.origen, 'codigo');
-  assert.equal(resultado.versionId, null);
+  assert.equal(resultado.plantillaId, null);
   assert.equal(resultado.definicion.titulo, service.definicionEstatica('ASISTADM').titulo);
+});
+
+test('obtenerDetalle completa una plantilla sin definición con la configuración base', async () => {
+  pool.execute = async (sql) => {
+    assert.match(sql, /FROM seleccion_plantillas p/);
+    return [[{
+      id: 7,
+      puesto_id: 1,
+      codigo: 'ASISTADM',
+      nombre: 'Asistente administrativo',
+      activa: 1,
+      actualizado_en: null,
+      definicion: null,
+    }]];
+  };
+
+  const detalle = await service.obtenerDetalle(7);
+  assert.equal(detalle.definicion.titulo, service.definicionEstatica('ASISTADM').titulo);
 });

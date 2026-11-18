@@ -144,83 +144,44 @@ function escaparComoJson(definicion) {
   return JSON.stringify(definicion);
 }
 
-async function esTablaInexistente(error) {
+function esTablaInexistente(error) {
   return error && ['ER_NO_SUCH_TABLE', 'ER_BAD_FIELD_ERROR'].includes(error.code);
 }
 
-async function obtenerDefinicionPublicada(codigo, ejecutor = pool) {
+async function obtenerDefinicionVigente(codigo, ejecutor = pool) {
   try {
     const [filas] = await ejecutor.execute(
-      `SELECT v.id, v.numero, v.definicion
-       FROM seleccion_plantillas p
-       INNER JOIN seleccion_plantilla_versiones v
-         ON v.plantilla_id = p.id AND v.estado = 'publicada'
-       WHERE p.codigo = ? AND p.activa = 1
+      `SELECT id, definicion, activa
+       FROM seleccion_plantillas
+       WHERE codigo = ? AND activa = 1
        LIMIT 1`,
       [codigo]
     );
     const fila = filas[0];
     if (fila) {
-      return {
-        definicion: parsearDefinicion(fila.definicion),
-        versionId: fila.id,
-        numero: fila.numero,
-        origen: 'bd',
-      };
+      const definicion = parsearDefinicion(fila.definicion) || definicionEstatica(codigo);
+      if (definicion) {
+        return {
+          definicion,
+          plantillaId: fila.id,
+          origen: 'bd',
+        };
+      }
     }
   } catch (error) {
-    if (!(await esTablaInexistente(error))) throw error;
+    if (!esTablaInexistente(error)) throw error;
   }
   const definicion = definicionEstatica(codigo);
-  return definicion
-    ? { definicion, versionId: null, numero: null, origen: 'codigo' }
-    : null;
-}
-
-async function obtenerDefinicionPorVersion(versionId, ejecutor = pool) {
-  const [filas] = await ejecutor.execute(
-    `SELECT v.id, v.numero, v.estado, v.definicion, p.codigo, p.nombre, p.activa
-     FROM seleccion_plantilla_versiones v
-     INNER JOIN seleccion_plantillas p ON p.id = v.plantilla_id
-     WHERE v.id = ?
-     LIMIT 1`,
-    [versionId]
-  );
-  const fila = filas[0];
-  if (!fila) throw errorDeEstado(404, 'La versión solicitada no existe.');
-  return {
-    id: fila.id,
-    numero: fila.numero,
-    estado: fila.estado,
-    codigo: fila.codigo,
-    nombre: fila.nombre,
-    activa: Boolean(fila.activa),
-    definicion: parsearDefinicion(fila.definicion),
-  };
-}
-
-function resumirVersion(fila) {
-  return fila ? {
-    id: fila.id,
-    numero: fila.numero,
-    estado: fila.estado,
-    notas: fila.notas,
-    creado_en: fila.creado_en,
-    publicada_en: fila.publicada_en,
-  } : null;
+  return definicion ? { definicion, plantillaId: null, origen: 'codigo' } : null;
 }
 
 async function listar() {
   const codigos = codigosEvaluables();
   const [filas] = await pool.execute(
     `SELECT pu.id AS puesto_id, pu.codigo_abreviatura AS codigo, pu.nombre_puesto,
-            pu.departamento, p.id AS plantilla_id, p.activa, p.actualizado_en,
-            v.id AS version_id, v.numero, v.estado, v.notas, v.creado_en, v.publicada_en,
-            (SELECT COUNT(*) FROM seleccion_plantilla_versiones pv WHERE pv.plantilla_id = p.id) AS total_versiones
+            pu.departamento, p.id AS plantilla_id, p.activa, p.actualizado_en
      FROM puestos pu
      LEFT JOIN seleccion_plantillas p ON p.puesto_id = pu.id
-     LEFT JOIN seleccion_plantilla_versiones v
-       ON v.plantilla_id = p.id AND v.estado = 'publicada'
      WHERE pu.codigo_abreviatura IN (${codigos.map(() => '?').join(', ')})
      ORDER BY pu.nombre_puesto`,
     codigos
@@ -233,23 +194,15 @@ async function listar() {
     departamento: fila.departamento,
     activa: fila.plantilla_id === null ? true : Boolean(fila.activa),
     personalizada: fila.plantilla_id !== null,
-    total_versiones: Number(fila.total_versiones || 0),
     actualizado_en: fila.actualizado_en,
-    version_publicada: resumirVersion(fila.version_id ? {
-      id: fila.version_id,
-      numero: fila.numero,
-      estado: fila.estado,
-      notas: fila.notas,
-      creado_en: fila.creado_en,
-      publicada_en: fila.publicada_en,
-    } : null),
     origen: fila.plantilla_id === null ? 'codigo' : 'bd',
   }));
 }
 
 async function buscarPlantilla(plantillaId, ejecutor = pool) {
   const [filas] = await ejecutor.execute(
-    `SELECT p.id, p.puesto_id, p.codigo, p.nombre, p.activa, p.actualizado_en, pu.nombre_puesto
+    `SELECT p.id, p.puesto_id, p.codigo, p.nombre, p.activa, p.actualizado_en,
+            p.definicion, pu.nombre_puesto
      FROM seleccion_plantillas p
      INNER JOIN puestos pu ON pu.id = p.puesto_id
      WHERE p.id = ?
@@ -262,25 +215,20 @@ async function buscarPlantilla(plantillaId, ejecutor = pool) {
 async function obtenerDetalle(plantillaId) {
   const plantilla = await buscarPlantilla(plantillaId);
   if (!plantilla) throw errorDeEstado(404, 'La plantilla no existe.');
-  const [versiones] = await pool.execute(
-    `SELECT id, numero, estado, definicion, notas, creado_por, creado_en, publicada_en
-     FROM seleccion_plantilla_versiones
-     WHERE plantilla_id = ?
-     ORDER BY numero DESC`,
-    [plantillaId]
-  );
+  const definicion = parsearDefinicion(plantilla.definicion) || definicionEstatica(plantilla.codigo);
+  if (!definicion) throw errorDeEstado(409, 'No hay una prueba de selección configurada para este puesto.');
   return {
-    ...plantilla,
+    id: plantilla.id,
+    puesto_id: plantilla.puesto_id,
+    codigo: plantilla.codigo,
+    nombre: plantilla.nombre,
     activa: Boolean(plantilla.activa),
-    versiones: versiones.map((version) => ({
-      ...resumirVersion(version),
-      definicion: parsearDefinicion(version.definicion),
-      creado_por: version.creado_por,
-    })),
+    actualizado_en: plantilla.actualizado_en,
+    definicion,
   };
 }
 
-async function crear(puestoId, definicion, notas, creadoPor) {
+async function crear(puestoId, definicion, creadoPor) {
   const [puestos] = await pool.execute(
     `SELECT id, codigo_abreviatura, nombre_puesto
      FROM puestos WHERE id = ? LIMIT 1`,
@@ -297,149 +245,53 @@ async function crear(puestoId, definicion, notas, creadoPor) {
   if (existentes.length) throw errorDeEstado(409, 'Ese puesto ya tiene una plantilla editable.');
 
   const definicionFinal = asegurarDefinicion(definicion || definicionEstatica(puesto.codigo_abreviatura));
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-    const [creada] = await connection.execute(
-      'INSERT INTO seleccion_plantillas (puesto_id, codigo, nombre) VALUES (?, ?, ?)',
-      [puesto.id, puesto.codigo_abreviatura, puesto.nombre_puesto]
-    );
-    await connection.execute(
-      `INSERT INTO seleccion_plantilla_versiones
-       (plantilla_id, numero, estado, definicion, notas, creado_por)
-       VALUES (?, 1, 'borrador', ?, ?, ?)`,
-      [creada.insertId, escaparComoJson(definicionFinal), notas || null, creadoPor || null]
-    );
-    await connection.commit();
-    return obtenerDetalle(creada.insertId);
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
-  }
+  const [creada] = await pool.execute(
+    `INSERT INTO seleccion_plantillas
+     (puesto_id, codigo, nombre, activa, definicion, creado_por)
+     VALUES (?, ?, ?, 1, ?, ?)`,
+    [
+      puesto.id,
+      puesto.codigo_abreviatura,
+      puesto.nombre_puesto,
+      escaparComoJson(definicionFinal),
+      creadoPor || null,
+    ]
+  );
+  return obtenerDetalle(creada.insertId);
 }
 
-async function actualizarBorrador(plantillaId, definicion, notas, creadoPor) {
+async function actualizar(plantillaId, definicion, creadoPor) {
   const plantilla = await buscarPlantilla(plantillaId);
   if (!plantilla) throw errorDeEstado(404, 'La plantilla no existe.');
-  const definicionFinal = definicion ? asegurarDefinicion(definicion) : null;
-  const [borradores] = await pool.execute(
-    `SELECT id, definicion FROM seleccion_plantilla_versiones
-     WHERE plantilla_id = ? AND estado = 'borrador'
-     ORDER BY numero DESC LIMIT 1`,
-    [plantillaId]
-  );
-  const borrador = borradores[0];
-  const definicionBase = definicionFinal || parsearDefinicion(borrador?.definicion);
-  if (!definicionBase) throw errorDeEstado(400, 'Debes enviar la definición de la prueba.');
-  asegurarDefinicion(definicionBase);
-
-  if (borrador) {
-    await pool.execute(
-      `UPDATE seleccion_plantilla_versiones
-       SET definicion = ?, notas = ?, creado_por = ?
-       WHERE id = ?`,
-      [escaparComoJson(definicionBase), notas || null, creadoPor || null, borrador.id]
-    );
-    return obtenerDetalle(plantillaId);
-  }
-
-  const [maximo] = await pool.execute(
-    'SELECT COALESCE(MAX(numero), 0) AS numero FROM seleccion_plantilla_versiones WHERE plantilla_id = ?',
-    [plantillaId]
-  );
-  const numero = Number(maximo[0].numero) + 1;
+  if (!definicion) throw errorDeEstado(400, 'Debes enviar la definición de la prueba.');
+  const definicionFinal = asegurarDefinicion(definicion);
   await pool.execute(
-    `INSERT INTO seleccion_plantilla_versiones
-     (plantilla_id, numero, estado, definicion, notas, creado_por)
-     VALUES (?, ?, 'borrador', ?, ?, ?)`,
-    [plantillaId, numero, escaparComoJson(definicionBase), notas || null, creadoPor || null]
+    `UPDATE seleccion_plantillas
+     SET definicion = ?, creado_por = ?
+     WHERE id = ?`,
+    [escaparComoJson(definicionFinal), creadoPor || null, plantillaId]
   );
   return obtenerDetalle(plantillaId);
-}
-
-async function publicar(plantillaId, creadoPor) {
-  const plantilla = await buscarPlantilla(plantillaId);
-  if (!plantilla) throw errorDeEstado(404, 'La plantilla no existe.');
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-    const [borradores] = await connection.execute(
-      `SELECT id, definicion FROM seleccion_plantilla_versiones
-       WHERE plantilla_id = ? AND estado = 'borrador'
-       ORDER BY numero DESC LIMIT 1 FOR UPDATE`,
-      [plantillaId]
-    );
-    const borrador = borradores[0];
-    if (!borrador) throw errorDeEstado(409, 'No hay un borrador pendiente de publicación.');
-    asegurarDefinicion(parsearDefinicion(borrador.definicion));
-
-    await connection.execute(
-      `UPDATE seleccion_plantilla_versiones
-       SET estado = 'archivada'
-       WHERE plantilla_id = ? AND estado = 'publicada'`,
-      [plantillaId]
-    );
-    await connection.execute(
-      `UPDATE seleccion_plantilla_versiones
-       SET estado = 'publicada', publicada_en = CURRENT_TIMESTAMP, creado_por = COALESCE(?, creado_por)
-       WHERE id = ?`,
-      [creadoPor || null, borrador.id]
-    );
-    await connection.execute('UPDATE seleccion_plantillas SET activa = 1 WHERE id = ?', [plantillaId]);
-    await connection.commit();
-    return obtenerDetalle(plantillaId);
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
-  }
 }
 
 async function cambiarActiva(plantillaId, activa, creadoPor) {
   const plantilla = await buscarPlantilla(plantillaId);
   if (!plantilla) throw errorDeEstado(404, 'La plantilla no existe.');
-  if (activa) {
-    const [publicadas] = await pool.execute(
-      `SELECT id FROM seleccion_plantilla_versiones
-       WHERE plantilla_id = ? AND estado = 'publicada' LIMIT 1`,
-      [plantillaId]
-    );
-    if (!publicadas.length) throw errorDeEstado(409, 'La plantilla no tiene una versión publicada.');
-  }
   await pool.execute(
-    'UPDATE seleccion_plantillas SET activa = ? WHERE id = ?',
-    [activa ? 1 : 0, plantillaId]
+    'UPDATE seleccion_plantillas SET activa = ?, creado_por = ? WHERE id = ?',
+    [activa ? 1 : 0, creadoPor || null, plantillaId]
   );
   return obtenerDetalle(plantillaId);
-}
-
-async function restaurarVersion(plantillaId, versionId, creadoPor) {
-  const version = await obtenerDefinicionPorVersion(versionId);
-  if (version.codigo !== (await buscarPlantilla(plantillaId))?.codigo) {
-    throw errorDeEstado(400, 'La versión no pertenece a esta plantilla.');
-  }
-  await pool.execute(
-    `DELETE FROM seleccion_plantilla_versiones
-     WHERE plantilla_id = ? AND estado = 'borrador'`,
-    [plantillaId]
-  );
-  return actualizarBorrador(plantillaId, version.definicion, `Restaurada desde versión ${version.numero}`, creadoPor);
 }
 
 module.exports = {
   codigosEvaluables,
   definicionEstatica,
   validarDefinicion,
-  obtenerDefinicionPublicada,
-  obtenerDefinicionPorVersion,
+  obtenerDefinicionVigente,
   listar,
   obtenerDetalle,
   crear,
-  actualizarBorrador,
-  publicar,
+  actualizar,
   cambiarActiva,
-  restaurarVersion,
 };

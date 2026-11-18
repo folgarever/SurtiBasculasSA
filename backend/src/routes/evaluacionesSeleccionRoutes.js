@@ -20,9 +20,7 @@ const {
   obtenerPlantillaAdmin,
   crearPlantillaAdmin,
   actualizarPlantillaAdmin,
-  publicarPlantillaAdmin,
   activarPlantillaAdmin,
-  restaurarVersionPlantillaAdmin,
   actualizarPerfilCandidatoAdmin,
   cambiarActivoCuentaCandidatoAdmin,
   eliminarCuentaCandidatoAdmin,
@@ -63,13 +61,7 @@ router.get('/admin/plantillas', permitirEvaluaciones, listarPlantillasAdmin);
 router.post('/admin/plantillas', permitirEvaluaciones, crearPlantillaAdmin);
 router.get('/admin/plantillas/:id', permitirEvaluaciones, obtenerPlantillaAdmin);
 router.put('/admin/plantillas/:id', permitirEvaluaciones, actualizarPlantillaAdmin);
-router.post('/admin/plantillas/:id/publicar', permitirEvaluaciones, publicarPlantillaAdmin);
 router.post('/admin/plantillas/:id/activa', permitirEvaluaciones, activarPlantillaAdmin);
-router.post(
-  '/admin/plantillas/:id/versiones/:versionId/restaurar',
-  permitirEvaluaciones,
-  restaurarVersionPlantillaAdmin,
-);
 router.get('/plantillas', permitirEvaluaciones, obtenerPlantillas);
 router.get('/resultados', permitirEvaluaciones, listarResultados);
 

@@ -45,18 +45,11 @@ export interface PlantillaEvaluacionSeleccion {
   secciones: SeccionPlantillaSeleccion[];
 }
 
-export interface VersionPlantillaSeleccion {
-  id: number | null;
-  numero: number | null;
-  origen: 'bd' | 'codigo' | 'version';
-}
-
 export interface PuestoPlantillaSeleccion {
   id: number;
   codigo_abreviatura: string;
   nombre_puesto: string;
   departamento: string;
-  version?: VersionPlantillaSeleccion;
   evaluacion: PlantillaEvaluacionSeleccion;
 }
 
@@ -78,7 +71,6 @@ export interface SeccionPruebaCandidato {
 export interface PuestoPruebaCandidato {
   id: number;
   nombre_puesto: string;
-  version?: VersionPlantillaSeleccion;
   evaluacion: {
     titulo: string;
     tiempo_total_minutos: number;
@@ -105,8 +97,6 @@ export interface ResultadoSeleccion {
   porcentaje_correctas: number | null;
   numero_intento: number | null;
   origen: 'automatica' | 'manual_anterior';
-  plantilla_version_id?: number | null;
-  plantilla_version_numero?: number | null;
   estado_candidato?: RegistroCandidatoSeleccion['estado'];
   reintento_motivo?: string | null;
   fecha_nacimiento: string | null;
@@ -166,15 +156,6 @@ export interface PerfilCandidatoAdminInput {
   curriculum?: File | null;
 }
 
-export interface ResumenVersionPlantilla {
-  id: number;
-  numero: number;
-  estado: 'borrador' | 'publicada' | 'archivada';
-  notas: string | null;
-  creado_en: string;
-  publicada_en: string | null;
-}
-
 export interface ResumenPlantillaSeleccion {
   plantilla_id: number | null;
   puesto_id: number;
@@ -183,15 +164,8 @@ export interface ResumenPlantillaSeleccion {
   departamento: string;
   activa: boolean;
   personalizada: boolean;
-  total_versiones: number;
   actualizado_en: string | null;
-  version_publicada: ResumenVersionPlantilla | null;
   origen: 'bd' | 'codigo';
-}
-
-export interface VersionDetallePlantilla extends ResumenVersionPlantilla {
-  definicion: PlantillaEvaluacionSeleccion;
-  creado_por: number | null;
 }
 
 export interface DetallePlantillaSeleccion {
@@ -201,7 +175,7 @@ export interface DetallePlantillaSeleccion {
   nombre: string;
   activa: boolean;
   actualizado_en: string | null;
-  versiones: VersionDetallePlantilla[];
+  definicion: PlantillaEvaluacionSeleccion;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -249,7 +223,6 @@ export class EvaluacionesSeleccionService {
 
   entregarPruebaCandidato(
     respuestas: Record<string, string>,
-    plantillaVersionId: number | null = null,
   ): Observable<{
     mensaje: string;
     resultado: {
@@ -275,7 +248,7 @@ export class EvaluacionesSeleccionService {
       };
     }>(
       `${this.baseUrl}/candidato/entregar`,
-      { respuestas, plantilla_version_id: plantillaVersionId },
+      { respuestas },
     );
   }
 
@@ -314,29 +287,20 @@ export class EvaluacionesSeleccionService {
   crearPlantilla(
     puestoId: number,
     definicion?: PlantillaEvaluacionSeleccion,
-    notas?: string,
   ): Observable<{ plantilla: DetallePlantillaSeleccion }> {
     return this.http.post<{ plantilla: DetallePlantillaSeleccion }>(
       `${this.baseUrl}/admin/plantillas`,
-      { puesto_id: puestoId, definicion, notas },
+      { puesto_id: puestoId, definicion },
     );
   }
 
   actualizarPlantilla(
     plantillaId: number,
     definicion: PlantillaEvaluacionSeleccion,
-    notas?: string,
   ): Observable<{ plantilla: DetallePlantillaSeleccion }> {
     return this.http.put<{ plantilla: DetallePlantillaSeleccion }>(
       `${this.baseUrl}/admin/plantillas/${plantillaId}`,
-      { definicion, notas },
-    );
-  }
-
-  publicarPlantilla(plantillaId: number): Observable<{ plantilla: DetallePlantillaSeleccion }> {
-    return this.http.post<{ plantilla: DetallePlantillaSeleccion }>(
-      `${this.baseUrl}/admin/plantillas/${plantillaId}/publicar`,
-      {},
+      { definicion },
     );
   }
 
@@ -344,16 +308,6 @@ export class EvaluacionesSeleccionService {
     return this.http.post<{ plantilla: DetallePlantillaSeleccion }>(
       `${this.baseUrl}/admin/plantillas/${plantillaId}/activa`,
       { activa },
-    );
-  }
-
-  restaurarVersionPlantilla(
-    plantillaId: number,
-    versionId: number,
-  ): Observable<{ plantilla: DetallePlantillaSeleccion }> {
-    return this.http.post<{ plantilla: DetallePlantillaSeleccion }>(
-      `${this.baseUrl}/admin/plantillas/${plantillaId}/versiones/${versionId}/restaurar`,
-      {},
     );
   }
 

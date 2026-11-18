@@ -24,43 +24,31 @@ describe('EvaluacionesSeleccionService', () => {
     TestBed.resetTestingModule();
   });
 
-  it('envía la versión de la plantilla que vio el candidato al entregar', () => {
+  it('envía solo las respuestas al entregar la prueba', () => {
     const respuestas = { 'aptitudes-0': 'A' };
-    servicio.entregarPruebaCandidato(respuestas, 42).subscribe();
+    servicio.entregarPruebaCandidato(respuestas).subscribe();
 
     const peticion = httpMock.expectOne(`${baseUrl}/candidato/entregar`);
     expect(peticion.request.method).toBe('POST');
-    expect(peticion.request.body).toEqual({
-      respuestas,
-      plantilla_version_id: 42,
-    });
+    expect(peticion.request.body).toEqual({ respuestas });
     peticion.flush({ mensaje: 'Entregada', resultado: {} });
   });
 
-  it('envía versión nula cuando la prueba viene del configuración base', () => {
-    servicio.entregarPruebaCandidato({}).subscribe();
-
-    const peticion = httpMock.expectOne(`${baseUrl}/candidato/entregar`);
-    expect(peticion.request.body.plantilla_version_id).toBeNull();
-    peticion.flush({ mensaje: 'Entregada', resultado: {} });
-  });
-
-  it('expone los endpoints ADMIN de plantillas versionadas', () => {
+  it('expone los endpoints ADMIN de la plantilla vigente', () => {
     servicio.listarPlantillasAdmin().subscribe();
     expect(httpMock.expectOne(`${baseUrl}/admin/plantillas`).request.method).toBe('GET');
 
     servicio.obtenerDetallePlantilla(7).subscribe();
     expect(httpMock.expectOne(`${baseUrl}/admin/plantillas/7`).request.method).toBe('GET');
 
-    servicio.publicarPlantilla(7).subscribe();
-    expect(httpMock.expectOne(`${baseUrl}/admin/plantillas/7/publicar`).request.method).toBe('POST');
+    servicio.actualizarPlantilla(7, {} as never).subscribe();
+    const actualizacion = httpMock.expectOne(`${baseUrl}/admin/plantillas/7`);
+    expect(actualizacion.request.method).toBe('PUT');
+    expect(actualizacion.request.body).toEqual({ definicion: {} });
 
     servicio.activarPlantilla(7, false).subscribe();
     const activacion = httpMock.expectOne(`${baseUrl}/admin/plantillas/7/activa`);
     expect(activacion.request.body).toEqual({ activa: false });
-
-    servicio.restaurarVersionPlantilla(7, 3).subscribe();
-    expect(httpMock.expectOne(`${baseUrl}/admin/plantillas/7/versiones/3/restaurar`).request.method).toBe('POST');
 
     httpMock.match(() => true).forEach((peticion) => peticion.flush({ plantillas: [], plantilla: {} }));
   });
