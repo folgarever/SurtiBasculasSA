@@ -2,6 +2,12 @@
 
 Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., incluyendo la jornada del personal, recursos humanos, administración de empleados y evaluación de desempeño.
 
+## Documentación
+
+- [Manual de usuario para administradores (PDF con capturas)](docs/manual-administradores.pdf)
+- [Manual de usuario para administradores (Markdown)](docs/manual-administradores.md)
+- [Runbook de migraciones](docs/runbook-migraciones.md)
+
 ## Funciones
 
 - Inicio de sesión corporativo y adaptable a móviles y equipos de escritorio, con el logo original de SURTIBÁSCULAS S.A. y favicon de marca.
@@ -33,7 +39,7 @@ El selector de apariencia permite usar el tema claro, oscuro o el del dispositiv
 ## Configuración
 
 1. Crea la base de datos `defaultdb` en MySQL y ejecuta [`database/schema.sql`](database/schema.sql) para una instalación nueva.
-2. Para una base existente, ejecuta una sola vez [`database/migrations/2026-11-01-evaluaciones-personal.sql`](database/migrations/2026-11-01-evaluaciones-personal.sql), [`database/migrations/2026-11-02-observaciones-evaluaciones.sql`](database/migrations/2026-11-02-observaciones-evaluaciones.sql), [`database/migrations/2026-11-06-sugerencias.sql`](database/migrations/2026-11-06-sugerencias.sql), [`database/migrations/2026-11-06-evaluaciones-conocimiento.sql`](database/migrations/2026-11-06-evaluaciones-conocimiento.sql), [`database/migrations/2026-11-09-banco-preguntas-conocimiento.sql`](database/migrations/2026-11-09-banco-preguntas-conocimiento.sql), [`database/migrations/2026-11-09-puntuacion-parcial-evaluaciones.sql`](database/migrations/2026-11-09-puntuacion-parcial-evaluaciones.sql), [`database/migrations/2026-11-11-evaluaciones-seleccion.sql`](database/migrations/2026-11-11-evaluaciones-seleccion.sql), [`database/migrations/2026-11-11-seleccion-candidatos.sql`](database/migrations/2026-11-11-seleccion-candidatos.sql), [`database/migrations/2026-11-11-codigos-acceso-candidatos.sql`](database/migrations/2026-11-11-codigos-acceso-candidatos.sql), [`database/migrations/2026-11-11-cuentas-candidatos-curriculum.sql`](database/migrations/2026-11-11-cuentas-candidatos-curriculum.sql) y [`database/migrations/2026-11-12-resultados-automaticos-seleccion.sql`](database/migrations/2026-11-12-resultados-automaticos-seleccion.sql), en ese orden. Ejecuta cada migración una sola vez y solo después de las anteriores; si las migraciones previas de selección ya fueron aplicadas, ejecuta únicamente la del **2026-11-12**. No vuelvas a ejecutar `CREATE TABLE` ni `schema.sql` en una base existente. Para una instalación nueva basta con ejecutar `schema.sql`. Después, ambos administradores deben iniciar sesión nuevamente para recibir el rol actualizado en su JWT.
+2. Para una base existente, ejecuta una sola vez [`database/migrations/2026-11-01-evaluaciones-personal.sql`](database/migrations/2026-11-01-evaluaciones-personal.sql), [`database/migrations/2026-11-02-observaciones-evaluaciones.sql`](database/migrations/2026-11-02-observaciones-evaluaciones.sql), [`database/migrations/2026-11-06-sugerencias.sql`](database/migrations/2026-11-06-sugerencias.sql), [`database/migrations/2026-11-06-evaluaciones-conocimiento.sql`](database/migrations/2026-11-06-evaluaciones-conocimiento.sql), [`database/migrations/2026-11-09-banco-preguntas-conocimiento.sql`](database/migrations/2026-11-09-banco-preguntas-conocimiento.sql), [`database/migrations/2026-11-09-puntuacion-parcial-evaluaciones.sql`](database/migrations/2026-11-09-puntuacion-parcial-evaluaciones.sql), [`database/migrations/2026-11-11-evaluaciones-seleccion.sql`](database/migrations/2026-11-11-evaluaciones-seleccion.sql), [`database/migrations/2026-11-11-seleccion-candidatos.sql`](database/migrations/2026-11-11-seleccion-candidatos.sql), [`database/migrations/2026-11-11-codigos-acceso-candidatos.sql`](database/migrations/2026-11-11-codigos-acceso-candidatos.sql), [`database/migrations/2026-11-11-cuentas-candidatos-curriculum.sql`](database/migrations/2026-11-11-cuentas-candidatos-curriculum.sql) y [`database/migrations/2026-11-12-resultados-automaticos-seleccion.sql`](database/migrations/2026-11-12-resultados-automaticos-seleccion.sql), [`database/migrations/2026-11-18-plantillas-seleccion-versionadas.sql`](database/migrations/2026-11-18-plantillas-seleccion-versionadas.sql), en ese orden. Ejecuta cada migración una sola vez y solo después de las anteriores; si las migraciones previas de selección ya fueron aplicadas, ejecuta únicamente las del **2026-11-12** y **2026-11-18** que falten. No vuelvas a ejecutar `CREATE TABLE` ni `schema.sql` en una base existente. Para una instalación nueva basta con ejecutar `schema.sql`. Después, ambos administradores deben iniciar sesión nuevamente para recibir el rol actualizado en su JWT.
 
    Si la migración del 2026-11-12 se interrumpe con el error 1050 porque `candidatos_seleccion_intentos` ya existe, no borres la tabla ni vuelvas a crearla. Compara `SHOW CREATE TABLE candidatos_seleccion_intentos` y `SHOW CREATE TABLE candidatos_seleccion` con el esquema y la migración. Si la tabla de intentos coincide y en `candidatos_seleccion` faltan ambas columnas de reintento y su clave foránea, ejecuta únicamente el `ALTER TABLE` de esa migración. Si ya existen o el esquema difiere, revisa las diferencias antes de modificarlo.
 3. Copia `backend/.env.example` como `backend/.env` y configura la conexión a MySQL y un secreto JWT largo y aleatorio. El nombre de base de datos debe coincidir con `defaultdb`. Configura también `CORS_ORIGINS` con los dominios autorizados. SSL de MySQL está activo por defecto en hosts remotos y desactivado en `localhost`; usa `DB_SSL` para forzarlo y `DB_SSL_REJECT_UNAUTHORIZED=false` únicamente si el certificado es autofirmado.
@@ -183,9 +189,12 @@ El mismo conjunto se ejecuta automáticamente en GitHub Actions para pushes y pu
 │   ├── package.json
 │   └── vercel.json
 ├── database/
-│   ├── migrations/            11 migraciones SQL (ver docs/runbook-migraciones.md)
+│   ├── migrations/            12 migraciones SQL (ver docs/runbook-migraciones.md)
 │   └── schema.sql             Esquema consolidado y datos de prueba
 ├── docs/
+│   ├── capturas/              9 capturas reales usadas en el manual PDF
+│   ├── manual-administradores.md
+│   ├── manual-administradores.pdf
 │   └── runbook-migraciones.md
 ├── frontend/
 │   ├── public/                config.js, favicon y logo corporativo
