@@ -28,6 +28,11 @@
   html[data-theme="dark"] .admin-welcome,
   html[data-theme="dark"] .attendance-band { background: #23395b; }
   html[data-theme="dark"] .admin-welcome h1 { color: #fff; }
+  html[data-theme="dark"] .dashboard-page :is(.date-chip, .summary-card, .panel-card) { background: var(--color-surface-alt); border-color: var(--color-hairline); }
+  html[data-theme="dark"] .dashboard-page :is(.summary-card .summary-label, .panel-header h2, .pending-item, .rank-list strong, .activity-body strong) { color: var(--color-ink-soft); }
+  html[data-theme="dark"] .dashboard-page :is(.pending-item, .bar-primary, .rank-track i, .activity-icon) { background: var(--color-surface-alt); }
+  html[data-theme="dark"] .dashboard-page .pending-item { border-color: var(--color-hairline); }
+  html[data-theme="dark"] .dashboard-page .pending-icon { color: var(--color-ember); }
   html[data-theme="dark"] .topbar .user-chip { color: var(--color-ink-soft); }
   html[data-theme="dark"] .topbar .icon-button { color: var(--color-ink-soft); }
   html[data-theme="dark"] .module-icon,

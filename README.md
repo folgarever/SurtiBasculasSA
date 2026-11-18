@@ -61,6 +61,8 @@ El backend restringe CORS a `CORS_ORIGINS` (lista separada por comas). Si no se 
 
 Las peticiones autenticadas verifican el JWT y **refrescan el perfil desde la base de datos**: una cuenta dada de baja, un cambio de rol o una cuenta de candidato eliminada dejan de tener acceso de inmediato, aunque el token siga vigente.
 
+El panel de administración (`/admin`) consume `GET /api/dashboard/admin`, disponible solo para `ADMIN`. El endpoint devuelve en una sola respuesta los indicadores del día, la serie de asistencia de los últimos siete días, la distribución por puesto y la actividad reciente.
+
 ## Nómina inicial
 
 | Código | Nombre | Cargo | Acceso |

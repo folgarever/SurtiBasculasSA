@@ -9,6 +9,7 @@ const evaluacionesRoutes = require('./src/routes/evaluacionesRoutes');
 const evaluacionesConocimientoRoutes = require('./src/routes/evaluacionesConocimientoRoutes');
 const evaluacionesSeleccionRoutes = require('./src/routes/evaluacionesSeleccionRoutes');
 const sugerenciasRoutes = require('./src/routes/sugerenciasRoutes');
+const dashboardRoutes = require('./src/routes/dashboardRoutes');
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use('/api/evaluaciones', evaluacionesRoutes);
 app.use('/api/evaluaciones-conocimiento', evaluacionesConocimientoRoutes);
 app.use('/api/evaluaciones-seleccion', evaluacionesSeleccionRoutes);
 app.use('/api/sugerencias', sugerenciasRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ mensaje: 'Ruta no encontrada.' });

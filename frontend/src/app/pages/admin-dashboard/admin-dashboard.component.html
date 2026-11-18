@@ -13,51 +13,177 @@
   [bottomItems]="bottomItems"
   bottomActive="/admin/sugerencias"
 >
-    <section class="admin-welcome">
+  <section class="admin-welcome">
+    <div>
       <p class="eyebrow">SURTIBASCULAS S.A. / ADMINISTRACIÓN</p>
       <h1>Panel de administración</h1>
-      <p>Bienvenido, {{ usuario?.nombre }}. Selecciona el área que deseas gestionar.</p>
-    </section>
+      <p>Bienvenido, {{ usuario?.nombre }}. Aquí tienes el pulso de la operación.</p>
+    </div>
+    <div class="admin-welcome-actions">
+      <span class="date-chip">{{ hoy }}</span>
+      <button class="button button-ghost" type="button" (click)="cargar()" [disabled]="cargando()">
+        <ng-icon name="lucideRefreshCw" size="15" [class.girando]="cargando()" />
+        {{ cargando() ? 'Actualizando...' : 'Actualizar' }}
+      </button>
+    </div>
+  </section>
 
-    <section class="module-grid" aria-label="Módulos de administración">
-      <a class="module-card module-attendance" routerLink="/rrhh">
-        <span class="module-icon"><ng-icon name="lucideClipboardCheck" size="22" /></span>
-        <span class="module-eyebrow">OPERACIÓN DIARIA</span>
-        <strong>Control de asistencia</strong>
-        <span class="module-description">Consulta las marcaciones, gestiona incidencias y exporta reportes.</span>
-        <span class="module-link">Ingresar al módulo <span aria-hidden="true">→</span></span>
-      </a>
-      @if (puedeEvaluar) {
-        <a class="module-card module-evaluation" routerLink="/evaluaciones">
-          <span class="module-icon"><ng-icon name="lucideUserRoundCog" size="22" /></span>
-          <span class="module-eyebrow">DESARROLLO DEL EQUIPO</span>
-          <strong>Evaluación de personal</strong>
-          <span class="module-description">Registra y consulta evaluaciones de desempeño por puesto.</span>
-          <span class="module-link">Ingresar al módulo <span aria-hidden="true">→</span></span>
-        </a>
-        <a class="module-card module-evaluation" routerLink="/admin/evaluaciones-conocimiento">
-          <span class="module-icon"><ng-icon name="lucideClipboardCheck" size="22" /></span>
-          <span class="module-eyebrow">SEGUIMIENTO MENSUAL</span>
-          <strong>Evaluación de conocimientos y desempeño</strong>
-          <span class="module-description">Consulta resultados, evaluaciones pendientes y evolución del personal.</span>
-          <span class="module-link">Ver indicadores <span aria-hidden="true">→</span></span>
-        </a>
+  @if (error()) {
+    <div class="alert alert-error" role="alert">
+      {{ error() }}
+      <button class="button button-text" type="button" (click)="cargar()">Reintentar</button>
+    </div>
+  }
+
+  @if (cargando() && !datos()) {
+    <section class="summary-strip resumen-grid" aria-label="Cargando indicadores">
+      @for (item of [1, 2, 3, 4]; track item) {
+        <div class="summary-card skeleton"><span class="skeleton-line corta"></span><span class="skeleton-line"></span></div>
       }
-      <a class="module-card module-employees" routerLink="/admin/empleados">
-        <span class="module-icon"><ng-icon name="lucideUsers" size="22" /></span>
-        <span class="module-eyebrow">DIRECTORIO</span>
-        <strong>Gestión de empleados</strong>
-        <span class="module-description">Consulta el personal registrado y agrega nuevos empleados.</span>
-        <span class="module-link">Ver empleados <span aria-hidden="true">→</span></span>
-      </a>
-      <a class="module-card module-evaluation" routerLink="/admin/sugerencias">
-        <span class="module-icon"><ng-icon name="lucideMessageSquare" size="22" /></span>
-        <span class="module-eyebrow">ESCUCHA DEL EQUIPO</span>
-        <strong>Sugerencias del personal</strong>
-        <span class="module-description">Revisa ideas y recomendaciones y responde cuando sea necesario.</span>
-        <span class="module-link">Abrir foro <span aria-hidden="true">→</span></span>
-      </a>
+    </section>
+    <section class="panel-skeleton"></section>
+  } @else if (resumen(); as $r) {
+    <section class="summary-strip resumen-grid" aria-label="Indicadores principales">
+      <div class="summary-card">
+        <span class="indicador-icono"><ng-icon name="lucideUsers" size="19" /></span>
+        <div><span class="summary-number">{{ $r.empleados_activos }}</span><span class="summary-label">Empleados activos</span></div>
+        <span class="summary-note">{{ $r.empleados_inactivos }} inactivos</span>
+      </div>
+      <div class="summary-card">
+        <span class="indicador-icono"><ng-icon name="lucideClipboardCheck" size="19" /></span>
+        <div><span class="summary-number">{{ $r.empleados_presentes }}</span><span class="summary-label">Presentes hoy</span></div>
+        <span class="summary-note">{{ $r.marcaciones_hoy }} marcaciones</span>
+      </div>
+      <div class="summary-card">
+        <span class="indicador-icono"><ng-icon name="lucideTrendingUp" size="19" /></span>
+        <div><span class="summary-number">{{ $r.puntualidad_hoy }}%</span><span class="summary-label">Puntualidad</span></div>
+        <span class="summary-note">{{ $r.llegadas_tarde_hoy }} atrasos</span>
+      </div>
+      <div class="summary-card">
+        <span class="indicador-icono"><ng-icon name="lucideMessageSquare" size="19" /></span>
+        <div><span class="summary-number">{{ $r.sugerencias_pendientes }}</span><span class="summary-label">Sugerencias nuevas</span></div>
+        <span class="summary-note">de {{ $r.sugerencias_totales }} en total</span>
+      </div>
     </section>
 
-    <footer class="workspace-footer"><span>SURTIBASCULAS S.A. · ADMINISTRACIÓN</span><span>Acceso centralizado a los módulos de gestión</span></footer>
-  </app-shell>
+    <section class="panel-grid">
+      <article class="panel-card panel-asistencia">
+        <header class="panel-header">
+          <div><p class="eyebrow">ASISTENCIA</p><h2>Últimos 7 días</h2></div>
+          <span class="leyenda"><i class="dot primary"></i> Marcaciones <i class="dot alert"></i> Atrasos</span>
+        </header>
+        <div class="bar-chart" role="img" aria-label="Marcaciones de los últimos siete días">
+          @for (dia of serieAsistencia; track dia.fecha) {
+            <div class="bar-column" [attr.title]="dia.fecha + ': ' + dia.total + ' marcaciones, ' + dia.atrasos + ' atrasos'">
+              <div class="bars">
+                <span class="bar bar-primary" [style.height.%]="alturaBarra(dia.total)"><b>{{ dia.total || '' }}</b></span>
+                <span class="bar bar-alert" [style.height.%]="dia.atrasos ? alturaBarra(dia.atrasos) : 0"></span>
+              </div>
+              <span class="bar-label">{{ etiquetaDia(dia.fecha) }}</span>
+            </div>
+          }
+        </div>
+      </article>
+
+      <article class="panel-card panel-puestos">
+        <header class="panel-header">
+          <div><p class="eyebrow">PLANTILLA</p><h2>Puestos más numerosos</h2></div>
+          <a class="text-link" routerLink="/rrhh">Ver personal <ng-icon name="lucideArrowRight" size="14" /></a>
+        </header>
+        @if (datos()?.distribucion_puestos.length) {
+          <ul class="rank-list">
+            @for (puesto of datos()?.distribucion_puestos; track puesto.puesto) {
+              <li>
+                <div><strong>{{ puesto.puesto }}</strong><span>{{ puesto.total }} personas</span></div>
+                <span class="rank-track"><i [style.width.%]="(puesto.total / maximoPuesto) * 100"></i></span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="panel-empty">No hay empleados activos registrados.</p>
+        }
+      </article>
+    </section>
+
+    <section class="panel-grid panel-grid-inferior">
+      <article class="panel-card panel-pendientes">
+        <header class="panel-header">
+          <div><p class="eyebrow">ATENCIÓN</p><h2>Pendientes</h2></div>
+        </header>
+        <div class="pending-list">
+          @for (item of pendientes; track item.ruta) {
+            <a class="pending-item" [class.tono-rojo]="item.tono === 'rojo'" [routerLink]="item.ruta">
+              <span class="pending-icon"><ng-icon [name]="item.icono" size="17" /></span>
+              <span class="pending-label">{{ item.etiqueta }}</span>
+              <strong>{{ item.valor }}</strong>
+              <ng-icon name="lucideArrowRight" size="15" />
+            </a>
+          }
+        </div>
+      </article>
+
+      <article class="panel-card panel-actividad">
+        <header class="panel-header">
+          <div><p class="eyebrow">TIEMPO REAL</p><h2>Actividad reciente</h2></div>
+          <span class="actualizado">Actualizado {{ fechaCorta(datos()?.actualizado_en || null) }}</span>
+        </header>
+        @if (datos()?.actividad_reciente.length) {
+          <ul class="activity-list">
+            @for (actividad of datos()?.actividad_reciente; track actividad.tipo + actividad.id) {
+              <li>
+                <span class="activity-icon" [class]="'act-' + actividad.tipo"><ng-icon [name]="iconoActividad(actividad)" size="16" /></span>
+                <div class="activity-body">
+                  <div><strong>{{ actividad.persona }}</strong><span [class]="'state-pill ' + (actividad.estado === 'Pendiente' || actividad.estado === 'Atraso' ? 'state-warn' : 'state-good')">{{ actividad.estado }}</span></div>
+                  <p>{{ actividad.titulo }}</p>
+                </div>
+                <time>{{ fechaCorta(actividad.fecha) }}</time>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="panel-empty">Aún no hay actividad registrada.</p>
+        }
+      </article>
+    </section>
+
+    <section class="panel-card panel-modulos">
+      <header class="panel-header">
+        <div><p class="eyebrow">ACCIONES RÁPIDAS</p><h2>Módulos</h2></div>
+      </header>
+      <div class="module-grid" aria-label="Módulos de administración">
+        <a class="module-card module-attendance" routerLink="/rrhh">
+          <span class="module-icon"><ng-icon name="lucideClipboardCheck" size="22" /></span>
+          <span class="module-eyebrow">OPERACIÓN DIARIA</span>
+          <strong>Control de asistencia</strong>
+          <span class="module-description">Marcaciones, incidencias y reportes.</span>
+        </a>
+        <a class="module-card module-employees" routerLink="/admin/empleados">
+          <span class="module-icon"><ng-icon name="lucideUsers" size="22" /></span>
+          <span class="module-eyebrow">PERSONAL</span>
+          <strong>Empleados</strong>
+          <span class="module-description">Altas, datos de puesto y accesos.</span>
+        </a>
+        @if (puedeEvaluar) {
+          <a class="module-card module-evaluations" routerLink="/evaluaciones">
+            <span class="module-icon"><ng-icon name="lucideUserRoundCog" size="22" /></span>
+            <span class="module-eyebrow">DESEMPEÑO</span>
+            <strong>Evaluación de personal</strong>
+            <span class="module-description">Evaluaciones de desempeño por puesto.</span>
+          </a>
+          <a class="module-card module-evaluations" routerLink="/admin/evaluaciones-conocimiento">
+            <span class="module-icon"><ng-icon name="lucideClipboardCheck" size="22" /></span>
+            <span class="module-eyebrow">CONOCIMIENTO</span>
+            <strong>Evaluaciones mensuales</strong>
+            <span class="module-description">Banco de preguntas y resultados.</span>
+          </a>
+          <a class="module-card module-selection" routerLink="/admin/evaluaciones-seleccion">
+            <span class="module-icon"><ng-icon name="lucideClipboardCheck" size="22" /></span>
+            <span class="module-eyebrow">RECLUTAMIENTO</span>
+            <strong>Pruebas de selección</strong>
+            <span class="module-description">Candidatos y pruebas de ingreso.</span>
+          </a>
+        }
+      </div>
+    </section>
+  }
+</app-shell>
