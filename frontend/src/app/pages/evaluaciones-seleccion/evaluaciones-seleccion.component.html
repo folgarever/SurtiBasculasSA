@@ -1,7 +1,7 @@
 <app-shell
   inicio="/admin"
   caption="MÓDULOS"
-  topbarLabel="ADMINISTRACIÓN / SELECCIÓN"
+  topbarLabel="ADMINISTRACIÓN / RECLUTAMIENTO"
   topbarTitle="Evaluaciones de selección"
   workspaceClass="knowledge-workspace selection-workspace"
   [admin]="true"
@@ -13,7 +13,7 @@
   [bottomItems]="bottomItems"
   bottomActive="/admin/sugerencias"
 >
-    <div class="page-heading"><div><p class="eyebrow">ADMINISTRACIÓN / RECLUTAMIENTO</p><h1>Pruebas de selección por puesto</h1><p class="subheading">Configuración versionada, cuentas de candidato, seguimiento, calificación automática e historial. Este proceso es independiente de las evaluaciones mensuales de empleados.</p></div></div>
+    <div class="page-heading"><div><p class="eyebrow">ADMINISTRACIÓN / RECLUTAMIENTO</p><h1>Pruebas de selección por puesto</h1><p class="subheading">Administra las preguntas y respuestas de cada puesto, crea accesos para aspirantes y consulta sus resultados. Los cambios se guardan como borrador; solo se usan con candidatos nuevos cuando publicas una versión.</p></div></div>
     @if (error()) { <div class="alert alert-error" role="alert">{{ error() }} <button type="button" (click)="error.set('')">×</button></div> }
     @if (aviso()) { <div class="alert alert-success" role="status">{{ aviso() }}</div> }
 
@@ -21,21 +21,26 @@
       <section class="knowledge-panel"><div class="knowledge-empty">Cargando pruebas de selección…</div></section>
     } @else {
       <section class="knowledge-panel selection-editor-panel">
-        <div class="section-heading"><div><p class="eyebrow">1. CONFIGURACIÓN DE PRUEBAS</p><h2>Plantillas versionadas</h2><p class="subheading">Edita preguntas, opciones, puntajes, rúbricas y umbrales. Publicar crea una versión nueva: los intentos anteriores conservan la versión con la que fueron calificados.</p></div></div>
+        <div class="section-heading"><div><p class="eyebrow">1. CONFIGURACIÓN DE PRUEBAS</p><h2>Administrar pruebas por puesto</h2><p class="subheading">Elige un puesto para editar su prueba. Agrega, corrige o quita preguntas y opciones; guarda tus cambios y publícalos cuando estén listos.</p></div></div>
+        <div class="selection-editor-help">
+          <strong>Cómo hacer cambios</strong>
+          <ol><li>Abre la prueba del puesto que necesitas.</li><li>Edita preguntas y marca la respuesta correcta en cada una.</li><li>Guarda como borrador para conservar los cambios sin afectar candidatos.</li><li>Publica para usar la nueva versión en los siguientes intentos.</li></ol>
+          <p>Las versiones anteriores y sus resultados se conservan. Si ya no quieres recibir nuevos intentos para una prueba personalizada, desactívala; no es necesario borrar su historial.</p>
+        </div>
         @if (!resumenesPlantillas().length) {
           <div class="knowledge-empty">No hay plantillas configuradas. Aplica la migración de plantillas versionadas para habilitar el editor.</div>
         } @else {
           <div class="selection-table-wrap">
             <table class="selection-table">
-              <thead><tr><th>Puesto</th><th>Origen</th><th>Versión publicada</th><th>Estado</th><th>Acción</th></tr></thead>
+              <thead><tr><th>Puesto</th><th>Configuración</th><th>Última versión publicada</th><th>Estado</th><th>Acción</th></tr></thead>
               <tbody>
                 @for (resumen of resumenesPlantillas(); track resumen.puesto_id) {
                   <tr>
                     <td><strong>{{ resumen.nombre }}</strong><small>{{ resumen.codigo }} · {{ resumen.departamento }}</small></td>
-                    <td>{{ resumen.origen === 'bd' ? 'Editable' : 'Configuración base' }}</td>
+                    <td>{{ resumen.origen === 'bd' ? 'Personalizada' : 'Prueba base del sistema' }}</td>
                     <td>{{ resumen.version_publicada ? 'V' + resumen.version_publicada.numero : 'Sin publicar' }}<small>{{ resumen.total_versiones }} versión(es)</small></td>
-                    <td><span class="selection-status">{{ resumen.activa ? 'Activa' : 'Inactiva' }}</span></td>
-                    <td><button class="details-button" type="button" [disabled]="guardandoPlantilla()" (click)="abrirEditor(resumen)">{{ resumen.plantilla_id ? 'Editar' : 'Crear borrador editable' }}</button></td>
+                    <td><span class="selection-status">{{ resumen.activa ? 'Disponible' : 'Desactivada' }}</span></td>
+                    <td><button class="details-button" type="button" [disabled]="guardandoPlantilla()" (click)="abrirEditor(resumen)">{{ resumen.plantilla_id ? 'Administrar prueba' : 'Personalizar prueba' }}</button></td>
                   </tr>
                 }
               </tbody>
@@ -47,76 +52,91 @@
           @if (definicionEditada(); as definicion) {
             <div class="selection-editor">
               <div class="selection-editor-heading">
-                <div><h3>{{ detalle.nombre }}</h3><p class="subheading">Editando la última versión guardada. Los cambios no afectan a los candidatos hasta publicar.</p></div>
+                <div><p class="eyebrow">EDITOR DE PRUEBA</p><h3>{{ detalle.nombre }}</h3><p class="subheading">Cambia lo que necesites. La versión publicada no se modifica hasta que guardes y publiques.</p><p class="selection-count">{{ definicion.secciones.length }} secciones · {{ totalPreguntas() }} preguntas · {{ detalle.versiones.length }} versiones guardadas</p></div>
                 <div class="selection-template-actions">
-                  <button class="details-button" type="button" [disabled]="guardandoPlantilla()" (click)="guardarBorrador()">Guardar borrador</button>
-                  <button class="button button-accent" type="button" [disabled]="guardandoPlantilla()" (click)="publicarPlantilla()">Publicar versión</button>
-                  <button class="details-button" type="button" [disabled]="guardandoPlantilla()" (click)="alternarActivaPlantilla()">{{ detalle.activa ? 'Desactivar' : 'Activar' }}</button>
+                  <button class="details-button" type="button" [disabled]="guardandoPlantilla() || !puedeGuardar()" (click)="guardarBorrador()">Guardar borrador</button>
+                  <button class="button button-accent" type="button" [disabled]="guardandoPlantilla() || !puedePublicar()" (click)="publicarPlantilla()">Publicar para nuevas pruebas</button>
+                  <button class="details-button" type="button" [disabled]="guardandoPlantilla()" (click)="alternarActivaPlantilla()">{{ detalle.activa ? 'Desactivar prueba' : 'Activar prueba' }}</button>
+                  <button class="details-button" type="button" [disabled]="guardandoPlantilla()" (click)="cerrarEditor()">Cerrar editor</button>
                 </div>
               </div>
 
+              @if (erroresDefinicion().length) {
+                <div class="selection-validation" role="alert">
+                  <strong>Corrige estos detalles para poder guardar o publicar:</strong>
+                  <ul>@for (errorValidacion of erroresDefinicion(); track $index) { <li>{{ errorValidacion }}</li> }</ul>
+                </div>
+              }
+              @if (hayCambiosSinGuardar()) {
+                <p class="selection-unsaved-note" role="status">Tienes cambios sin guardar. Guarda el borrador antes de publicarlo.</p>
+              }
+
               <div class="selection-editor-grid">
-                <label><span>Título</span><input type="text" [value]="definicion.titulo" (input)="actualizarDefinicionCampo('titulo', $event)"></label>
-                <label><span>Tiempo total (min)</span><input type="number" min="1" [value]="definicion.tiempo_total_minutos" (input)="actualizarDefinicionCampo('tiempo_total_minutos', $event)"></label>
-                <label><span>Puntaje total</span><input type="number" min="1" [value]="definicion.puntaje_total" (input)="actualizarDefinicionCampo('puntaje_total', $event)"></label>
-                <label><span>Notas de la versión</span><input type="text" maxlength="500" [value]="notasVersion()" (input)="notasVersion.set($any($event.target).value)"></label>
+                <label><span>Título de la prueba</span><input type="text" [value]="definicion.titulo" (input)="actualizarDefinicionCampo('titulo', $event)"></label>
+                <label><span>Duración total (minutos)</span><input type="number" min="1" [value]="definicion.tiempo_total_minutos" (input)="actualizarDefinicionCampo('tiempo_total_minutos', $event)"></label>
+                <label><span>Puntaje máximo total</span><input type="number" min="1" [value]="definicion.puntaje_total" (input)="actualizarDefinicionCampo('puntaje_total', $event)"></label>
+                <label><span>Nota de esta versión (opcional)</span><input type="text" maxlength="500" placeholder="Ej. Se actualizaron preguntas técnicas" [value]="notasVersion()" (input)="notasVersion.set($any($event.target).value)"></label>
                 @for (umbral of clavesUmbral; track umbral) {
-                  <label><span>{{ umbral.replace('_', ' ') }}</span><input type="number" min="0" [value]="definicion.umbrales[umbral]" (input)="actualizarUmbral(umbral, $event)"></label>
+                  <label><span>{{ etiquetasUmbral[umbral] }}</span><small>{{ descripcionesUmbral[umbral] }}</small><input type="number" min="0" [max]="definicion.puntaje_total" [value]="definicion.umbrales[umbral]" (input)="actualizarUmbral(umbral, $event)"></label>
                 }
               </div>
 
               @for (seccion of definicion.secciones; track seccion.id; let seccionIndice = $index) {
-                <article class="selection-editor-section">
-                  <div class="selection-editor-section-heading"><h4>{{ seccion.nombre }}</h4><button class="details-button details-button-danger" type="button" (click)="eliminarPregunta(seccionIndice, 0)" [disabled]="seccion.items.length <= 1">Quitar primera pregunta</button></div>
+                <details class="selection-editor-section" open>
+                  <summary class="selection-editor-section-heading"><h4>{{ seccion.nombre }}</h4><span>{{ seccion.items.length }} preguntas · {{ seccion.tiempo_minutos }} min · {{ seccion.puntaje_maximo }} puntos</span></summary>
                   <div class="selection-editor-grid">
-                    <label><span>Nombre</span><input type="text" [value]="seccion.nombre" (input)="actualizarSeccion(seccionIndice, 'nombre', $event)"></label>
-                    <label><span>Minutos</span><input type="number" min="0" [value]="seccion.tiempo_minutos" (input)="actualizarSeccion(seccionIndice, 'tiempo_minutos', $event)"></label>
-                    <label><span>Puntaje máximo</span><input type="number" min="0" [value]="seccion.puntaje_maximo" (input)="actualizarSeccion(seccionIndice, 'puntaje_maximo', $event)"></label>
-                    <label class="selection-editor-wide"><span>Instrucciones</span><input type="text" [value]="seccion.instrucciones" (input)="actualizarSeccion(seccionIndice, 'instrucciones', $event)"></label>
+                    <label><span>Nombre de la sección</span><input type="text" [value]="seccion.nombre" (input)="actualizarSeccion(seccionIndice, 'nombre', $event)"></label>
+                    <label><span>Tiempo asignado (minutos)</span><input type="number" min="0" [value]="seccion.tiempo_minutos" (input)="actualizarSeccion(seccionIndice, 'tiempo_minutos', $event)"></label>
+                    <label><span>Puntaje máximo de la sección</span><input type="number" min="0" [value]="seccion.puntaje_maximo" (input)="actualizarSeccion(seccionIndice, 'puntaje_maximo', $event)"></label>
+                    <label class="selection-editor-wide"><span>Instrucciones para el candidato</span><input type="text" [value]="seccion.instrucciones" (input)="actualizarSeccion(seccionIndice, 'instrucciones', $event)"></label>
                   </div>
 
                   @for (item of seccion.items; track $index; let itemIndice = $index) {
-                    <div class="selection-editor-item">
-                      <div class="selection-editor-item-heading"><strong>Pregunta {{ itemIndice + 1 }}</strong><button class="details-button details-button-danger" type="button" (click)="eliminarPregunta(seccionIndice, itemIndice)" [disabled]="seccion.items.length <= 1">Eliminar pregunta</button></div>
-                      <label class="selection-editor-wide"><span>Enunciado</span><textarea rows="2" [value]="item.enunciado" (input)="actualizarItem(seccionIndice, itemIndice, 'enunciado', $event)"></textarea></label>
-                      @if (item.detalle !== undefined) { <label class="selection-editor-wide"><span>Detalle</span><textarea rows="2" [value]="item.detalle" (input)="actualizarItem(seccionIndice, itemIndice, 'detalle', $event)"></textarea></label> }
+                    <details class="selection-editor-item">
+                      <summary class="selection-editor-item-heading"><strong>Pregunta {{ itemIndice + 1 }}</strong><span>{{ item.enunciado || 'Escribe el enunciado de la pregunta' }}</span></summary>
+                      <div class="selection-question-editor">
+                        <div class="selection-editor-item-actions"><span>Edición de pregunta</span><button class="details-button details-button-danger" type="button" (click)="eliminarPregunta(seccionIndice, itemIndice)" [disabled]="seccion.items.length <= 1">Eliminar pregunta</button></div>
+                        <label class="selection-editor-wide"><span>Enunciado de la pregunta</span><textarea rows="2" [value]="item.enunciado" (input)="actualizarItem(seccionIndice, itemIndice, 'enunciado', $event)"></textarea></label>
+                        @if (item.detalle !== undefined) { <label class="selection-editor-wide"><span>Información adicional (opcional)</span><textarea rows="2" [value]="item.detalle" (input)="actualizarItem(seccionIndice, itemIndice, 'detalle', $event)"></textarea></label> }
 
-                      <p class="selection-editor-label">Opciones</p>
-                      @for (opcion of item.opciones ?? []; track opcion.id + '-' + $index; let opcionIndice = $index) {
-                        <div class="selection-editor-option">
-                          <input type="radio" [name]="'correcta-' + seccionIndice + '-' + itemIndice" [checked]="opcion.correcta" (change)="marcarCorrecta(seccionIndice, itemIndice, opcionIndice)" [attr.aria-label]="'Marcar opción ' + opcion.id + ' como correcta'">
-                          <input type="text" [value]="opcion.texto" (input)="actualizarOpcion(seccionIndice, itemIndice, opcionIndice, 'texto', $event)">
-                          <input type="number" min="0" step="0.01" [value]="opcion.puntos" (input)="actualizarOpcion(seccionIndice, itemIndice, opcionIndice, 'puntos', $event)">
-                          <button class="details-button details-button-danger" type="button" (click)="eliminarOpcion(seccionIndice, itemIndice, opcionIndice)" [disabled]="(item.opciones?.length ?? 0) <= 2">×</button>
-                        </div>
-                      }
-                      <button class="details-button" type="button" (click)="agregarOpcion(seccionIndice, itemIndice)">+ Opción</button>
+                        <div class="selection-editor-section-heading"><h5>Opciones de respuesta</h5><small>Marca una respuesta correcta y conserva al menos dos opciones.</small></div>
+                        @for (opcion of item.opciones ?? []; track opcion.id + '-' + $index; let opcionIndice = $index) {
+                          <div class="selection-editor-option">
+                            <label class="selection-correct-option"><input type="radio" [name]="'correcta-' + seccionIndice + '-' + itemIndice" [checked]="opcion.correcta" (change)="marcarCorrecta(seccionIndice, itemIndice, opcionIndice)">Correcta</label>
+                            <input type="text" [value]="opcion.texto" (input)="actualizarOpcion(seccionIndice, itemIndice, opcionIndice, 'texto', $event)" [attr.aria-label]="'Texto de opción ' + opcion.id">
+                            <label class="selection-points-field"><span>Puntos</span><input type="number" min="0" step="0.01" [value]="opcion.puntos" (input)="actualizarOpcion(seccionIndice, itemIndice, opcionIndice, 'puntos', $event)" [attr.aria-label]="'Puntos de opción ' + opcion.id"></label>
+                            <button class="details-button details-button-danger" type="button" (click)="eliminarOpcion(seccionIndice, itemIndice, opcionIndice)" [disabled]="(item.opciones?.length ?? 0) <= 2" [attr.aria-label]="'Eliminar opción ' + opcion.id">Quitar</button>
+                          </div>
+                        }
+                        <button class="details-button" type="button" (click)="agregarOpcion(seccionIndice, itemIndice)">+ Agregar opción</button>
 
-                      <p class="selection-editor-label">Rúbrica de calificación</p>
-                      @for (criterio of item.rubrica; track $index; let criterioIndice = $index) {
-                        <div class="selection-editor-option">
-                          <input type="text" [value]="criterio.criterio" (input)="actualizarRubrica(seccionIndice, itemIndice, criterioIndice, 'criterio', $event)">
-                          <input type="number" min="0" step="0.01" [value]="criterio.puntos" (input)="actualizarRubrica(seccionIndice, itemIndice, criterioIndice, 'puntos', $event)">
-                          <button class="details-button details-button-danger" type="button" (click)="eliminarRubrica(seccionIndice, itemIndice, criterioIndice)">×</button>
-                        </div>
-                      }
-                      <button class="details-button" type="button" (click)="agregarRubrica(seccionIndice, itemIndice)">+ Criterio</button>
-                    </div>
+                        <p class="selection-editor-label">Rúbrica interna de calificación (opcional)</p>
+                        @for (criterio of item.rubrica; track $index; let criterioIndice = $index) {
+                          <div class="selection-rubric-editor-option">
+                            <input type="text" [value]="criterio.criterio" (input)="actualizarRubrica(seccionIndice, itemIndice, criterioIndice, 'criterio', $event)" [attr.aria-label]="'Criterio de calificación ' + (criterioIndice + 1)">
+                            <label class="selection-points-field"><span>Puntos</span><input type="number" min="0" step="0.01" [value]="criterio.puntos" (input)="actualizarRubrica(seccionIndice, itemIndice, criterioIndice, 'puntos', $event)" [attr.aria-label]="'Puntos del criterio ' + (criterioIndice + 1)"></label>
+                            <button class="details-button details-button-danger" type="button" (click)="eliminarRubrica(seccionIndice, itemIndice, criterioIndice)" [attr.aria-label]="'Eliminar criterio ' + (criterioIndice + 1)">Quitar</button>
+                          </div>
+                        }
+                        <button class="details-button" type="button" (click)="agregarRubrica(seccionIndice, itemIndice)">+ Agregar criterio</button>
+                      </div>
+                    </details>
                   }
-                  <button class="details-button" type="button" (click)="agregarPregunta(seccionIndice)">+ Pregunta en {{ seccion.id }}</button>
-                </article>
+                  <button class="details-button selection-add-question" type="button" (click)="agregarPregunta(seccionIndice)">+ Agregar pregunta a {{ seccion.nombre }}</button>
+                  <small>Cada sección requiere al menos una pregunta.</small>
+                </details>
               }
 
               <article class="selection-editor-section">
-                <div class="selection-editor-section-heading"><h4>Verificación en vivo</h4><small>No suma puntos al total.</small></div>
+                <div class="selection-editor-section-heading"><h4>Verificación en vivo</h4><small>Actividad complementaria; no suma puntos al total.</small></div>
                 @for (actividad of definicion.verificacion_en_vivo.actividades; track $index; let actividadIndice = $index) {
                   <div class="selection-editor-option">
-                    <input type="text" [value]="actividad.solicitud" (input)="actualizarActividad(actividadIndice, 'solicitud', $event)">
-                    <input type="text" [value]="actividad.respuesta_esperada" (input)="actualizarActividad(actividadIndice, 'respuesta_esperada', $event)">
-                    <button class="details-button details-button-danger" type="button" (click)="eliminarActividad(actividadIndice)">×</button>
+                    <input type="text" [value]="actividad.solicitud" (input)="actualizarActividad(actividadIndice, 'solicitud', $event)" aria-label="Actividad solicitada al candidato">
+                    <input type="text" [value]="actividad.respuesta_esperada" (input)="actualizarActividad(actividadIndice, 'respuesta_esperada', $event)" aria-label="Respuesta esperada">
+                    <button class="details-button details-button-danger" type="button" (click)="eliminarActividad(actividadIndice)" aria-label="Eliminar actividad">Quitar</button>
                   </div>
                 }
-                <button class="details-button" type="button" (click)="agregarActividad()">+ Actividad</button>
+                <button class="details-button" type="button" (click)="agregarActividad()">+ Agregar actividad</button>
               </article>
 
               <article class="selection-editor-section">
@@ -124,10 +144,10 @@
                 @for (version of detalle.versiones; track version.id) {
                   <div class="selection-version-row">
                     <strong>V{{ version.numero }}</strong>
-                    <span class="selection-status">{{ version.estado }}</span>
+                    <span class="selection-status">{{ version.estado === 'borrador' ? 'Borrador' : version.estado === 'publicada' ? 'Publicada' : 'Archivada' }}</span>
                     <span>{{ version.notas || 'Sin notas' }}</span>
-                    <button class="details-button" type="button" (click)="cargarVersionEnEditor(version)">Cargar en editor</button>
-                    @if (version.estado !== 'borrador') { <button class="details-button" type="button" (click)="restaurarVersion(version)">Restaurar</button> }
+                    <button class="details-button" type="button" (click)="cargarVersionEnEditor(version)">Revisar esta versión</button>
+                    @if (version.estado !== 'borrador') { <button class="details-button" type="button" (click)="restaurarVersion(version)">Crear borrador desde aquí</button> }
                   </div>
                 }
               </article>

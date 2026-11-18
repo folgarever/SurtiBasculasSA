@@ -46,6 +46,20 @@ export class EvaluacionesSeleccionComponent implements OnInit {
     'minimo_conocimientos',
     'minimo_valores',
   ];
+  protected readonly etiquetasUmbral: Record<UmbralPlantilla, string> = {
+    recomendable: 'Puntaje para recomendar',
+    revision_adicional: 'Puntaje para revisión adicional',
+    minimo_practica: 'Puntaje mínimo de práctica',
+    minimo_conocimientos: 'Puntaje mínimo de conocimientos',
+    minimo_valores: 'Puntaje mínimo de valores',
+  };
+  protected readonly descripcionesUmbral: Record<UmbralPlantilla, string> = {
+    recomendable: 'Puntaje total mínimo para recomendar al candidato.',
+    revision_adicional: 'Puntaje total mínimo para pasar a revisión adicional.',
+    minimo_practica: 'Puntaje que debe alcanzar en la sección Práctica.',
+    minimo_conocimientos: 'Puntaje que debe alcanzar en Conocimientos.',
+    minimo_valores: 'Puntaje que debe alcanzar en Valores.',
+  };
   protected readonly plantillas = signal<PuestoPlantillaSeleccion[]>([]);
   protected readonly resumenesPlantillas = signal<ResumenPlantillaSeleccion[]>([]);
   protected readonly puestoSeleccionado = signal('');
@@ -63,6 +77,30 @@ export class EvaluacionesSeleccionComponent implements OnInit {
   protected readonly definicionEditada = signal<PlantillaEvaluacionSeleccion | null>(null);
   protected readonly notasVersion = signal('');
   protected readonly guardandoPlantilla = signal(false);
+  protected readonly erroresDefinicion = computed(() => {
+    const definicion = this.definicionEditada();
+    return definicion ? this.validarDefinicion(definicion) : [];
+  });
+  protected readonly totalPreguntas = computed(
+    () => this.definicionEditada()?.secciones.reduce((total, seccion) => total + seccion.items.length, 0) ?? 0,
+  );
+  protected readonly hayCambiosSinGuardar = computed(() => {
+    const plantilla = this.detallePlantilla();
+    const definicion = this.definicionEditada();
+    if (!plantilla || !definicion) return false;
+    const versionActual = [...plantilla.versiones].sort((a, b) => b.numero - a.numero)[0];
+    return JSON.stringify(definicion) !== JSON.stringify(versionActual?.definicion)
+      || this.notasVersion() !== (versionActual?.notas ?? '');
+  });
+  protected readonly puedeGuardar = computed(() => {
+    const tieneBorrador = this.detallePlantilla()?.versiones.some((version) => version.estado === 'borrador') === true;
+    return this.erroresDefinicion().length === 0 && (this.hayCambiosSinGuardar() || !tieneBorrador);
+  });
+  protected readonly puedePublicar = computed(
+    () => this.detallePlantilla()?.versiones.some((version) => version.estado === 'borrador') === true
+      && !this.hayCambiosSinGuardar()
+      && this.erroresDefinicion().length === 0,
+  );
 
   protected readonly editandoPerfilId = signal<number | null>(null);
   protected readonly perfilEdicion = signal<PerfilCandidatoAdminInput>({
@@ -259,6 +297,13 @@ export class EvaluacionesSeleccionComponent implements OnInit {
     });
   }
 
+  protected cerrarEditor(): void {
+    if (this.hayCambiosSinGuardar() && !window.confirm('Hay cambios sin guardar. ¿Deseas cerrar y descartarlos?')) return;
+    this.detallePlantilla.set(null);
+    this.definicionEditada.set(null);
+    this.notasVersion.set('');
+  }
+
   protected actualizarDefinicionCampo(campo: 'titulo' | 'tiempo_total_minutos' | 'puntaje_total', event: Event): void {
     const valor = campo === 'titulo' ? this.valorTexto(event) : Number(this.valorTexto(event));
     this.mutarDefinicion((definicion) => {
@@ -350,6 +395,9 @@ export class EvaluacionesSeleccionComponent implements OnInit {
   }
 
   protected eliminarPregunta(seccionIndice: number, itemIndice: number): void {
+    const seccion = this.definicionEditada()?.secciones[seccionIndice];
+    if (!seccion || seccion.items.length <= 1) return;
+    if (!window.confirm(`¿Eliminar la pregunta ${itemIndice + 1}? El cambio se aplicará cuando guardes el borrador.`)) return;
     this.mutarDefinicion((definicion) => {
       definicion.secciones[seccionIndice]?.items.splice(itemIndice, 1);
     });
@@ -426,6 +474,7 @@ export class EvaluacionesSeleccionComponent implements OnInit {
   protected publicarPlantilla(): void {
     const plantilla = this.detallePlantilla();
     if (!plantilla) return;
+    if (!window.confirm('¿Publicar esta versión? Los nuevos intentos usarán esta prueba; los resultados anteriores no cambiarán.')) return;
     this.limpiarMensajes();
     this.guardandoPlantilla.set(true);
     this.servicio.publicarPlantilla(plantilla.id).subscribe({
@@ -443,6 +492,7 @@ export class EvaluacionesSeleccionComponent implements OnInit {
   protected alternarActivaPlantilla(): void {
     const plantilla = this.detallePlantilla();
     if (!plantilla) return;
+    if (plantilla.activa && !window.confirm('¿Desactivar esta prueba personalizada? Los nuevos intentos usarán la configuración base del puesto.')) return;
     this.limpiarMensajes();
     this.guardandoPlantilla.set(true);
     this.servicio.activarPlantilla(plantilla.id, !plantilla.activa).subscribe({
@@ -619,7 +669,59 @@ export class EvaluacionesSeleccionComponent implements OnInit {
     this.detallePlantilla.set(plantilla);
     const version = [...plantilla.versiones].sort((a, b) => b.numero - a.numero)[0] ?? null;
     this.definicionEditada.set(version ? this.clonar(version.definicion) : null);
-    this.notasVersion.set('');
+    this.notasVersion.set(version?.notas ?? '');
+  }
+
+  private validarDefinicion(definicion: PlantillaEvaluacionSeleccion): string[] {
+    const errores: string[] = [];
+    if (!definicion.titulo.trim()) errores.push('Escribe el título de la prueba.');
+    if (!Number.isFinite(definicion.tiempo_total_minutos) || definicion.tiempo_total_minutos <= 0) {
+      errores.push('El tiempo total debe ser mayor que cero.');
+    }
+    if (!Number.isFinite(definicion.puntaje_total) || definicion.puntaje_total <= 0) {
+      errores.push('El puntaje total debe ser mayor que cero.');
+    }
+
+    const umbrales = Object.values(definicion.umbrales);
+    if (umbrales.some((valor) => !Number.isFinite(valor) || valor < 0 || valor > definicion.puntaje_total)) {
+      errores.push('Todos los criterios de decisión deben estar entre 0 y el puntaje total.');
+    }
+    if (definicion.umbrales.recomendable < definicion.umbrales.revision_adicional) {
+      errores.push('El puntaje recomendable no puede ser menor que el de revisión adicional.');
+    }
+
+    const idsSeccion = ['aptitudes', 'conocimientos', 'practica', 'valores'];
+    if (definicion.secciones.length !== idsSeccion.length
+      || idsSeccion.some((id) => !definicion.secciones.some((seccion) => seccion.id === id))) {
+      errores.push('La prueba debe conservar sus cuatro secciones: Aptitudes, Conocimientos, Práctica y Valores.');
+    }
+    definicion.secciones.forEach((seccion) => {
+      const nombre = seccion.nombre || seccion.id;
+      if (!seccion.nombre.trim()) errores.push(`${nombre}: escribe el nombre de la sección.`);
+      if (!seccion.items.length) errores.push(`${nombre}: agrega al menos una pregunta.`);
+      seccion.items.forEach((item, indice) => {
+        const referencia = `${nombre}, pregunta ${indice + 1}`;
+        if (!item.enunciado.trim()) errores.push(`${referencia}: escribe el enunciado.`);
+        const opciones = item.opciones ?? [];
+        if (opciones.length < 2) errores.push(`${referencia}: agrega al menos dos opciones.`);
+        if (opciones.filter((opcion) => opcion.correcta).length !== 1) {
+          errores.push(`${referencia}: marca una sola respuesta correcta.`);
+        }
+        opciones.forEach((opcion) => {
+          if (!opcion.texto.trim()) errores.push(`${referencia}: completa el texto de cada opción.`);
+          if (!Number.isFinite(opcion.puntos) || opcion.puntos < 0) {
+            errores.push(`${referencia}: los puntos de las opciones no pueden ser negativos.`);
+          }
+        });
+        item.rubrica.forEach((criterio) => {
+          if (!criterio.criterio.trim()) errores.push(`${referencia}: completa los criterios de calificación.`);
+          if (!Number.isFinite(criterio.puntos) || criterio.puntos < 0) {
+            errores.push(`${referencia}: los puntos de la rúbrica no pueden ser negativos.`);
+          }
+        });
+      });
+    });
+    return [...new Set(errores)];
   }
 
   private mutarDefinicion(mutador: (definicion: PlantillaEvaluacionSeleccion) => void): void {
