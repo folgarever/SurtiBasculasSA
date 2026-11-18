@@ -57,11 +57,13 @@ El selector de apariencia permite usar el tema claro, oscuro o el del dispositiv
 
 El frontend usa `/api` bajo el mismo origen. En desarrollo lo resuelve `frontend/proxy.conf.json` y en Vercel la regla de `frontend/vercel.json` reenvía `/api/*` al backend. `frontend/public/config.js` solo fija ese valor por defecto y admite sobreescribirlo con `window.API_URL` o `window.SURTIBASCULAS_CONFIG.apiUrl` antes de cargar el script.
 
-El backend restringe CORS a `CORS_ORIGINS` (lista separada por comas). Si no se define, permite `http://localhost:4200` y `https://surtibasculas.vercel.app`. El inicio de sesión tiene límite de 10 intentos por IP cada 15 minutos; el contador es por instancia, por lo que en arquitecturas serverless no sustituye un limite distribuido.
+El backend restringe CORS a `CORS_ORIGINS` (lista separada por comas). Si no se define, permite `http://localhost:4200` y cualquier dominio `*.vercel.app`, incluidas las URLs de preview. El inicio de sesión tiene límite de 10 intentos por IP cada 15 minutos; el contador es por instancia, por lo que en arquitecturas serverless no sustituye un limite distribuido.
 
 Las peticiones autenticadas verifican el JWT y **refrescan el perfil desde la base de datos**: una cuenta dada de baja, un cambio de rol o una cuenta de candidato eliminada dejan de tener acceso de inmediato, aunque el token siga vigente.
 
 El panel de administración (`/admin`) consume `GET /api/dashboard/admin`, disponible solo para `ADMIN`. El endpoint devuelve en una sola respuesta los indicadores del día, la serie de asistencia de los últimos siete días, la distribución por puesto y la actividad reciente.
+
+`GET /api/health` verifica la conexión a MySQL y responde `{ "estado": "ok", "base_de_datos": "ok" }`. Si la base de datos falla, devuelve `500` con `estado: "error"`; es el primer endpoint a revisar cuando el login responde «Error interno del servidor».
 
 ## Nómina inicial
 

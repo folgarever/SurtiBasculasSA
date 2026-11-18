@@ -10,6 +10,7 @@ const evaluacionesConocimientoRoutes = require('./src/routes/evaluacionesConocim
 const evaluacionesSeleccionRoutes = require('./src/routes/evaluacionesSeleccionRoutes');
 const sugerenciasRoutes = require('./src/routes/sugerenciasRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
+const pool = require('./src/config/db');
 
 const app = express();
 
@@ -18,6 +19,16 @@ app.use(express.json({ limit: '256kb' }));
 
 app.get('/', (req, res) => {
   res.json({ estado: 'ok', servicio: 'SURTIBASCULAS API' });
+});
+
+app.get('/api/health', async (req, res) => {
+  try {
+    await pool.execute('SELECT 1');
+    return res.json({ estado: 'ok', base_de_datos: 'ok' });
+  } catch (error) {
+    console.error('Health check de base de datos falló:', error.message);
+    return res.status(500).json({ estado: 'error', base_de_datos: 'error' });
+  }
 });
 
 app.use('/api/auth', authRoutes);
