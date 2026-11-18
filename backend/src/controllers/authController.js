@@ -6,7 +6,13 @@ const { CODIGOS_ADMINISTRADORES } = require('../config/authorization');
 async function login(req, res, next) {
   const { codigo_empleado: codigoEmpleado, password } = req.body || {};
 
-  if (!codigoEmpleado || !password) {
+  if (
+    typeof codigoEmpleado !== 'string'
+    || !codigoEmpleado.trim()
+    || typeof password !== 'string'
+    || !password
+    || password.length > 72
+  ) {
     return res.status(400).json({ mensaje: 'Código de empleado y contraseña son requeridos.' });
   }
 

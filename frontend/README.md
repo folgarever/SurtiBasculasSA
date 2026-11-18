@@ -15,12 +15,9 @@ La aplicación queda disponible en `http://localhost:4200`. En desarrollo, `prox
 
 ## Producción
 
-Configura `public/config.js` con la URL pública HTTPS de la API, incluyendo `/api`, y permite el dominio del frontend en la configuración CORS del backend:
+`public/config.js` usa `/api` bajo el mismo origen. En Vercel, `vercel.json` reenvía `/api/*` al backend, por lo que no hace falta fijar una URL absoluta ni abrir CORS a otros dominios.
 
-```js
-window.API_URL = 'https://TU-API.example.com/api';
-window.SIMET_API_URL = window.API_URL;
-```
+Si el frontend se sirve en un dominio distinto al del backend, define `window.SURTIBASCULAS_CONFIG = { apiUrl: 'https://TU-API.example.com/api' }` antes de cargar `config.js` (o `window.API_URL`) e incluye el dominio del frontend en `CORS_ORIGINS` del backend.
 
 ## Comandos
 

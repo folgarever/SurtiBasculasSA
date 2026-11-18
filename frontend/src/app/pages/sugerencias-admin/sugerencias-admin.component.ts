@@ -21,6 +21,7 @@ export class SugerenciasAdminComponent implements OnInit {
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
+  protected readonly puedeEvaluar = this.auth.hasEvaluationRole();
   protected readonly sugerencias = signal<Sugerencia[]>([]);
   protected readonly respuestas = signal<Record<number, string>>({});
   protected readonly filtro = signal<FiltroSugerencias>('todas');

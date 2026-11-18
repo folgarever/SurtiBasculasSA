@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const pool = require('../config/db');
 const { CODIGOS_ADMINISTRADORES } = require('../config/authorization');
 
-function verificarToken(req, res, next) {
+async function verificarToken(req, res, next) {
   const authorization = req.headers.authorization;
   const [scheme, token] = authorization ? authorization.split(' ') : [];
 
@@ -11,11 +11,63 @@ function verificarToken(req, res, next) {
     return res.status(401).json({ mensaje: 'Token de autenticación requerido.' });
   }
 
+  let claims;
   try {
-    req.usuario = jwt.verify(token, process.env.JWT_SECRET);
-    return next();
+    claims = jwt.verify(token, process.env.JWT_SECRET);
   } catch (error) {
     return res.status(401).json({ mensaje: 'Token inválido o expirado.' });
+  }
+
+  // El JWT sigue siendo la credencial, pero se refresca el perfil desde la BD
+  // para que bajas, cambios de rol o cuentas eliminadas dejen de tener efecto de inmediato.
+  try {
+    if (claims.role === 'CANDIDATE') {
+      const [cuentas] = await pool.execute(
+        'SELECT id FROM candidatos_seleccion_accesos WHERE id = ? LIMIT 1',
+        [claims.candidato_acceso_id]
+      );
+      if (!cuentas[0]) {
+        return res.status(401).json({ mensaje: 'La cuenta de candidato ya no está disponible.' });
+      }
+      req.usuario = claims;
+      return next();
+    }
+
+    if (claims.id) {
+      const [empleados] = await pool.execute(
+        `SELECT e.id, e.codigo_empleado, e.nombre, e.rol_id,
+                p.nombre_puesto, r.nombre AS nombre_rol
+         FROM empleados e
+         INNER JOIN puestos p ON p.id = e.puesto_id
+         INNER JOIN roles r ON r.id = e.rol_id
+         WHERE e.id = ? AND e.activo = 1
+         LIMIT 1`,
+        [claims.id]
+      );
+      const empleado = empleados[0];
+      if (!empleado) {
+        return res.status(401).json({ mensaje: 'La cuenta ya no está activa.' });
+      }
+
+      const esAdministrador = CODIGOS_ADMINISTRADORES.includes(empleado.codigo_empleado)
+        && empleado.nombre_rol === 'ADMIN';
+      req.usuario = {
+        ...claims,
+        id: empleado.id,
+        codigo_empleado: empleado.codigo_empleado,
+        nombre: empleado.nombre,
+        puesto: empleado.nombre_puesto,
+        rol: empleado.nombre_rol,
+        rol_id: empleado.rol_id,
+        role: esAdministrador ? 'ADMIN' : 'EMPLOYEE',
+      };
+      return next();
+    }
+
+    req.usuario = claims;
+    return next();
+  } catch (error) {
+    return next(error);
   }
 }
 

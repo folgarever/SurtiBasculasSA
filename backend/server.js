@@ -1,7 +1,7 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 
 const express = require('express');
-const cors = require('cors');
+const corsMiddleware = require('./src/config/cors');
 const authRoutes = require('./src/routes/authRoutes');
 const asistenciaRoutes = require('./src/routes/asistenciaRoutes');
 const rrhhRoutes = require('./src/routes/rrhhRoutes');
@@ -12,7 +12,7 @@ const sugerenciasRoutes = require('./src/routes/sugerenciasRoutes');
 
 const app = express();
 
-app.use(cors());
+app.use(corsMiddleware);
 app.use(express.json({ limit: '256kb' }));
 
 app.get('/', (req, res) => {
@@ -34,6 +34,12 @@ app.use((req, res) => {
 app.use((error, req, res, next) => {
   console.error(error);
   if (res.headersSent) return next(error);
+
+  const status = Number(error.status || error.statusCode);
+  if (status >= 400 && status < 500) {
+    return res.status(status).json({ mensaje: error.message || 'Solicitud inválida.' });
+  }
+
   return res.status(500).json({ mensaje: 'Error interno del servidor.' });
 });
 

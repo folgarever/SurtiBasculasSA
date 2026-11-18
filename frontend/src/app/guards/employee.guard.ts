@@ -4,6 +4,8 @@ import { AuthService } from '../services/auth.service';
 
 export const employeeGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
-  if (!auth.isAuthenticated()) return inject(Router).createUrlTree(['/login']);
-  return auth.hasAdminRole() ? inject(Router).createUrlTree(['/admin']) : true;
+  const router = inject(Router);
+  if (!auth.isAuthenticated()) return router.createUrlTree(['/login']);
+  if (auth.isCandidate()) return router.createUrlTree(['/seleccion-candidato']);
+  return auth.hasAdminRole() ? router.createUrlTree(['/admin/sugerencias']) : true;
 };

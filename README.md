@@ -34,7 +34,7 @@ El selector de apariencia permite usar el tema claro, oscuro o el del dispositiv
 2. Para una base existente, ejecuta una sola vez [`database/migrations/2026-11-01-evaluaciones-personal.sql`](database/migrations/2026-11-01-evaluaciones-personal.sql), [`database/migrations/2026-11-02-observaciones-evaluaciones.sql`](database/migrations/2026-11-02-observaciones-evaluaciones.sql), [`database/migrations/2026-11-06-sugerencias.sql`](database/migrations/2026-11-06-sugerencias.sql), [`database/migrations/2026-11-06-evaluaciones-conocimiento.sql`](database/migrations/2026-11-06-evaluaciones-conocimiento.sql), [`database/migrations/2026-11-09-banco-preguntas-conocimiento.sql`](database/migrations/2026-11-09-banco-preguntas-conocimiento.sql), [`database/migrations/2026-11-09-puntuacion-parcial-evaluaciones.sql`](database/migrations/2026-11-09-puntuacion-parcial-evaluaciones.sql), [`database/migrations/2026-11-11-evaluaciones-seleccion.sql`](database/migrations/2026-11-11-evaluaciones-seleccion.sql), [`database/migrations/2026-11-11-seleccion-candidatos.sql`](database/migrations/2026-11-11-seleccion-candidatos.sql), [`database/migrations/2026-11-11-codigos-acceso-candidatos.sql`](database/migrations/2026-11-11-codigos-acceso-candidatos.sql), [`database/migrations/2026-11-11-cuentas-candidatos-curriculum.sql`](database/migrations/2026-11-11-cuentas-candidatos-curriculum.sql) y [`database/migrations/2026-11-12-resultados-automaticos-seleccion.sql`](database/migrations/2026-11-12-resultados-automaticos-seleccion.sql), en ese orden. Ejecuta cada migración una sola vez y solo después de las anteriores; si las migraciones previas de selección ya fueron aplicadas, ejecuta únicamente la del **2026-11-12**. No vuelvas a ejecutar `CREATE TABLE` ni `schema.sql` en una base existente. Para una instalación nueva basta con ejecutar `schema.sql`. Después, ambos administradores deben iniciar sesión nuevamente para recibir el rol actualizado en su JWT.
 
    Si la migración del 2026-11-12 se interrumpe con el error 1050 porque `candidatos_seleccion_intentos` ya existe, no borres la tabla ni vuelvas a crearla. Compara `SHOW CREATE TABLE candidatos_seleccion_intentos` y `SHOW CREATE TABLE candidatos_seleccion` con el esquema y la migración. Si la tabla de intentos coincide y en `candidatos_seleccion` faltan ambas columnas de reintento y su clave foránea, ejecuta únicamente el `ALTER TABLE` de esa migración. Si ya existen o el esquema difiere, revisa las diferencias antes de modificarlo.
-3. Copia `backend/.env.example` como `backend/.env` y configura la conexión a MySQL y un secreto JWT largo y aleatorio. El nombre de base de datos debe coincidir con `defaultdb`.
+3. Copia `backend/.env.example` como `backend/.env` y configura la conexión a MySQL y un secreto JWT largo y aleatorio. El nombre de base de datos debe coincidir con `defaultdb`. Configura también `CORS_ORIGINS` con los dominios autorizados. SSL de MySQL está activo por defecto en hosts remotos y desactivado en `localhost`; usa `DB_SSL` para forzarlo y `DB_SSL_REJECT_UNAUTHORIZED=false` únicamente si el certificado es autofirmado.
 4. Instala dependencias e inicia el backend:
 
    ```powershell
@@ -52,6 +52,14 @@ El selector de apariencia permite usar el tema claro, oscuro o el del dispositiv
    ```
 
 6. Abre `http://localhost:4200`. El proxy de desarrollo envía `/api` al backend en `http://localhost:3000`.
+
+### API y CORS
+
+El frontend usa `/api` bajo el mismo origen. En desarrollo lo resuelve `frontend/proxy.conf.json` y en Vercel la regla de `frontend/vercel.json` reenvía `/api/*` al backend. `frontend/public/config.js` solo fija ese valor por defecto y admite sobreescribirlo con `window.API_URL` o `window.SURTIBASCULAS_CONFIG.apiUrl` antes de cargar el script.
+
+El backend restringe CORS a `CORS_ORIGINS` (lista separada por comas). Si no se define, permite `http://localhost:4200` y `https://surtibasculas.vercel.app`. El inicio de sesión tiene límite de 10 intentos por IP cada 15 minutos; el contador es por instancia, por lo que en arquitecturas serverless no sustituye un limite distribuido.
+
+Las peticiones autenticadas verifican el JWT y **refrescan el perfil desde la base de datos**: una cuenta dada de baja, un cambio de rol o una cuenta de candidato eliminada dejan de tener acceso de inmediato, aunque el token siga vigente.
 
 ## Nómina inicial
 
@@ -145,102 +153,55 @@ Desde la raíz:
 ```powershell
 npm --prefix frontend run build
 npm --prefix frontend test -- --watch=false
+npm --prefix backend test
 ```
+
+El mismo conjunto se ejecuta automáticamente en GitHub Actions para pushes y pull requests a `folgarever` (`.github/workflows/ci.yml`).
 
 ## Estructura
 
 ```text
 .
+├── .github/
+│   └── workflows/ci.yml       Build y tests en pushes/PRs a folgarever
 ├── backend/
 │   ├── src/
-│   │   ├── config/
-│   │   │   ├── authorization.js
-│   │   │   └── db.js
-│   │   ├── controllers/
-│   │   │   ├── asistenciaController.js
-│   │   │   ├── authController.js
-│   │   │   ├── evaluacionesController.js
-│   │   │   └── rrhhController.js
-│   │   ├── middlewares/
-│   │   │   └── authMiddleware.js
-│   │   └── routes/
-│   │       ├── asistenciaRoutes.js
-│   │       ├── authRoutes.js
-│   │       ├── evaluacionesRoutes.js
-│   │       └── rrhhRoutes.js
+│   │   ├── config/            authorization, cors, db y bancos de preguntas
+│   │   ├── controllers/       7 controladores (auth, asistencia, rrhh, evaluaciones,
+│   │   │                      evaluaciones-conocimiento, evaluaciones-seleccion, sugerencias)
+│   │   ├── middlewares/       authMiddleware.js y rateLimit.js
+│   │   └── routes/            7 enrutadores, uno por módulo
+│   ├── test/                  authMiddleware, rateLimit y entrega de selección
 │   ├── .env.example
-│   ├── server.js            Entrada de Express y despliegue en Vercel
+│   ├── server.js              Entrada de Express y despliegue en Vercel
 │   ├── package.json
-│   ├── package-lock.json
 │   └── vercel.json
 ├── database/
-│   ├── migrations/
-│   │   ├── 2026-11-01-evaluaciones-personal.sql
-│   │   └── 2026-11-02-observaciones-evaluaciones.sql
-│   └── schema.sql           Esquema inicial y datos de prueba
+│   ├── migrations/            11 migraciones SQL (ver docs/runbook-migraciones.md)
+│   └── schema.sql             Esquema consolidado y datos de prueba
+├── docs/
+│   └── runbook-migraciones.md
 ├── frontend/
-│   ├── public/
-│   │   ├── config.js
-│   │   ├── favicon.ico
-│   │   └── surtibasculas-logo.png
+│   ├── public/                config.js, favicon y logo corporativo
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── guards/
-│   │   │   │   ├── admin.guard.ts
-│   │   │   │   ├── auth.guard.ts
-│   │   │   │   ├── evaluation.guard.ts
-│   │   │   │   └── role.guard.ts
-│   │   │   ├── interceptors/
-│   │   │   │   └── auth.interceptor.ts
-│   │   │   ├── pages/
-│   │   │   │   ├── admin-dashboard/
-│   │   │   │   │   ├── admin-dashboard.component.html
-│   │   │   │   │   └── admin-dashboard.component.ts
-│   │   │   │   ├── empleado-dashboard/
-│   │   │   │   │   ├── empleado-dashboard.component.html
-│   │   │   │   │   └── empleado-dashboard.component.ts
-│   │   │   │   ├── empleados/
-│   │   │   │   │   ├── empleados.component.html
-│   │   │   │   │   └── empleados.component.ts
-│   │   │   │   ├── evaluaciones/
-│   │   │   │   │   ├── evaluaciones.component.html
-│   │   │   │   │   └── evaluaciones.component.ts
-│   │   │   │   ├── login/
-│   │   │   │   │   ├── login.component.html
-│   │   │   │   │   └── login.component.ts
-│   │   │   │   └── rrhh-dashboard/
-│   │   │   │       ├── rrhh-dashboard.component.html
-│   │   │   │       └── rrhh-dashboard.component.ts
-│   │   │   ├── services/
-│   │   │   │   ├── asistencia.service.ts
-│   │   │   │   ├── auth.service.ts
-│   │   │   │   ├── evaluaciones.service.ts
-│   │   │   │   └── rrhh.service.ts
+│   │   │   ├── components/    selector-tema
+│   │   │   ├── guards/        6 guards (auth, admin, role, evaluation, employee, candidate)
+│   │   │   ├── interceptors/  auth.interceptor.ts
+│   │   │   ├── pages/         12 páginas (dashboards, empleados, evaluaciones, sugerencias, candidato)
+│   │   │   ├── services/      8 servicios API + TemaService
 │   │   │   ├── app.config.ts
 │   │   │   ├── app.routes.ts
 │   │   │   ├── app.spec.ts
 │   │   │   └── app.ts
-│   │   ├── environments/
-│   │   │   ├── environment.prod.ts
-│   │   │   └── environment.ts
-│   │   ├── brand-theme.css
+│   │   ├── environments/      environment.ts y environment.prod.ts
+│   │   ├── brand-theme.css    Tokens corporativos y tema oscuro
 │   │   ├── index.html
 │   │   ├── main.ts
 │   │   └── styles.css
-│   ├── .editorconfig
-│   ├── .gitignore
-│   ├── .prettierrc
-│   ├── README.md
-│   ├── angular.json
-│   ├── package-lock.json
-│   ├── package.json
-│   ├── postcss.config.json
-│   ├── proxy.conf.json
-│   ├── tailwind.config.js
-│   ├── tsconfig.app.json
-│   ├── tsconfig.json
-│   ├── tsconfig.spec.json
-│   └── vercel.json
+│   ├── proxy.conf.json        /api → http://localhost:3000
+│   ├── vercel.json            Build, rewrite de /api y SPA
+│   └── ...                    angular.json, package.json, Tailwind, TypeScript, specs
 ├── .gitignore
 ├── LICENSE
 └── README.md

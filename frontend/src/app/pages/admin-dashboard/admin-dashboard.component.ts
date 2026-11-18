@@ -22,6 +22,7 @@ import { SelectorTemaComponent } from '../../components/selector-tema/selector-t
 export class AdminDashboardComponent {
   private readonly auth = inject(AuthService);
   protected readonly usuario = this.auth.getUsuario();
+  protected readonly puedeEvaluar = this.auth.hasEvaluationRole();
 
   protected salir(): void {
     this.auth.logout();

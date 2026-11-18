@@ -51,6 +51,7 @@ export class EmpleadosComponent implements OnInit {
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
+  protected readonly puedeEvaluar = this.auth.hasEvaluationRole();
   protected readonly empleados = signal<EmpleadoAdministracion[]>([]);
   protected readonly puestos = signal<Puesto[]>([]);
   protected readonly busqueda = signal('');
