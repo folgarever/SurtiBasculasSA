@@ -268,7 +268,13 @@ El resultado se calcula al entregar: puntos obtenidos entre puntos posibles. Con
    - **Incorrecta · 0 puntos**.
 6. Guarda. Para editar, carga la pregunta en el mismo editor; para eliminar, confirma la acción.
 
-El máximo es 255 preguntas por puesto y periodo. Puedes dejar un periodo vacío; mientras no tenga preguntas, no se habilitarán evaluaciones para ese puesto y periodo.
+### Copiar banco del periodo anterior
+
+Cuando el periodo seleccionado esté vacío o quieras prepararlo más rápido, pulsa **Copiar del periodo anterior**. El sistema carga las preguntas del periodo inmediatamente anterior en un panel editable: puedes cambiar el texto, el puntaje y las opciones, quitar preguntas u opciones y agregar opciones. Nada se guarda hasta que pulses **Copiar N preguntas**.
+
+Si el periodo destino ya tiene preguntas, las copiadas se agregan al final y el sistema te pedirá confirmación. El origen siempre es el periodo inmediatamente anterior según la frecuencia del puesto. El servidor valida todas las preguntas y actualiza las evaluaciones pendientes en una sola transacción: si alguna falla, no se copia ninguna.
+
+El máximo es 255 preguntas por puesto y periodo, contando las existentes más las copiadas. Puedes dejar un periodo vacío; mientras no tenga preguntas, no se habilitarán evaluaciones para ese puesto y periodo.
 
 **Regla importante:** cualquier cambio en el banco reescribe el cuestionario de todas las evaluaciones **pendientes** de ese puesto y periodo y actualiza `total_preguntas`. Las evaluaciones **completadas** conservan su copia original: no se recalculan. Haz los cambios antes de que los empleados respondan y pídeles recargar si estaban respondiendo en ese momento.
 

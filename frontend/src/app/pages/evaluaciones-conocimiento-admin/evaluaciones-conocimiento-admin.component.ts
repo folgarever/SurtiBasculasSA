@@ -12,6 +12,7 @@ import {
   FrecuenciaEvaluacion,
   OpcionPreguntaInput,
   PreguntaBanco,
+  PreguntaBancoInput,
   PuestoConocimiento,
   TipoPuntuacionOpcion,
   etiquetaFrecuenciaEvaluacion,
@@ -47,6 +48,11 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
   protected readonly cargandoBanco = signal(false);
   protected readonly mostrandoEditor = signal(false);
   protected readonly guardandoPregunta = signal(false);
+  protected readonly mostrandoCopia = signal(false);
+  protected readonly cargandoCopia = signal(false);
+  protected readonly guardandoCopia = signal(false);
+  protected readonly origenCopia = signal('');
+  protected readonly borradoresCopia = signal<PreguntaBancoInput[]>([]);
   protected readonly editandoPreguntaId = signal<number | null>(null);
   protected readonly textoPregunta = signal('');
   protected readonly opcionesPregunta = signal<OpcionPreguntaInput[]>([
@@ -135,12 +141,14 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
     this.puestoBanco.set(puestoId);
     this.periodoBanco.set(puesto?.periodo_actual || '');
     this.cancelarEdicionPregunta();
+    this.cancelarCopia();
     this.cargarBanco();
   }
 
   protected actualizarPeriodoBanco(event: Event): void {
     this.periodoBanco.set((event.target as HTMLSelectElement).value);
     this.cancelarEdicionPregunta();
+    this.cancelarCopia();
     this.cargarBanco();
   }
 
@@ -156,6 +164,7 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
         this.periodoBanco.set(puesto.periodo_actual);
         this.guardandoFrecuencia.set(false);
         this.cancelarEdicionPregunta();
+        this.cancelarCopia();
         this.cargarBanco();
         this.cargarEvaluaciones();
         this.aviso.set(mensaje);
@@ -259,37 +268,178 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
     this.editandoPreguntaId.set(null);
   }
 
+  protected abrirCopiaBanco(): void {
+    const puestoId = Number(this.puestoBanco());
+    const destino = this.periodoBanco();
+    if (!puestoId || !destino) return;
+    this.cancelarEdicionPregunta();
+    this.error.set('');
+    this.aviso.set('');
+    this.origenCopia.set('');
+    this.borradoresCopia.set([]);
+    this.mostrandoCopia.set(true);
+    this.cargandoCopia.set(true);
+    this.servicio.obtenerCopiaBancoAdmin(puestoId, destino).subscribe({
+      next: ({ origen, preguntas }) => {
+        if (this.puestoBanco() !== String(puestoId) || this.periodoBanco() !== destino) return;
+        this.cargandoCopia.set(false);
+        this.origenCopia.set(origen);
+        this.borradoresCopia.set(preguntas.map((pregunta) => ({
+          texto: pregunta.texto,
+          puntos_maximos: pregunta.puntos_maximos,
+          opciones: pregunta.opciones.map(({ texto, tipo, porcentaje }) => ({ texto, tipo, porcentaje })),
+        })));
+        if (!preguntas.length) {
+          this.aviso.set(`El periodo ${this.formatoPeriodo(origen)} no tiene preguntas para copiar.`);
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        this.cargandoCopia.set(false);
+        this.error.set(error.error?.mensaje || 'No se pudo cargar el banco del periodo anterior.');
+      },
+    });
+  }
+
+  protected cancelarCopia(): void {
+    this.mostrandoCopia.set(false);
+    this.cargandoCopia.set(false);
+    this.guardandoCopia.set(false);
+    this.origenCopia.set('');
+    this.borradoresCopia.set([]);
+  }
+
+  protected actualizarTextoCopia(indice: number, event: Event): void {
+    const texto = (event.target as HTMLTextAreaElement).value;
+    this.actualizarBorradorCopia(indice, (pregunta) => ({ ...pregunta, texto }));
+  }
+
+  protected actualizarPuntajeCopia(indice: number, event: Event): void {
+    const puntos_maximos = (event.target as HTMLInputElement).valueAsNumber;
+    this.actualizarBorradorCopia(indice, (pregunta) => ({ ...pregunta, puntos_maximos }));
+  }
+
+  protected actualizarOpcionCopia(indice: number, opcionIndice: number, event: Event): void {
+    const texto = (event.target as HTMLInputElement).value;
+    this.actualizarBorradorCopia(indice, (pregunta) => ({
+      ...pregunta,
+      opciones: pregunta.opciones.map((opcion, indiceActual) => (
+        indiceActual === opcionIndice ? { ...opcion, texto } : opcion
+      )),
+    }));
+  }
+
+  protected actualizarTipoCopia(indice: number, opcionIndice: number, event: Event): void {
+    const tipo = (event.target as HTMLSelectElement).value;
+    if (tipo !== 'correcta' && tipo !== 'intermedia' && tipo !== 'incorrecta') return;
+    const tipoOpcion: TipoPuntuacionOpcion = tipo;
+    this.actualizarBorradorCopia(indice, (pregunta) => {
+      const opciones: OpcionPreguntaInput[] = pregunta.opciones.map((opcion, indiceActual) => {
+        if (tipoOpcion === 'correcta' && opcion.tipo === 'correcta' && indiceActual !== opcionIndice) {
+          return { ...opcion, tipo: 'incorrecta', porcentaje: 0 };
+        }
+        if (indiceActual !== opcionIndice) return opcion;
+        return {
+          ...opcion,
+          tipo: tipoOpcion,
+          porcentaje: tipoOpcion === 'correcta'
+            ? 100
+            : tipoOpcion === 'incorrecta'
+              ? 0
+              : (opcion.tipo === 'intermedia' ? opcion.porcentaje : 50),
+        };
+      });
+      return { ...pregunta, opciones };
+    });
+  }
+
+  protected actualizarPorcentajeCopia(indice: number, opcionIndice: number, event: Event): void {
+    const porcentaje = (event.target as HTMLInputElement).valueAsNumber;
+    this.actualizarBorradorCopia(indice, (pregunta) => ({
+      ...pregunta,
+      opciones: pregunta.opciones.map((opcion, indiceActual) => (
+        indiceActual === opcionIndice ? { ...opcion, porcentaje } : opcion
+      )),
+    }));
+  }
+
+  protected agregarOpcionCopia(indice: number): void {
+    this.actualizarBorradorCopia(indice, (pregunta) => ({
+      ...pregunta,
+      opciones: pregunta.opciones.length >= 10
+        ? pregunta.opciones
+        : [...pregunta.opciones, { texto: '', tipo: 'incorrecta', porcentaje: 0 }],
+    }));
+  }
+
+  protected quitarOpcionCopia(indice: number, opcionIndice: number): void {
+    this.actualizarBorradorCopia(indice, (pregunta) => ({
+      ...pregunta,
+      opciones: pregunta.opciones.length <= 2
+        ? pregunta.opciones
+        : pregunta.opciones.filter((_, indiceActual) => indiceActual !== opcionIndice),
+    }));
+  }
+
+  protected quitarPreguntaCopia(indice: number): void {
+    this.borradoresCopia.update((borradores) => borradores.filter((_, indiceActual) => indiceActual !== indice));
+  }
+
+  protected guardarCopia(): void {
+    const puestoId = Number(this.puestoBanco());
+    const destino = this.periodoBanco();
+    const origen = this.origenCopia();
+    const preguntas = this.borradoresCopia();
+    if (!puestoId || !destino || !origen || !preguntas.length) {
+      this.error.set('No hay preguntas para copiar.');
+      return;
+    }
+    const mensajeError = preguntas
+      .map((pregunta, indice) => {
+        const errorPregunta = this.validarPreguntaLocal(pregunta);
+        return errorPregunta ? `Pregunta ${indice + 1}: ${errorPregunta}` : null;
+      })
+      .find(Boolean);
+    if (mensajeError) {
+      this.error.set(mensajeError);
+      return;
+    }
+    const existentes = this.preguntasBanco().length;
+    if (existentes + preguntas.length > 255) {
+      this.error.set('El banco admite un máximo de 255 preguntas por puesto y periodo.');
+      return;
+    }
+    if (existentes && !window.confirm(
+      `El periodo ${this.formatoPeriodo(destino)} ya tiene ${existentes} preguntas.`
+      + ` Se agregarán ${preguntas.length} al final. ¿Continuar?`
+    )) return;
+
+    this.error.set('');
+    this.aviso.set('');
+    this.guardandoCopia.set(true);
+    this.servicio.copiarBancoAdmin(puestoId, destino, origen, preguntas).subscribe({
+      next: ({ mensaje }) => {
+        this.guardandoCopia.set(false);
+        this.cancelarCopia();
+        this.cargarBanco();
+        this.cargarEvaluaciones();
+        this.aviso.set(mensaje);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.guardandoCopia.set(false);
+        this.error.set(error.error?.mensaje || 'No se pudo copiar el banco de preguntas.');
+      },
+    });
+  }
+
   protected guardarPregunta(): void {
-    const texto = this.textoPregunta().trim();
-    const opciones = this.opcionesPregunta().map((opcion) => ({ ...opcion, texto: opcion.texto.trim() }));
-    if (!texto || opciones.length < 2 || opciones.some((opcion) => !opcion.texto)) {
-      this.error.set('Completa la pregunta y todas sus opciones antes de guardar.');
-      return;
-    }
-    if (texto.length > 1000 || opciones.some((opcion) => opcion.texto.length > 300)) {
-      this.error.set('La pregunta admite hasta 1000 caracteres y cada opción hasta 300.');
-      return;
-    }
-    const maximo = this.puntajeMaximoPregunta();
-    if (!Number.isFinite(maximo) || maximo <= 0 || maximo > 9999.99 || Number(maximo.toFixed(2)) !== maximo) {
-      this.error.set('El puntaje máximo debe ser mayor que cero y admitir hasta dos decimales.');
-      return;
-    }
-    if (opciones.filter((opcion) => opcion.tipo === 'correcta').length !== 1) {
-      this.error.set('Cada pregunta debe tener exactamente una opción correcta.');
-      return;
-    }
-    if (opciones.some((opcion) => (
-      opcion.tipo === 'intermedia'
-      && (
-        !Number.isInteger(opcion.porcentaje)
-        || opcion.porcentaje < 1
-        || opcion.porcentaje > 99
-        || this.puntosOpcion(opcion.tipo, opcion.porcentaje, maximo) <= 0
-        || this.puntosOpcion(opcion.tipo, opcion.porcentaje, maximo) >= maximo
-      )
-    ))) {
-      this.error.set('El puntaje de cada opción intermedia debe ser un porcentaje entero entre 1 y 99.');
+    const borrador = {
+      texto: this.textoPregunta(),
+      opciones: this.opcionesPregunta(),
+      puntos_maximos: this.puntajeMaximoPregunta(),
+    };
+    const mensajeError = this.validarPreguntaLocal(borrador);
+    if (mensajeError) {
+      this.error.set(mensajeError);
       return;
     }
 
@@ -300,9 +450,9 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
       return;
     }
     const pregunta = {
-      texto,
-      opciones,
-      puntos_maximos: maximo,
+      texto: borrador.texto.trim(),
+      opciones: borrador.opciones.map((opcion) => ({ ...opcion, texto: opcion.texto.trim() })),
+      puntos_maximos: borrador.puntos_maximos,
     };
     const id = this.editandoPreguntaId();
     this.error.set('');
@@ -366,6 +516,46 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
       year: 'numeric',
       timeZone: 'America/Guatemala',
     });
+  }
+
+  private actualizarBorradorCopia(
+    indice: number,
+    actualizar: (pregunta: PreguntaBancoInput) => PreguntaBancoInput,
+  ): void {
+    this.borradoresCopia.update((borradores) => borradores.map((borrador, indiceActual) => (
+      indiceActual === indice ? actualizar(borrador) : borrador
+    )));
+  }
+
+  private validarPreguntaLocal(pregunta: PreguntaBancoInput): string | null {
+    const texto = pregunta.texto.trim();
+    const opciones = pregunta.opciones.map((opcion) => ({ ...opcion, texto: opcion.texto.trim() }));
+    if (!texto || opciones.length < 2 || opciones.some((opcion) => !opcion.texto)) {
+      return 'Completa la pregunta y todas sus opciones antes de guardar.';
+    }
+    if (texto.length > 1000 || opciones.some((opcion) => opcion.texto.length > 300)) {
+      return 'La pregunta admite hasta 1000 caracteres y cada opción hasta 300.';
+    }
+    const maximo = pregunta.puntos_maximos;
+    if (!Number.isFinite(maximo) || maximo <= 0 || maximo > 9999.99 || Number(maximo.toFixed(2)) !== maximo) {
+      return 'El puntaje máximo debe ser mayor que cero y admitir hasta dos decimales.';
+    }
+    if (opciones.filter((opcion) => opcion.tipo === 'correcta').length !== 1) {
+      return 'Cada pregunta debe tener exactamente una opción correcta.';
+    }
+    if (opciones.some((opcion) => (
+      opcion.tipo === 'intermedia'
+      && (
+        !Number.isInteger(opcion.porcentaje)
+        || opcion.porcentaje < 1
+        || opcion.porcentaje > 99
+        || this.puntosOpcion(opcion.tipo, opcion.porcentaje, maximo) <= 0
+        || this.puntosOpcion(opcion.tipo, opcion.porcentaje, maximo) >= maximo
+      )
+    ))) {
+      return 'El puntaje de cada opción intermedia debe ser un porcentaje entero entre 1 y 99.';
+    }
+    return null;
   }
 
   private cargarCatalogos(): void {

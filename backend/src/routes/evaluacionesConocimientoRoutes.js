@@ -5,6 +5,8 @@ const {
   entregarEvaluacion,
   obtenerCatalogosAdmin,
   obtenerBancoAdmin,
+  obtenerCopiaBancoAdmin,
+  copiarBancoAdmin,
   crearPreguntaAdmin,
   editarPreguntaAdmin,
   eliminarPreguntaAdmin,
@@ -21,6 +23,8 @@ router.post('/mi/responder', entregarEvaluacion);
 router.get('/admin/catalogos', permitirEvaluaciones, obtenerCatalogosAdmin);
 router.put('/admin/puestos/:puestoId/frecuencia', permitirEvaluaciones, actualizarFrecuenciaPuestoAdmin);
 router.get('/admin/banco/:puestoId/preguntas', permitirEvaluaciones, obtenerBancoAdmin);
+router.get('/admin/banco/:puestoId/preguntas/copiar', permitirEvaluaciones, obtenerCopiaBancoAdmin);
+router.post('/admin/banco/:puestoId/preguntas/copiar', permitirEvaluaciones, copiarBancoAdmin);
 router.post('/admin/banco/:puestoId/preguntas', permitirEvaluaciones, crearPreguntaAdmin);
 router.put('/admin/banco/:puestoId/preguntas/:preguntaId', permitirEvaluaciones, editarPreguntaAdmin);
 router.delete('/admin/banco/:puestoId/preguntas/:preguntaId', permitirEvaluaciones, eliminarPreguntaAdmin);

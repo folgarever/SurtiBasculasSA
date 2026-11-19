@@ -91,9 +91,33 @@ function periodosSiguientes(periodo, frecuencia, cantidad = 3) {
   return resultado;
 }
 
+function periodoAnterior(periodo, frecuencia) {
+  if (!esPeriodoValido(periodo, frecuencia)) {
+    throw new Error(`Periodo o frecuencia no válidos: ${periodo} / ${frecuencia}`);
+  }
+  if (frecuencia === 'mensual') {
+    const [anio, mes] = periodo.split('-').map(Number);
+    return `${mes === 1 ? anio - 1 : anio}-${dosDigitos(mes === 1 ? 12 : mes - 1)}`;
+  }
+  if (frecuencia === 'quincenal') {
+    const [anio, mes, quincena] = periodo.split('-');
+    const numeroAnio = Number(anio);
+    const numeroMes = Number(mes);
+    if (quincena === 'Q2') return `${anio}-${mes}-Q1`;
+    return `${numeroMes === 1 ? numeroAnio - 1 : numeroAnio}-${dosDigitos(numeroMes === 1 ? 12 : numeroMes - 1)}-Q2`;
+  }
+
+  const [anioTexto, semanaConPrefijo] = periodo.split('-');
+  const lunes = lunesDeSemanaISO(Number(anioTexto), Number(semanaConPrefijo.slice(1)));
+  lunes.setUTCDate(lunes.getUTCDate() - 7);
+  lunes.setUTCHours(12, 0, 0, 0);
+  return periodoDeFecha(lunes, 'semanal');
+}
+
 module.exports = {
   FRECUENCIAS_EVALUACION,
   esPeriodoValido,
+  periodoAnterior,
   periodoDeFecha,
   periodosSiguientes,
   periodoSiguiente,

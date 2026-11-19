@@ -53,7 +53,10 @@
       } @else {
         <div class="question-bank-heading">
           <span>{{ preguntasBanco().length }} preguntas · {{ formatoPeriodo(periodoBanco()) }}</span>
-          <button class="button button-accent" type="button" [disabled]="!puestoBanco() || !periodoBanco()" (click)="nuevaPregunta()">Agregar pregunta</button>
+          <div class="question-bank-actions">
+            <button class="details-button" type="button" [disabled]="!puestoBanco() || !periodoBanco() || cargandoCopia() || guardandoCopia()" (click)="abrirCopiaBanco()">Copiar del periodo anterior</button>
+            <button class="button button-accent" type="button" [disabled]="!puestoBanco() || !periodoBanco() || cargandoCopia() || guardandoCopia()" (click)="nuevaPregunta()">Agregar pregunta</button>
+          </div>
         </div>
         @if (!preguntasBanco().length) {
           <p class="knowledge-intro">Este periodo aún no tiene preguntas. Agrégalas para habilitar las evaluaciones de {{ formatoPeriodo(periodoBanco()) }}.</p>
@@ -121,6 +124,70 @@
               <button class="details-button" type="button" [disabled]="guardandoPregunta()" (click)="cancelarEdicionPregunta()">Cancelar</button>
               <button class="button button-accent" type="button" [disabled]="guardandoPregunta()" (click)="guardarPregunta()">{{ guardandoPregunta() ? 'Guardando…' : 'Guardar pregunta' }}</button>
             </div>
+          </div>
+        }
+
+        @if (mostrandoCopia()) {
+          <div class="question-editor">
+            <div class="question-bank-heading">
+              <h3>Copiar banco desde {{ formatoPeriodo(origenCopia()) }}</h3>
+              <button class="details-button" type="button" [disabled]="guardandoCopia()" (click)="cancelarCopia()">Cerrar</button>
+            </div>
+            @if (cargandoCopia()) {
+              <p class="knowledge-intro">Cargando preguntas del periodo anterior…</p>
+            } @else {
+              @if (!borradoresCopia().length) {
+                <p class="knowledge-intro">No hay preguntas para copiar. Cierra este panel y agrégalas manualmente.</p>
+              }
+              @for (borrador of borradoresCopia(); track $index; let indice = $index) {
+                <article class="question-editor">
+                  <div class="question-bank-heading">
+                    <h3>Pregunta {{ indice + 1 }}</h3>
+                    <button class="details-button question-delete-button" type="button" [disabled]="guardandoCopia()" (click)="quitarPreguntaCopia(indice)">Quitar pregunta</button>
+                  </div>
+                  <label class="evaluation-field">
+                    <span>Pregunta</span>
+                    <textarea rows="2" maxlength="1000" [value]="borrador.texto" [disabled]="guardandoCopia()" (input)="actualizarTextoCopia(indice, $event)"></textarea>
+                  </label>
+                  <label class="evaluation-field">
+                    <span>Puntaje máximo de la pregunta</span>
+                    <input type="number" min="0.01" max="9999.99" step="0.01" [value]="borrador.puntos_maximos" [disabled]="guardandoCopia()" (input)="actualizarPuntajeCopia(indice, $event)">
+                  </label>
+                  <div class="question-editor-options">
+                    <span class="question-editor-label">Opciones y puntaje asignado</span>
+                    @for (opcion of borrador.opciones; track $index; let opcionIndice = $index) {
+                      <div class="question-editor-option">
+                        <input type="text" [value]="opcion.texto" maxlength="300" [attr.aria-label]="'Texto de la opción ' + (opcionIndice + 1)" [disabled]="guardandoCopia()" (input)="actualizarOpcionCopia(indice, opcionIndice, $event)">
+                        <select [value]="opcion.tipo" [attr.aria-label]="'Tipo de puntaje para opción ' + (opcionIndice + 1)" [disabled]="guardandoCopia()" (change)="actualizarTipoCopia(indice, opcionIndice, $event)">
+                          <option value="correcta">Correcta · puntaje completo</option>
+                          <option value="intermedia">Intermedia · puntaje parcial</option>
+                          <option value="incorrecta">Incorrecta · 0 puntos</option>
+                        </select>
+                        @if (opcion.tipo === 'intermedia') {
+                          <div class="question-partial-score">
+                            <label>
+                              <span>% del puntaje</span>
+                              <input type="number" min="1" max="99" step="1" [value]="opcion.porcentaje" [disabled]="guardandoCopia()" (input)="actualizarPorcentajeCopia(indice, opcionIndice, $event)">
+                            </label>
+                            <span class="question-option-score">{{ puntosOpcion(opcion.tipo, opcion.porcentaje, borrador.puntos_maximos) }} pts</span>
+                          </div>
+                        } @else {
+                          <span class="question-option-score">{{ puntosOpcion(opcion.tipo, opcion.porcentaje, borrador.puntos_maximos) }} pts</span>
+                        }
+                        <button class="details-button question-delete-button" type="button" [disabled]="guardandoCopia() || borrador.opciones.length <= 2" (click)="quitarOpcionCopia(indice, opcionIndice)">Quitar</button>
+                      </div>
+                    }
+                    <button class="details-button" type="button" [disabled]="guardandoCopia() || borrador.opciones.length >= 10" (click)="agregarOpcionCopia(indice)">Agregar opción</button>
+                  </div>
+                </article>
+              }
+              @if (borradoresCopia().length) {
+                <div class="question-bank-actions">
+                  <button class="details-button" type="button" [disabled]="guardandoCopia()" (click)="cancelarCopia()">Cancelar</button>
+                  <button class="button button-accent" type="button" [disabled]="guardandoCopia()" (click)="guardarCopia()">{{ guardandoCopia() ? 'Copiando…' : 'Copiar ' + borradoresCopia().length + ' preguntas' }}</button>
+                </div>
+              }
+            }
           </div>
         }
       }

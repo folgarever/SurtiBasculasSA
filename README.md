@@ -18,7 +18,7 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 - Administración del directorio de empleados, incluidas altas, ediciones y bajas.
 - Evaluación periódica del personal, con cinco competencias generales y escala de 1 a 5.
 - Evaluación técnica y psicométrica adicional para el Jefe de Mantenimiento.
-- Evaluaciones de conocimiento con frecuencia configurable por puesto (mensual, quincenal o semanal), banco de preguntas por puesto y periodo, puntaje parcial configurable por opción, historial individual y panel administrativo con KPIs.
+- Evaluaciones de conocimiento con frecuencia configurable por puesto (mensual, quincenal o semanal), banco de preguntas por puesto y periodo con copia editable del periodo anterior, puntaje parcial configurable por opción, historial individual y panel administrativo con KPIs.
 - Pruebas de selección independientes de las evaluaciones de conocimiento, con cuadernillo por puesto, rúbrica, puntajes y resultados consultables.
 - Envío de sugerencias por parte del personal y foro administrativo con respuestas.
 - Acceso a evaluaciones limitado a Héctor Ortiz (`SUR-GG-001`) y Mafer García (`SUR-AC-002`).
@@ -140,6 +140,8 @@ Hay evaluaciones de selección para los 11 puestos del catálogo, incluyendo Asi
 | `GET` | `/api/evaluaciones-conocimiento/admin/catalogos` | Administrador autorizado | Obtener empleados, puestos con frecuencia/periodos, departamentos y frecuencias |
 | `PUT` | `/api/evaluaciones-conocimiento/admin/puestos/<puesto_id>/frecuencia` | Administrador autorizado | Cambiar la frecuencia del puesto (`mensual`, `quincenal` o `semanal`) |
 | `GET` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas?periodo=<periodo>` | Administrador autorizado | Consultar las preguntas del puesto en un periodo |
+| `GET` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas/copiar?periodo=<periodo>` | Administrador autorizado | Vista previa de las preguntas del periodo anterior, listas para editar y copiar |
+| `POST` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas/copiar?periodo=<periodo>` | Administrador autorizado | Copiar preguntas editadas al periodo, validarlas y sincronizar evaluaciones pendientes |
 | `POST` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas?periodo=<periodo>` | Administrador autorizado | Agregar una pregunta al periodo con puntaje máximo y opciones de puntaje completo, parcial o nulo |
 | `PUT` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas/<pregunta_id>?periodo=<periodo>` | Administrador autorizado | Editar una pregunta del periodo, su puntaje máximo y los puntajes de sus opciones |
 | `DELETE` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas/<pregunta_id>?periodo=<periodo>` | Administrador autorizado | Eliminar una pregunta del periodo |

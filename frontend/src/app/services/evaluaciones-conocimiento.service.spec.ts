@@ -62,6 +62,34 @@ describe('EvaluacionesConocimientoService', () => {
     peticiones.forEach((peticion) => peticion.flush({ periodo: '2026-11-Q2', preguntas: [], mensaje: 'OK' }));
   });
 
+  it('obtiene y copia el banco del periodo anterior', () => {
+    const url = `${baseUrl}/admin/banco/3/preguntas/copiar`;
+    servicio.obtenerCopiaBancoAdmin(3, '2026-12').subscribe();
+
+    const vistaPrevia = httpMock.expectOne((peticion) => (
+      peticion.url === url && peticion.method === 'GET'
+    ));
+    expect(vistaPrevia.request.params.get('periodo')).toBe('2026-12');
+    vistaPrevia.flush({ origen: '2026-11', destino: '2026-12', preguntas: [] });
+
+    const pregunta = {
+      texto: 'Pregunta copiada',
+      puntos_maximos: 1,
+      opciones: [
+        { texto: 'Sí', tipo: 'correcta' as const, porcentaje: 100 },
+        { texto: 'No', tipo: 'incorrecta' as const, porcentaje: 0 },
+      ],
+    };
+    servicio.copiarBancoAdmin(3, '2026-12', '2026-11', [pregunta]).subscribe();
+
+    const copia = httpMock.expectOne((peticion) => (
+      peticion.url === url && peticion.method === 'POST'
+    ));
+    expect(copia.request.params.get('periodo')).toBe('2026-12');
+    expect(copia.request.body).toEqual({ origen: '2026-11', preguntas: [pregunta] });
+    copia.flush({ mensaje: 'OK', periodo: '2026-12', origen: '2026-11', copiadas: 1 });
+  });
+
   it('actualiza la frecuencia del puesto como ADMIN', () => {
     servicio.actualizarFrecuenciaPuestoAdmin(5, 'semanal').subscribe();
 

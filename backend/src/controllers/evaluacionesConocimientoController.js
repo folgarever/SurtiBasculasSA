@@ -3,6 +3,7 @@ const { obtenerBanco } = require('../config/evaluacionesConocimiento');
 const {
   FRECUENCIAS_EVALUACION,
   esPeriodoValido,
+  periodoAnterior,
   periodoDeFecha,
   periodosSiguientes,
 } = require('../utils/periodosEvaluacion');
@@ -469,6 +470,121 @@ async function obtenerBancoAdmin(req, res, next) {
   }
 }
 
+async function obtenerCopiaBancoAdmin(req, res, next) {
+  if (!/^\d+$/.test(req.params.puestoId) || Number(req.params.puestoId) < 1) {
+    return res.status(400).json({ mensaje: 'El identificador del puesto no es válido.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [puestos] = await connection.execute(
+      'SELECT id, frecuencia_evaluacion FROM puestos WHERE id = ? LIMIT 1',
+      [Number(req.params.puestoId)]
+    );
+    if (!puestos[0]) return res.status(404).json({ mensaje: 'Puesto no encontrado.' });
+    const puesto = {
+      ...puestos[0],
+      frecuencia_evaluacion: frecuenciaValida(puestos[0].frecuencia_evaluacion)
+        ? puestos[0].frecuencia_evaluacion
+        : 'mensual',
+    };
+    const destino = periodoDeSolicitud(req, puesto);
+    if (!destino) return res.status(400).json({ mensaje: 'El periodo de la evaluación no es válido.' });
+    const origen = periodoAnterior(destino, puesto.frecuencia_evaluacion);
+    return res.json({
+      origen,
+      destino,
+      preguntas: await listarPreguntasBanco(connection, puesto.id, origen),
+    });
+  } catch (error) {
+    return next(error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function copiarBancoAdmin(req, res, next) {
+  if (!/^\d+$/.test(req.params.puestoId) || Number(req.params.puestoId) < 1) {
+    return res.status(400).json({ mensaje: 'El identificador del puesto no es válido.' });
+  }
+  const solicitudes = req.body?.preguntas;
+  if (!Array.isArray(solicitudes) || !solicitudes.length || solicitudes.length > 255) {
+    return res.status(400).json({ mensaje: 'Debes copiar entre 1 y 255 preguntas.' });
+  }
+  const preguntas = solicitudes.map(validarPregunta);
+  if (preguntas.some((pregunta) => !pregunta)) {
+    return res.status(400).json({ mensaje: 'Alguna de las preguntas a copiar no es válida.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [puestos] = await connection.execute(
+      'SELECT id, frecuencia_evaluacion FROM puestos WHERE id = ? LIMIT 1',
+      [Number(req.params.puestoId)]
+    );
+    if (!puestos[0]) return res.status(404).json({ mensaje: 'Puesto no encontrado.' });
+    const puesto = {
+      ...puestos[0],
+      frecuencia_evaluacion: frecuenciaValida(puestos[0].frecuencia_evaluacion)
+        ? puestos[0].frecuencia_evaluacion
+        : 'mensual',
+    };
+    const destino = periodoDeSolicitud(req, puesto);
+    if (!destino) return res.status(400).json({ mensaje: 'El periodo de la evaluación no es válido.' });
+    const origen = periodoAnterior(destino, puesto.frecuencia_evaluacion);
+    if (req.body?.origen !== origen) {
+      return res.status(400).json({
+        mensaje: `El origen debe ser el periodo inmediatamente anterior (${origen}).`,
+      });
+    }
+
+    await connection.beginTransaction();
+    const [preguntasExistentes] = await connection.execute(
+      'SELECT id, orden FROM evaluaciones_banco_preguntas WHERE puesto_id = ? AND periodo = ? FOR UPDATE',
+      [puesto.id, destino]
+    );
+    if (preguntasExistentes.length + preguntas.length > 255) {
+      await connection.rollback();
+      return res.status(409).json({ mensaje: 'El banco admite un máximo de 255 preguntas por puesto y periodo.' });
+    }
+    const ordenBase = preguntasExistentes.reduce(
+      (maximo, pregunta) => Math.max(maximo, Number(pregunta.orden) || 0),
+      0
+    );
+    for (const [indice, pregunta] of preguntas.entries()) {
+      await connection.execute(
+        `INSERT INTO evaluaciones_banco_preguntas
+         (puesto_id, periodo, texto, opciones, respuesta_correcta, puntos_maximos, orden)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          puesto.id,
+          destino,
+          pregunta.texto,
+          JSON.stringify(pregunta.opciones),
+          pregunta.correcta,
+          pregunta.puntosMaximos,
+          ordenBase + indice + 1,
+        ]
+      );
+    }
+    await sincronizarPendientes(connection, puesto.id, destino);
+    await connection.commit();
+    return res.status(201).json({
+      mensaje: `Se copiaron ${preguntas.length} preguntas de ${origen} a ${destino}.`,
+      periodo: destino,
+      origen,
+      copiadas: preguntas.length,
+    });
+  } catch (error) {
+    if (connection) await connection.rollback();
+    return next(error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
 async function crearPreguntaAdmin(req, res, next) {
   const pregunta = validarPregunta(req.body);
   if (!pregunta) {
@@ -765,6 +881,8 @@ module.exports = {
   entregarEvaluacion,
   obtenerCatalogosAdmin,
   obtenerBancoAdmin,
+  obtenerCopiaBancoAdmin,
+  copiarBancoAdmin,
   crearPreguntaAdmin,
   editarPreguntaAdmin,
   eliminarPreguntaAdmin,

@@ -223,6 +223,30 @@ export class EvaluacionesConocimientoService {
     );
   }
 
+  obtenerCopiaBancoAdmin(puestoId: number, destino: string): Observable<{
+    origen: string;
+    destino: string;
+    preguntas: PreguntaBanco[];
+  }> {
+    return this.http.get<{ origen: string; destino: string; preguntas: PreguntaBanco[] }>(
+      `${this.baseUrl}/admin/banco/${puestoId}/preguntas/copiar`,
+      { params: this.parametroPeriodo(destino) },
+    );
+  }
+
+  copiarBancoAdmin(
+    puestoId: number,
+    destino: string,
+    origen: string,
+    preguntas: PreguntaBancoInput[],
+  ): Observable<{ mensaje: string; periodo: string; origen: string; copiadas: number }> {
+    return this.http.post<{ mensaje: string; periodo: string; origen: string; copiadas: number }>(
+      `${this.baseUrl}/admin/banco/${puestoId}/preguntas/copiar`,
+      { origen, preguntas },
+      { params: this.parametroPeriodo(destino) },
+    );
+  }
+
   crearPreguntaAdmin(
     puestoId: number,
     periodo: string,
