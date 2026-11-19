@@ -3,6 +3,37 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+export type FrecuenciaEvaluacion = 'mensual' | 'quincenal' | 'semanal';
+
+export function etiquetaFrecuenciaEvaluacion(frecuencia: FrecuenciaEvaluacion): string {
+  return { mensual: 'Mensual', quincenal: 'Quincenal', semanal: 'Semanal' }[frecuencia];
+}
+
+export function formatoPeriodoEvaluacion(periodo: string): string {
+  if (/^\d{4}-(0[1-9]|1[0-2])$/.test(periodo)) {
+    const [anio, mes] = periodo.split('-').map(Number);
+    return new Date(anio, mes - 1, 1).toLocaleDateString('es-GT', {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'America/Guatemala',
+    });
+  }
+  const quincenal = /^(\d{4})-(0[1-9]|1[0-2])-Q([12])$/.exec(periodo);
+  if (quincenal) {
+    const anio = Number(quincenal[1]);
+    const mes = Number(quincenal[2]);
+    const nombreMes = new Date(anio, mes - 1, 1).toLocaleDateString('es-GT', {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'America/Guatemala',
+    });
+    return `${quincenal[3] === '1' ? '1.ª' : '2.ª'} quincena de ${nombreMes}`;
+  }
+  const semanal = /^(\d{4})-W(\d{2})$/.exec(periodo);
+  if (semanal) return `Semana ${Number(semanal[2])} de ${semanal[1]}`;
+  return periodo;
+}
+
 export interface PreguntaConocimiento {
   id: string;
   texto: string;
@@ -21,7 +52,9 @@ export interface EvaluacionConocimiento {
   puesto_id: number;
   nombre_puesto?: string;
   departamento?: string;
+  frecuencia_evaluacion?: FrecuenciaEvaluacion;
   periodo: string;
+  periodo_actual?: string | null;
   estado: 'pendiente' | 'completada';
   total_preguntas: number;
   respuestas_correctas: number | null;
@@ -40,12 +73,23 @@ export interface EmpleadoConocimiento {
   puesto_id: number;
   nombre_puesto: string;
   departamento: string;
+  frecuencia_evaluacion?: FrecuenciaEvaluacion;
+  periodo_actual?: string;
+  periodos?: string[];
 }
 
 export interface PuestoConocimiento {
   id: number;
   nombre_puesto: string;
   departamento: string;
+  frecuencia_evaluacion: FrecuenciaEvaluacion;
+  periodo_actual: string;
+  periodos: string[];
+}
+
+export interface FrecuenciaConocimiento {
+  valor: FrecuenciaEvaluacion;
+  etiqueta: string;
 }
 
 export type TipoPuntuacionOpcion = 'correcta' | 'intermedia' | 'incorrecta';
@@ -83,12 +127,14 @@ export class EvaluacionesConocimientoService {
 
   obtenerMiEvaluacion(): Observable<{
     puesto: string;
+    frecuencia_evaluacion: FrecuenciaEvaluacion;
     periodo_actual: string;
     evaluacion_actual: EvaluacionConocimiento;
     historial: EvaluacionConocimiento[];
   }> {
     return this.http.get<{
       puesto: string;
+      frecuencia_evaluacion: FrecuenciaEvaluacion;
       periodo_actual: string;
       evaluacion_actual: EvaluacionConocimiento;
       historial: EvaluacionConocimiento[];
@@ -97,6 +143,7 @@ export class EvaluacionesConocimientoService {
 
   responder(respuestas: Record<string, number>): Observable<{
     mensaje: string;
+    periodo: string;
     respuestas_correctas: number;
     puntos_obtenidos: number;
     puntos_totales: number;
@@ -105,6 +152,7 @@ export class EvaluacionesConocimientoService {
   }> {
     return this.http.post<{
       mensaje: string;
+      periodo: string;
       respuestas_correctas: number;
       puntos_obtenidos: number;
       puntos_totales: number;
@@ -117,63 +165,97 @@ export class EvaluacionesConocimientoService {
     empleados: EmpleadoConocimiento[];
     puestos: PuestoConocimiento[];
     departamentos: string[];
+    frecuencias: FrecuenciaConocimiento[];
   }> {
     return this.http.get<{
       empleados: EmpleadoConocimiento[];
       puestos: PuestoConocimiento[];
       departamentos: string[];
+      frecuencias: FrecuenciaConocimiento[];
     }>(`${this.baseUrl}/admin/catalogos`);
+  }
+
+  actualizarFrecuenciaPuestoAdmin(
+    puestoId: number,
+    frecuencia: FrecuenciaEvaluacion,
+  ): Observable<{ mensaje: string; puesto: PuestoConocimiento }> {
+    return this.http.put<{ mensaje: string; puesto: PuestoConocimiento }>(
+      `${this.baseUrl}/admin/puestos/${puestoId}/frecuencia`,
+      { frecuencia },
+    );
   }
 
   listarAdmin(filtros: {
     empleado_id?: number;
     puesto_id?: number;
     departamento?: string;
-  }): Observable<{ periodo_actual: string; evaluaciones: EvaluacionConocimiento[] }> {
+  }): Observable<{
+    periodo_actual: string | null;
+    periodos_por_puesto: Record<string, string>;
+    evaluaciones: EvaluacionConocimiento[];
+  }> {
     let params = new HttpParams();
     if (filtros.empleado_id) params = params.set('empleado_id', filtros.empleado_id);
     if (filtros.puesto_id) params = params.set('puesto_id', filtros.puesto_id);
     if (filtros.departamento) params = params.set('departamento', filtros.departamento);
-    return this.http.get<{ periodo_actual: string; evaluaciones: EvaluacionConocimiento[] }>(
-      `${this.baseUrl}/admin`,
-      { params },
-    );
+    return this.http.get<{
+      periodo_actual: string | null;
+      periodos_por_puesto: Record<string, string>;
+      evaluaciones: EvaluacionConocimiento[];
+    }>(`${this.baseUrl}/admin`, { params });
   }
 
   obtenerDetalleAdmin(id: number): Observable<{ evaluacion: EvaluacionConocimiento }> {
     return this.http.get<{ evaluacion: EvaluacionConocimiento }>(`${this.baseUrl}/admin/${id}`);
   }
 
-  obtenerBancoAdmin(puestoId: number): Observable<{ preguntas: PreguntaBanco[] }> {
-    return this.http.get<{ preguntas: PreguntaBanco[] }>(
+  private parametroPeriodo(periodo: string): HttpParams {
+    return new HttpParams().set('periodo', periodo);
+  }
+
+  obtenerBancoAdmin(puestoId: number, periodo: string): Observable<{
+    periodo: string;
+    preguntas: PreguntaBanco[];
+  }> {
+    return this.http.get<{ periodo: string; preguntas: PreguntaBanco[] }>(
       `${this.baseUrl}/admin/banco/${puestoId}/preguntas`,
+      { params: this.parametroPeriodo(periodo) },
     );
   }
 
   crearPreguntaAdmin(
     puestoId: number,
+    periodo: string,
     pregunta: PreguntaBancoInput,
-  ): Observable<{ mensaje: string }> {
-    return this.http.post<{ mensaje: string }>(
+  ): Observable<{ mensaje: string; periodo: string }> {
+    return this.http.post<{ mensaje: string; periodo: string }>(
       `${this.baseUrl}/admin/banco/${puestoId}/preguntas`,
       pregunta,
+      { params: this.parametroPeriodo(periodo) },
     );
   }
 
   editarPreguntaAdmin(
     puestoId: number,
+    periodo: string,
     preguntaId: number,
     pregunta: PreguntaBancoInput,
-  ): Observable<{ mensaje: string }> {
-    return this.http.put<{ mensaje: string }>(
+  ): Observable<{ mensaje: string; periodo: string }> {
+    return this.http.put<{ mensaje: string; periodo: string }>(
       `${this.baseUrl}/admin/banco/${puestoId}/preguntas/${preguntaId}`,
       pregunta,
+      { params: this.parametroPeriodo(periodo) },
     );
   }
 
-  eliminarPreguntaAdmin(puestoId: number, preguntaId: number): Observable<{ mensaje: string }> {
-    return this.http.delete<{ mensaje: string }>(
+  eliminarPreguntaAdmin(
+    puestoId: number,
+    periodo: string,
+    preguntaId: number,
+  ): Observable<{ mensaje: string; periodo: string }> {
+    return this.http.delete<{ mensaje: string; periodo: string }>(
       `${this.baseUrl}/admin/banco/${puestoId}/preguntas/${preguntaId}`,
+      { params: this.parametroPeriodo(periodo) },
     );
   }
 }

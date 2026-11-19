@@ -14,7 +14,7 @@
   bottomActive="/sugerencias"
 >
     <div class="page-heading">
-      <div><p class="eyebrow">PORTAL DEL EMPLEADO / DESARROLLO</p><h1>Evaluación de conocimientos y desempeño</h1><p class="subheading">Prueba mensual según tu puesto: {{ puesto() || usuario?.puesto }}.</p></div>
+      <div><p class="eyebrow">PORTAL DEL EMPLEADO / DESARROLLO</p><h1>Evaluación de conocimientos y desempeño</h1><p class="subheading">Prueba de frecuencia {{ etiquetaFrecuencia() }} según tu puesto: {{ puesto() || usuario?.puesto }}.</p></div>
     </div>
 
     @if (aviso()) { <div class="alert alert-success" role="status">{{ aviso() }}</div> }
@@ -31,7 +31,7 @@
 
       <section class="knowledge-panel">
         <div class="section-heading">
-          <div><p class="eyebrow">EVALUACIÓN DEL MES</p><h2>{{ formatoPeriodo(actual.periodo) }} · {{ puesto() }}</h2></div>
+          <div><p class="eyebrow">EVALUACIÓN DEL PERIODO</p><h2>{{ formatoPeriodo(actual.periodo) }} · {{ puesto() }}</h2></div>
           <span class="state-pill" [class.state-good]="actual.estado === 'completada'" [class.state-warn]="actual.estado === 'pendiente'">{{ actual.estado === 'completada' ? 'Completada' : 'Pendiente' }}</span>
         </div>
 
@@ -80,7 +80,7 @@
       </section>
 
       <section class="knowledge-history">
-        <div class="section-heading"><div><p class="eyebrow">EVOLUCIÓN MENSUAL</p><h2>Historial de resultados</h2></div><span class="record-count">{{ historial().length }} periodos</span></div>
+        <div class="section-heading"><div><p class="eyebrow">EVOLUCIÓN POR PERIODO</p><h2>Historial de resultados</h2></div><span class="record-count">{{ historial().length }} periodos</span></div>
         <div class="table-frame"><div class="table-scroll">
           <table>
             <thead><tr><th>Periodo</th><th>Fecha realizada</th><th>Calificación</th><th>Resultado</th><th>Estado</th></tr></thead>

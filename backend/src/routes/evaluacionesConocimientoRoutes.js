@@ -8,6 +8,7 @@ const {
   crearPreguntaAdmin,
   editarPreguntaAdmin,
   eliminarPreguntaAdmin,
+  actualizarFrecuenciaPuestoAdmin,
   listarEvaluacionesAdmin,
   obtenerDetalleAdmin,
 } = require('../controllers/evaluacionesConocimientoController');
@@ -18,6 +19,7 @@ router.use(verificarToken);
 router.get('/mi', obtenerMiEvaluacion);
 router.post('/mi/responder', entregarEvaluacion);
 router.get('/admin/catalogos', permitirEvaluaciones, obtenerCatalogosAdmin);
+router.put('/admin/puestos/:puestoId/frecuencia', permitirEvaluaciones, actualizarFrecuenciaPuestoAdmin);
 router.get('/admin/banco/:puestoId/preguntas', permitirEvaluaciones, obtenerBancoAdmin);
 router.post('/admin/banco/:puestoId/preguntas', permitirEvaluaciones, crearPreguntaAdmin);
 router.put('/admin/banco/:puestoId/preguntas/:preguntaId', permitirEvaluaciones, editarPreguntaAdmin);

@@ -21,10 +21,24 @@ async function obtenerResumenAdmin(req, res, next) {
         (SELECT COUNT(*) FROM marcaciones WHERE fecha = CURDATE()) AS marcaciones_hoy,
         (SELECT COUNT(DISTINCT empleado_id) FROM marcaciones WHERE fecha = CURDATE()) AS empleados_presentes,
         (SELECT COUNT(*) FROM marcaciones WHERE fecha = CURDATE() AND estado_entrada = 'atraso') AS llegadas_tarde_hoy,
-        (SELECT COUNT(*) FROM evaluaciones_conocimiento
-          WHERE periodo = DATE_FORMAT(CURDATE(), '%Y-%m') AND estado = 'pendiente') AS evaluaciones_pendientes,
-        (SELECT COUNT(*) FROM evaluaciones_conocimiento
-          WHERE periodo = DATE_FORMAT(CURDATE(), '%Y-%m') AND estado = 'completada') AS evaluaciones_completadas,
+        (SELECT COUNT(*) FROM evaluaciones_conocimiento ev
+          INNER JOIN puestos p ON p.id = ev.puesto_id
+          CROSS JOIN (SELECT DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-06:00')) AS fecha_local) f
+          WHERE ev.estado = 'pendiente'
+            AND ev.periodo = CASE p.frecuencia_evaluacion
+              WHEN 'quincenal' THEN CONCAT(DATE_FORMAT(f.fecha_local, '%Y-%m'), '-Q', IF(DAY(f.fecha_local) <= 15, 1, 2))
+              WHEN 'semanal' THEN DATE_FORMAT(f.fecha_local, '%x-W%v')
+              ELSE DATE_FORMAT(f.fecha_local, '%Y-%m')
+            END) AS evaluaciones_pendientes,
+        (SELECT COUNT(*) FROM evaluaciones_conocimiento ev
+          INNER JOIN puestos p ON p.id = ev.puesto_id
+          CROSS JOIN (SELECT DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-06:00')) AS fecha_local) f
+          WHERE ev.estado = 'completada'
+            AND ev.periodo = CASE p.frecuencia_evaluacion
+              WHEN 'quincenal' THEN CONCAT(DATE_FORMAT(f.fecha_local, '%Y-%m'), '-Q', IF(DAY(f.fecha_local) <= 15, 1, 2))
+              WHEN 'semanal' THEN DATE_FORMAT(f.fecha_local, '%x-W%v')
+              ELSE DATE_FORMAT(f.fecha_local, '%Y-%m')
+            END) AS evaluaciones_completadas,
         (SELECT COUNT(*) FROM evaluaciones
           WHERE fecha_evaluacion >= DATE_FORMAT(CURDATE(), '%Y-%m-01')) AS evaluaciones_desempeno_mes,
         (SELECT COUNT(*) FROM sugerencias WHERE respondido_en IS NULL) AS sugerencias_pendientes,

@@ -112,7 +112,7 @@ export class AdminDashboardComponent implements OnInit {
     ];
     if (this.puedeEvaluar) {
       items.unshift(
-        { icono: 'lucideClipboardCheck', etiqueta: 'Evaluaciones mensuales', valor: resumen.evaluaciones_pendientes, ruta: '/admin/evaluaciones-conocimiento', tono: 'rojo' },
+        { icono: 'lucideClipboardCheck', etiqueta: 'Evaluaciones por periodo', valor: resumen.evaluaciones_pendientes, ruta: '/admin/evaluaciones-conocimiento', tono: 'rojo' },
         { icono: 'lucideUsers', etiqueta: 'Candidatos en registro', valor: resumen.candidatos_registro, ruta: '/admin/evaluaciones-seleccion', tono: 'azul' }
       );
     }

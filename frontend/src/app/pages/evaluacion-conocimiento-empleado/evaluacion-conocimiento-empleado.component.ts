@@ -7,6 +7,9 @@ import { AuthService } from '../../services/auth.service';
 import {
   EvaluacionConocimiento,
   EvaluacionesConocimientoService,
+  FrecuenciaEvaluacion,
+  etiquetaFrecuenciaEvaluacion,
+  formatoPeriodoEvaluacion,
 } from '../../services/evaluaciones-conocimiento.service';
 
 @Component({
@@ -25,6 +28,7 @@ export class EvaluacionConocimientoEmpleadoComponent implements OnInit {
   protected readonly evaluacion = signal<EvaluacionConocimiento | null>(null);
   protected readonly historial = signal<EvaluacionConocimiento[]>([]);
   protected readonly puesto = signal('');
+  protected readonly frecuencia = signal<FrecuenciaEvaluacion>('mensual');
   protected readonly respuestas = signal<Record<string, number>>({});
   protected readonly cargando = signal(true);
   protected readonly enviando = signal(false);
@@ -76,12 +80,11 @@ export class EvaluacionConocimientoEmpleadoComponent implements OnInit {
   }
 
   protected formatoPeriodo(periodo: string): string {
-    const [anio, mes] = periodo.split('-').map(Number);
-    return new Date(anio, mes - 1, 1).toLocaleDateString('es-GT', {
-      month: 'long',
-      year: 'numeric',
-      timeZone: 'America/Guatemala',
-    });
+    return formatoPeriodoEvaluacion(periodo);
+  }
+
+  protected etiquetaFrecuencia(): string {
+    return etiquetaFrecuenciaEvaluacion(this.frecuencia());
   }
 
   protected formatoFecha(fecha: string | null): string {
@@ -97,10 +100,11 @@ export class EvaluacionConocimientoEmpleadoComponent implements OnInit {
   private cargarEvaluacion(): void {
     this.cargando.set(true);
     this.servicio.obtenerMiEvaluacion().subscribe({
-      next: ({ evaluacion_actual: actual, historial, puesto }) => {
+      next: ({ evaluacion_actual: actual, historial, puesto, frecuencia_evaluacion: frecuencia }) => {
         this.evaluacion.set(actual);
         this.historial.set(historial);
         this.puesto.set(puesto);
+        this.frecuencia.set(frecuencia || 'mensual');
         const respuestasGuardadas = (actual.preguntas ?? []).reduce<Record<string, number>>((acumuladas, pregunta) => {
           if (pregunta.respuesta !== null) acumuladas[pregunta.id] = pregunta.respuesta;
           return acumuladas;

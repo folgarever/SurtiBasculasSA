@@ -1,15 +1,39 @@
 const pool = require('../config/db');
 const { obtenerBanco } = require('../config/evaluacionesConocimiento');
+const {
+  FRECUENCIAS_EVALUACION,
+  esPeriodoValido,
+  periodoDeFecha,
+  periodosSiguientes,
+} = require('../utils/periodosEvaluacion');
 
-function mesActual() {
-  const partes = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Guatemala',
-    year: 'numeric',
-    month: '2-digit',
-  }).formatToParts(new Date());
-  const anio = partes.find((parte) => parte.type === 'year')?.value;
-  const mes = partes.find((parte) => parte.type === 'month')?.value;
-  return `${anio}-${mes}`;
+function frecuenciaValida(valor) {
+  return FRECUENCIAS_EVALUACION.includes(valor);
+}
+
+function periodoActualDeFrecuencia(frecuencia) {
+  return periodoDeFecha(new Date(), frecuencia);
+}
+
+function catalogoPuesto(puesto) {
+  const frecuencia = frecuenciaValida(puesto.frecuencia_evaluacion)
+    ? puesto.frecuencia_evaluacion
+    : 'mensual';
+  const periodoActual = periodoDeFecha(new Date(), frecuencia);
+  return {
+    ...puesto,
+    frecuencia_evaluacion: frecuencia,
+    periodo_actual: periodoActual,
+    periodos: [periodoActual, ...periodosSiguientes(periodoActual, frecuencia, 3)],
+  };
+}
+
+function periodoDeSolicitud(req, puesto) {
+  const valor = req.query.periodo;
+  if (valor === undefined || valor === '') {
+    return periodoActualDeFrecuencia(puesto.frecuencia_evaluacion || 'mensual');
+  }
+  return esPeriodoValido(valor) ? valor : null;
 }
 
 function leerJson(valor) {
@@ -59,7 +83,9 @@ function resumenEvaluacion(registro, incluirPreguntas = false) {
     puesto_id: registro.puesto_id,
     nombre_puesto: registro.nombre_puesto,
     departamento: registro.departamento,
+    frecuencia_evaluacion: registro.frecuencia_evaluacion,
     periodo: registro.periodo,
+    periodo_actual: registro.periodo_actual,
     estado: registro.estado,
     total_preguntas: registro.total_preguntas,
     respuestas_correctas: registro.respuestas_correctas,
@@ -84,7 +110,8 @@ function resumenEvaluacion(registro, incluirPreguntas = false) {
 
 async function obtenerEmpleado(connection, empleadoId) {
   const [empleados] = await connection.execute(
-    `SELECT e.id, e.puesto_id, p.codigo_abreviatura, p.nombre_puesto, p.departamento
+    `SELECT e.id, e.puesto_id, p.codigo_abreviatura, p.nombre_puesto, p.departamento,
+            p.frecuencia_evaluacion
      FROM empleados e
      INNER JOIN puestos p ON p.id = e.puesto_id
      WHERE e.id = ? AND e.activo = 1
@@ -94,12 +121,18 @@ async function obtenerEmpleado(connection, empleadoId) {
   return empleados[0];
 }
 
-async function inicializarBanco(connection, puesto) {
+async function inicializarBanco(connection, puesto, periodo) {
   const [inicializados] = await connection.execute(
     'SELECT puesto_id FROM evaluaciones_banco_inicializado WHERE puesto_id = ? LIMIT 1',
     [puesto.id]
   );
   if (inicializados.length) return;
+
+  const [existentes] = await connection.execute(
+    'SELECT id FROM evaluaciones_banco_preguntas WHERE puesto_id = ? AND periodo = ? LIMIT 1',
+    [puesto.id, periodo]
+  );
+  if (existentes.length) return;
 
   await connection.beginTransaction();
   try {
@@ -113,9 +146,9 @@ async function inicializarBanco(connection, puesto) {
         const [texto, opciones, respuestaCorrecta] = bancoInicial[indice];
         await connection.execute(
           `INSERT INTO evaluaciones_banco_preguntas
-           (puesto_id, texto, opciones, respuesta_correcta, orden)
-           VALUES (?, ?, ?, ?, ?)`,
-          [puesto.id, texto, JSON.stringify(opciones), respuestaCorrecta, indice + 1]
+           (puesto_id, periodo, texto, opciones, respuesta_correcta, orden)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [puesto.id, periodo, texto, JSON.stringify(opciones), respuestaCorrecta, indice + 1]
         );
       }
     }
@@ -126,13 +159,13 @@ async function inicializarBanco(connection, puesto) {
   }
 }
 
-async function listarPreguntasBanco(connection, puestoId) {
+async function listarPreguntasBanco(connection, puestoId, periodo) {
   const [preguntas] = await connection.execute(
     `SELECT id, texto, opciones, respuesta_correcta, puntos_maximos
      FROM evaluaciones_banco_preguntas
-     WHERE puesto_id = ?
+     WHERE puesto_id = ? AND periodo = ?
      ORDER BY orden, id`,
-    [puestoId]
+    [puestoId, periodo]
   );
   return preguntas.map((pregunta) => {
     const maximo = Number(pregunta.puntos_maximos);
@@ -202,8 +235,8 @@ function validarPregunta(cuerpo) {
   };
 }
 
-async function sincronizarPendientes(connection, puestoId) {
-  const preguntas = await listarPreguntasBanco(connection, puestoId);
+async function sincronizarPendientes(connection, puestoId, periodo) {
+  const preguntas = await listarPreguntasBanco(connection, puestoId, periodo);
   const preguntasEvaluacion = preguntas.map((pregunta) => ({
     id: `q${pregunta.id}`,
     texto: pregunta.texto,
@@ -215,15 +248,15 @@ async function sincronizarPendientes(connection, puestoId) {
     `UPDATE evaluaciones_conocimiento
      SET preguntas = ?, total_preguntas = ?
      WHERE puesto_id = ? AND periodo = ? AND estado = 'pendiente'`,
-    [JSON.stringify(preguntasEvaluacion), preguntasEvaluacion.length, puestoId, mesActual()]
+    [JSON.stringify(preguntasEvaluacion), preguntasEvaluacion.length, puestoId, periodo]
   );
 }
 
 async function habilitarEvaluacion(connection, empleado, periodo) {
-  await inicializarBanco(connection, empleado);
-  const banco = await listarPreguntasBanco(connection, empleado.puesto_id);
+  await inicializarBanco(connection, empleado, periodo);
+  const banco = await listarPreguntasBanco(connection, empleado.puesto_id, periodo);
   if (!banco.length) {
-    const error = new Error(`No hay preguntas configuradas para el puesto ${empleado.codigo_abreviatura}.`);
+    const error = new Error(`No hay preguntas configuradas para el puesto ${empleado.codigo_abreviatura} en el periodo ${periodo}.`);
     error.status = 409;
     error.codigo = 'BANCO_PREGUNTAS_VACIO';
     throw error;
@@ -260,7 +293,8 @@ async function obtenerMiEvaluacion(req, res, next) {
     const empleado = await obtenerEmpleado(connection, Number(req.usuario.id));
     if (!empleado) return res.status(404).json({ mensaje: 'El empleado no existe o está inactivo.' });
 
-    const actual = await habilitarEvaluacion(connection, empleado, mesActual());
+    const periodoActual = periodoActualDeFrecuencia(empleado.frecuencia_evaluacion);
+    const actual = await habilitarEvaluacion(connection, empleado, periodoActual);
     const [historial] = await connection.execute(
       `SELECT id, empleado_id, puesto_id, periodo, preguntas, respuestas,
               total_preguntas, respuestas_correctas, puntos_obtenidos, puntos_totales,
@@ -270,12 +304,17 @@ async function obtenerMiEvaluacion(req, res, next) {
        ORDER BY periodo DESC`,
       [empleado.id]
     );
-    const actualConDatos = { ...actual, empleado_id: empleado.id };
+    const datosComunes = {
+      empleado_id: empleado.id,
+      frecuencia_evaluacion: empleado.frecuencia_evaluacion,
+      periodo_actual: periodoActual,
+    };
     return res.json({
       puesto: empleado.nombre_puesto,
-      periodo_actual: mesActual(),
-      evaluacion_actual: resumenEvaluacion(actualConDatos, true),
-      historial: historial.map((evaluacion) => resumenEvaluacion({ ...evaluacion, empleado_id: empleado.id })),
+      frecuencia_evaluacion: empleado.frecuencia_evaluacion,
+      periodo_actual: periodoActual,
+      evaluacion_actual: resumenEvaluacion({ ...actual, ...datosComunes }, true),
+      historial: historial.map((evaluacion) => resumenEvaluacion({ ...evaluacion, ...datosComunes })),
     });
   } catch (error) {
     if (error.status) return res.status(error.status).json({ mensaje: error.message });
@@ -294,22 +333,27 @@ async function entregarEvaluacion(req, res, next) {
   let connection;
   try {
     connection = await pool.getConnection();
+    const empleado = await obtenerEmpleado(connection, Number(req.usuario.id));
+    if (!empleado) {
+      return res.status(404).json({ mensaje: 'El empleado no existe o está inactivo.' });
+    }
+    const periodoActual = periodoActualDeFrecuencia(empleado.frecuencia_evaluacion);
     await connection.beginTransaction();
     const [evaluaciones] = await connection.execute(
       `SELECT id, preguntas, estado
        FROM evaluaciones_conocimiento
        WHERE empleado_id = ? AND periodo = ?
        FOR UPDATE`,
-      [Number(req.usuario.id), mesActual()]
+      [empleado.id, periodoActual]
     );
     const evaluacion = evaluaciones[0];
     if (!evaluacion) {
       await connection.rollback();
-      return res.status(404).json({ mensaje: 'No hay una evaluación habilitada para este mes.' });
+      return res.status(404).json({ mensaje: `No hay una evaluación habilitada para el periodo ${periodoActual}.` });
     }
     if (evaluacion.estado === 'completada') {
       await connection.rollback();
-      return res.status(409).json({ mensaje: 'La evaluación de este mes ya fue enviada.' });
+      return res.status(409).json({ mensaje: `La evaluación del periodo ${periodoActual} ya fue enviada.` });
     }
 
     const preguntas = leerJson(evaluacion.preguntas);
@@ -354,6 +398,7 @@ async function entregarEvaluacion(req, res, next) {
     await connection.commit();
     return res.json({
       mensaje: 'Evaluación enviada.',
+      periodo: periodoActual,
       respuestas_correctas: correctas,
       puntos_obtenidos: puntosObtenidos,
       puntos_totales: puntosTotales,
@@ -373,17 +418,26 @@ async function obtenerCatalogosAdmin(req, res, next) {
   try {
     const [empleados] = await pool.execute(
       `SELECT e.id, e.codigo_empleado, e.nombre, e.puesto_id,
-              p.nombre_puesto, p.departamento
+              p.nombre_puesto, p.departamento, p.frecuencia_evaluacion
        FROM empleados e
        INNER JOIN puestos p ON p.id = e.puesto_id
        WHERE e.activo = 1
        ORDER BY e.nombre`
     );
     const [puestos] = await pool.execute(
-      'SELECT id, nombre_puesto, departamento FROM puestos ORDER BY nombre_puesto'
+      'SELECT id, nombre_puesto, departamento, frecuencia_evaluacion FROM puestos ORDER BY nombre_puesto'
     );
-    const departamentos = [...new Set(puestos.map((puesto) => puesto.departamento))];
-    return res.json({ empleados, puestos, departamentos });
+    const catalogoPuestos = puestos.map(catalogoPuesto);
+    const departamentos = [...new Set(catalogoPuestos.map((puesto) => puesto.departamento))];
+    return res.json({
+      empleados: empleados.map(catalogoPuesto),
+      puestos: catalogoPuestos,
+      departamentos,
+      frecuencias: FRECUENCIAS_EVALUACION.map((valor) => ({
+        valor,
+        etiqueta: { mensual: 'Mensual', quincenal: 'Quincenal', semanal: 'Semanal' }[valor],
+      })),
+    });
   } catch (error) {
     return next(error);
   }
@@ -398,12 +452,16 @@ async function obtenerBancoAdmin(req, res, next) {
   try {
     connection = await pool.getConnection();
     const [puestos] = await connection.execute(
-      'SELECT id, codigo_abreviatura FROM puestos WHERE id = ? LIMIT 1',
+      'SELECT id, frecuencia_evaluacion FROM puestos WHERE id = ? LIMIT 1',
       [Number(req.params.puestoId)]
     );
     if (!puestos[0]) return res.status(404).json({ mensaje: 'Puesto no encontrado.' });
-    await inicializarBanco(connection, puestos[0]);
-    return res.json({ preguntas: await listarPreguntasBanco(connection, puestos[0].id) });
+    const periodo = periodoDeSolicitud(req, puestos[0]);
+    if (!periodo) return res.status(400).json({ mensaje: 'El periodo de la evaluación no es válido.' });
+    return res.json({
+      periodo,
+      preguntas: await listarPreguntasBanco(connection, puestos[0].id, periodo),
+    });
   } catch (error) {
     return next(error);
   } finally {
@@ -424,30 +482,35 @@ async function crearPreguntaAdmin(req, res, next) {
   try {
     connection = await pool.getConnection();
     const [puestos] = await connection.execute(
-      'SELECT id, codigo_abreviatura FROM puestos WHERE id = ? LIMIT 1',
+      'SELECT id, frecuencia_evaluacion FROM puestos WHERE id = ? LIMIT 1',
       [Number(req.params.puestoId)]
     );
     if (!puestos[0]) return res.status(404).json({ mensaje: 'Puesto no encontrado.' });
-    await inicializarBanco(connection, puestos[0]);
+    const periodo = periodoDeSolicitud(req, puestos[0]);
+    if (!periodo) return res.status(400).json({ mensaje: 'El periodo de la evaluación no es válido.' });
+
     await connection.beginTransaction();
     const [preguntasExistentes] = await connection.execute(
-      'SELECT id FROM evaluaciones_banco_preguntas WHERE puesto_id = ? FOR UPDATE',
-      [puestos[0].id]
+      'SELECT id FROM evaluaciones_banco_preguntas WHERE puesto_id = ? AND periodo = ? FOR UPDATE',
+      [puestos[0].id, periodo]
     );
     if (preguntasExistentes.length >= 255) {
       await connection.rollback();
-      return res.status(409).json({ mensaje: 'El banco de preguntas admite un máximo de 255 preguntas por puesto.' });
+      return res.status(409).json({ mensaje: 'El banco admite un máximo de 255 preguntas por puesto y periodo.' });
     }
     const [orden] = await connection.execute(
-      'SELECT COALESCE(MAX(orden), 0) + 1 AS siguiente FROM evaluaciones_banco_preguntas WHERE puesto_id = ?',
-      [puestos[0].id]
+      `SELECT COALESCE(MAX(orden), 0) + 1 AS siguiente
+       FROM evaluaciones_banco_preguntas
+       WHERE puesto_id = ? AND periodo = ?`,
+      [puestos[0].id, periodo]
     );
     await connection.execute(
       `INSERT INTO evaluaciones_banco_preguntas
-       (puesto_id, texto, opciones, respuesta_correcta, puntos_maximos, orden)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       (puesto_id, periodo, texto, opciones, respuesta_correcta, puntos_maximos, orden)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         puestos[0].id,
+        periodo,
         pregunta.texto,
         JSON.stringify(pregunta.opciones),
         pregunta.correcta,
@@ -455,9 +518,9 @@ async function crearPreguntaAdmin(req, res, next) {
         orden[0].siguiente,
       ]
     );
-    await sincronizarPendientes(connection, puestos[0].id);
+    await sincronizarPendientes(connection, puestos[0].id, periodo);
     await connection.commit();
-    return res.status(201).json({ mensaje: 'Pregunta agregada.' });
+    return res.status(201).json({ mensaje: 'Pregunta agregada.', periodo });
   } catch (error) {
     if (connection) await connection.rollback();
     return next(error);
@@ -484,16 +547,18 @@ async function editarPreguntaAdmin(req, res, next) {
   try {
     connection = await pool.getConnection();
     const [puestos] = await connection.execute(
-      'SELECT id, codigo_abreviatura FROM puestos WHERE id = ? LIMIT 1',
+      'SELECT id, frecuencia_evaluacion FROM puestos WHERE id = ? LIMIT 1',
       [Number(req.params.puestoId)]
     );
     if (!puestos[0]) return res.status(404).json({ mensaje: 'Puesto no encontrado.' });
-    await inicializarBanco(connection, puestos[0]);
+    const periodo = periodoDeSolicitud(req, puestos[0]);
+    if (!periodo) return res.status(400).json({ mensaje: 'El periodo de la evaluación no es válido.' });
+
     await connection.beginTransaction();
     const [resultado] = await connection.execute(
       `UPDATE evaluaciones_banco_preguntas
        SET texto = ?, opciones = ?, respuesta_correcta = ?, puntos_maximos = ?
-       WHERE id = ? AND puesto_id = ?`,
+       WHERE id = ? AND puesto_id = ? AND periodo = ?`,
       [
         pregunta.texto,
         JSON.stringify(pregunta.opciones),
@@ -501,15 +566,16 @@ async function editarPreguntaAdmin(req, res, next) {
         pregunta.puntosMaximos,
         Number(req.params.preguntaId),
         puestos[0].id,
+        periodo,
       ]
     );
     if (!resultado.affectedRows) {
       await connection.rollback();
-      return res.status(404).json({ mensaje: 'Pregunta no encontrada para este puesto.' });
+      return res.status(404).json({ mensaje: 'Pregunta no encontrada para este puesto y periodo.' });
     }
-    await sincronizarPendientes(connection, puestos[0].id);
+    await sincronizarPendientes(connection, puestos[0].id, periodo);
     await connection.commit();
-    return res.json({ mensaje: 'Pregunta actualizada.' });
+    return res.json({ mensaje: 'Pregunta actualizada.', periodo });
   } catch (error) {
     if (connection) await connection.rollback();
     return next(error);
@@ -532,40 +598,57 @@ async function eliminarPreguntaAdmin(req, res, next) {
   try {
     connection = await pool.getConnection();
     const [puestos] = await connection.execute(
-      'SELECT id, codigo_abreviatura FROM puestos WHERE id = ? LIMIT 1',
+      'SELECT id, frecuencia_evaluacion FROM puestos WHERE id = ? LIMIT 1',
       [Number(req.params.puestoId)]
     );
     if (!puestos[0]) return res.status(404).json({ mensaje: 'Puesto no encontrado.' });
-    await inicializarBanco(connection, puestos[0]);
+    const periodo = periodoDeSolicitud(req, puestos[0]);
+    if (!periodo) return res.status(400).json({ mensaje: 'El periodo de la evaluación no es válido.' });
+
     await connection.beginTransaction();
-    const [preguntas] = await connection.execute(
-      'SELECT id FROM evaluaciones_banco_preguntas WHERE puesto_id = ? FOR UPDATE',
-      [puestos[0].id]
-    );
-    if (!preguntas.some((pregunta) => pregunta.id === Number(req.params.preguntaId))) {
-      await connection.rollback();
-      return res.status(404).json({ mensaje: 'Pregunta no encontrada para este puesto.' });
-    }
-    if (preguntas.length <= 1) {
-      await connection.rollback();
-      return res.status(409).json({ mensaje: 'Cada puesto debe conservar al menos una pregunta.' });
-    }
     const [resultado] = await connection.execute(
-      'DELETE FROM evaluaciones_banco_preguntas WHERE id = ? AND puesto_id = ?',
-      [Number(req.params.preguntaId), puestos[0].id]
+      'DELETE FROM evaluaciones_banco_preguntas WHERE id = ? AND puesto_id = ? AND periodo = ?',
+      [Number(req.params.preguntaId), puestos[0].id, periodo]
     );
     if (!resultado.affectedRows) {
       await connection.rollback();
-      return res.status(404).json({ mensaje: 'Pregunta no encontrada para este puesto.' });
+      return res.status(404).json({ mensaje: 'Pregunta no encontrada para este puesto y periodo.' });
     }
-    await sincronizarPendientes(connection, puestos[0].id);
+    await sincronizarPendientes(connection, puestos[0].id, periodo);
     await connection.commit();
-    return res.json({ mensaje: 'Pregunta eliminada.' });
+    return res.json({ mensaje: 'Pregunta eliminada.', periodo });
   } catch (error) {
     if (connection) await connection.rollback();
     return next(error);
   } finally {
     if (connection) connection.release();
+  }
+}
+
+async function actualizarFrecuenciaPuestoAdmin(req, res, next) {
+  if (!/^\d+$/.test(req.params.puestoId) || Number(req.params.puestoId) < 1) {
+    return res.status(400).json({ mensaje: 'El identificador del puesto no es válido.' });
+  }
+  if (!frecuenciaValida(req.body?.frecuencia)) {
+    return res.status(400).json({ mensaje: 'La frecuencia debe ser mensual, quincenal o semanal.' });
+  }
+
+  try {
+    const [resultado] = await pool.execute(
+      'UPDATE puestos SET frecuencia_evaluacion = ? WHERE id = ?',
+      [req.body.frecuencia, Number(req.params.puestoId)]
+    );
+    if (!resultado.affectedRows) return res.status(404).json({ mensaje: 'Puesto no encontrado.' });
+    const [puestos] = await pool.execute(
+      'SELECT id, nombre_puesto, departamento, frecuencia_evaluacion FROM puestos WHERE id = ? LIMIT 1',
+      [Number(req.params.puestoId)]
+    );
+    return res.json({
+      mensaje: 'Frecuencia actualizada. Las evaluaciones existentes conservan su periodo.',
+      puesto: catalogoPuesto(puestos[0]),
+    });
+  } catch (error) {
+    return next(error);
   }
 }
 
@@ -583,15 +666,22 @@ async function listarEvaluacionesAdmin(req, res, next) {
   try {
     connection = await pool.getConnection();
     const [empleadosActivos] = await connection.execute(
-      `SELECT e.id, e.puesto_id, p.codigo_abreviatura, p.nombre_puesto, p.departamento
+      `SELECT e.id, e.puesto_id, p.codigo_abreviatura, p.nombre_puesto, p.departamento,
+              p.frecuencia_evaluacion
        FROM empleados e
        INNER JOIN puestos p ON p.id = e.puesto_id
        WHERE e.activo = 1`
     );
-    const periodoActual = mesActual();
+    const periodosPorPuesto = new Map();
     for (const empleado of empleadosActivos) {
+      if (!periodosPorPuesto.has(empleado.puesto_id)) {
+        periodosPorPuesto.set(
+          empleado.puesto_id,
+          periodoActualDeFrecuencia(empleado.frecuencia_evaluacion),
+        );
+      }
       try {
-        await habilitarEvaluacion(connection, empleado, periodoActual);
+        await habilitarEvaluacion(connection, empleado, periodosPorPuesto.get(empleado.puesto_id));
       } catch (error) {
         if (error.codigo !== 'BANCO_PREGUNTAS_VACIO') throw error;
       }
@@ -613,8 +703,8 @@ async function listarEvaluacionesAdmin(req, res, next) {
     }
     const [evaluaciones] = await connection.execute(
       `SELECT ev.id, ev.empleado_id, e.codigo_empleado, e.nombre AS empleado,
-              ev.puesto_id, p.nombre_puesto, p.departamento, ev.periodo,
-              ev.estado, ev.total_preguntas, ev.respuestas_correctas,
+              ev.puesto_id, p.nombre_puesto, p.departamento, p.frecuencia_evaluacion,
+              ev.periodo, ev.estado, ev.total_preguntas, ev.respuestas_correctas,
               ev.puntos_obtenidos, ev.puntos_totales, ev.porcentaje,
               ev.resultado, ev.fecha_realizacion
        FROM evaluaciones_conocimiento ev
@@ -625,11 +715,11 @@ async function listarEvaluacionesAdmin(req, res, next) {
       parametros
     );
     return res.json({
-      periodo_actual: periodoActual,
-      evaluaciones: evaluaciones.map((evaluacion) => ({
+      periodo_actual: periodosPorPuesto.values().next().value || null,
+      periodos_por_puesto: Object.fromEntries(periodosPorPuesto),
+      evaluaciones: evaluaciones.map((evaluacion) => resumenEvaluacion({
         ...evaluacion,
-        puntos_obtenidos: evaluacion.puntos_obtenidos === null ? null : Number(evaluacion.puntos_obtenidos),
-        puntos_totales: evaluacion.puntos_totales === null ? null : Number(evaluacion.puntos_totales),
+        periodo_actual: periodosPorPuesto.get(evaluacion.puesto_id) || null,
       })),
     });
   } catch (error) {
@@ -647,8 +737,8 @@ async function obtenerDetalleAdmin(req, res, next) {
   try {
     const [evaluaciones] = await pool.execute(
       `SELECT ev.id, ev.empleado_id, e.codigo_empleado, e.nombre AS empleado,
-              ev.puesto_id, p.nombre_puesto, p.departamento, ev.periodo,
-              ev.preguntas, ev.respuestas, ev.estado, ev.total_preguntas,
+              ev.puesto_id, p.nombre_puesto, p.departamento, p.frecuencia_evaluacion,
+              ev.periodo, ev.preguntas, ev.respuestas, ev.estado, ev.total_preguntas,
               ev.respuestas_correctas, ev.puntos_obtenidos, ev.puntos_totales,
               ev.porcentaje, ev.resultado, ev.fecha_realizacion
        FROM evaluaciones_conocimiento ev
@@ -659,7 +749,12 @@ async function obtenerDetalleAdmin(req, res, next) {
       [Number(req.params.id)]
     );
     if (!evaluaciones[0]) return res.status(404).json({ mensaje: 'Evaluación no encontrada.' });
-    return res.json({ evaluacion: resumenEvaluacion(evaluaciones[0], true) });
+    return res.json({
+      evaluacion: resumenEvaluacion({
+        ...evaluaciones[0],
+        periodo_actual: periodoActualDeFrecuencia(evaluaciones[0].frecuencia_evaluacion),
+      }, true),
+    });
   } catch (error) {
     return next(error);
   }
@@ -673,6 +768,7 @@ module.exports = {
   crearPreguntaAdmin,
   editarPreguntaAdmin,
   eliminarPreguntaAdmin,
+  actualizarFrecuenciaPuestoAdmin,
   listarEvaluacionesAdmin,
   obtenerDetalleAdmin,
 };

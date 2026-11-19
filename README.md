@@ -18,8 +18,8 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 - Administración del directorio de empleados, incluidas altas, ediciones y bajas.
 - Evaluación periódica del personal, con cinco competencias generales y escala de 1 a 5.
 - Evaluación técnica y psicométrica adicional para el Jefe de Mantenimiento.
-- Evaluación mensual de conocimientos con preguntas por puesto, puntaje parcial configurable por opción, historial individual y panel administrativo con KPIs.
-- Pruebas de selección independientes de las evaluaciones mensuales, con cuadernillo por puesto, rúbrica, puntajes y resultados consultables.
+- Evaluaciones de conocimiento con frecuencia configurable por puesto (mensual, quincenal o semanal), banco de preguntas por puesto y periodo, puntaje parcial configurable por opción, historial individual y panel administrativo con KPIs.
+- Pruebas de selección independientes de las evaluaciones de conocimiento, con cuadernillo por puesto, rúbrica, puntajes y resultados consultables.
 - Envío de sugerencias por parte del personal y foro administrativo con respuestas.
 - Acceso a evaluaciones limitado a Héctor Ortiz (`SUR-GG-001`) y Mafer García (`SUR-AC-002`).
 
@@ -105,19 +105,19 @@ La puntualidad incluye un resumen de días registrados y atrasos de los últimos
 
 El cuerpo de `POST` contiene `empleado_id`, `fecha_evaluacion` (`YYYY-MM-DD`), `periodo`, `calificaciones` (las cinco competencias generales del 1 al 5), `comentarios` opcional y `especializada` (las nueve competencias del jefe de mantenimiento). Las tablas y restricciones están incluidas en `schema.sql` y en la migración.
 
-## Evaluación mensual de conocimientos
+## Evaluaciones de conocimiento
 
-Cada empleado puede abrir `/evaluaciones-conocimiento` para realizar una evaluación del mes asociada a su puesto activo. El servidor crea y conserva una evaluación por empleado y periodo (`YYYY-MM`), calcula la calificación sobre respuestas correctas, fija el resultado en **Aprobado** (70% o más) o **Requiere refuerzo**, y no permite modificar una entrega completada. Las respuestas correctas no se envían al empleado hasta que termina la prueba. Los bancos cubren Gerencia General, Asistente Comercial y RR. HH., Vendedor, Auxiliar Contable, Jefe de Mantenimiento, Técnico, Auxiliar Técnico, Director de Calidad, Metrológico y Auxiliar de Laboratorio.
+Cada empleado puede abrir `/evaluaciones-conocimiento` para realizar la evaluación del periodo vigente según la frecuencia de su puesto. El servidor crea y conserva una evaluación por empleado y periodo, calcula la calificación sobre puntos obtenidos, fija el resultado en **Aprobado** (70% o más) o **Requiere refuerzo**, y no permite modificar una entrega completada. Las respuestas correctas no se envían al empleado hasta que termina la prueba. Los identificadores son `YYYY-MM` para frecuencia mensual, `YYYY-MM-Q1|Q2` para quincenal (días 1–15 y 16–fin de mes, hora de Guatemala) y `YYYY-Www` para semanal (semana ISO con año ISO). Al cambiar la frecuencia, las evaluaciones anteriores conservan su periodo y no se regeneran. Los bancos iniciales cubren Gerencia General, Asistente Comercial y RR. HH., Vendedor, Auxiliar Contable, Jefe de Mantenimiento, Técnico, Auxiliar Técnico, Director de Calidad, Metrológico y Auxiliar de Laboratorio.
 
-El panel `/admin/evaluaciones-conocimiento`, restringido a las cuentas administradoras autorizadas, permite administrar las preguntas, opciones, puntaje máximo por pregunta y puntaje completo, parcial o nulo de cada opción; los cambios se reflejan en las evaluaciones pendientes del mes de todos sus empleados y no alteran resultados ya completados. La nota se calcula como puntos obtenidos sobre los puntos posibles. También habilita los pendientes del mes y muestra KPIs de cumplimiento y promedio, filtros por empleado/puesto/departamento, resultados individuales, historial de respuestas y evolución mensual. Los departamentos son una clasificación asignada a los puestos (Gerencia; Comercial y Recursos Humanos; Administración y Finanzas; Mantenimiento; Calidad y Metrología) para habilitar el filtro; no sustituyen una estructura de departamentos independiente.
+El panel `/admin/evaluaciones-conocimiento`, restringido a las cuentas administradoras autorizadas, permite elegir la frecuencia de cada puesto y administrar un banco distinto por puesto y periodo, con opciones y puntaje completo, parcial o nulo. Los cambios del banco se reflejan solo en las evaluaciones **pendientes** de ese puesto y periodo y no alteran resultados completados. Los periodos nuevos comienzan vacíos hasta que ADMIN agrega preguntas; sin preguntas no se habilita la evaluación. La nota se calcula como puntos obtenidos sobre puntos posibles. El panel muestra KPIs de los periodos vigentes, filtros por empleado/puesto/departamento, resultados individuales, historial de respuestas y evolución por periodo. Los departamentos son una clasificación asignada a los puestos (Gerencia; Comercial y Recursos Humanos; Administración y Finanzas; Mantenimiento; Calidad y Metrología) para habilitar el filtro; no sustituyen una estructura de departamentos independiente.
 
 ## Pruebas de selección
 
-El panel `/admin/evaluaciones-seleccion`, restringido a las cuentas administradoras autorizadas, está organizado en este orden: crear cuenta y asignar puesto, seguimiento de cuentas y pruebas pendientes, historial de resultados automáticos y cuadernillo con guía interna por puesto. Cada cuenta recibe un usuario secuencial `CANDIDATO-AAAA-NNN` y una contraseña aleatoria que se muestra una sola vez. El candidato completa sus datos y adjunta su currículum PDF; el puesto ya asignado no se puede cambiar desde el portal. El servidor calcula y almacena puntaje, porcentaje correcto y decisión al entregar; el historial conserva los intentos y permite a Administración autorizar otro con motivo registrado. La impresión del cuadernillo incluye las opciones, pero excluye la guía de calificación. Los currículums y perfiles completos solo son visibles para Administración. La evaluación mensual sigue en su módulo y no comparte registros con selección.
+El panel `/admin/evaluaciones-seleccion`, restringido a las cuentas administradoras autorizadas, está organizado en este orden: crear cuenta y asignar puesto, seguimiento de cuentas y pruebas pendientes, historial de resultados automáticos y cuadernillo con guía interna por puesto. Cada cuenta recibe un usuario secuencial `CANDIDATO-AAAA-NNN` y una contraseña aleatoria que se muestra una sola vez. El candidato completa sus datos y adjunta su currículum PDF; el puesto ya asignado no se puede cambiar desde el portal. El servidor calcula y almacena puntaje, porcentaje correcto y decisión al entregar; el historial conserva los intentos y permite a Administración autorizar otro con motivo registrado. La impresión del cuadernillo incluye las opciones, pero excluye la guía de calificación. Los currículums y perfiles completos solo son visibles para Administración. Las evaluaciones de conocimiento siguen en su módulo y no comparten registros con selección.
 
 Administración asigna el puesto y entrega a cada aspirante su usuario y contraseña individuales. Después de iniciar sesión en la opción **Candidato**, el aspirante registra nombres, apellidos y fecha de nacimiento, adjunta su currículum PDF (máximo 5 MB) y responde la evaluación de su puesto en la misma página. El sistema calcula la edad, baraja las opciones, bloquea las respuestas después de entregarlas, califica automáticamente y guarda el resultado sin captura manual. Administración puede consultar los resultados anteriores y autorizar un nuevo intento con justificación.
 
-Hay evaluaciones de selección para los 11 puestos del catálogo, incluyendo Asistente Administrativo y Contable. Las pruebas nuevas se basan en las funciones y bancos de conocimientos de cada puesto; no se sustituyen por las evaluaciones mensuales.
+Hay evaluaciones de selección para los 11 puestos del catálogo, incluyendo Asistente Administrativo y Contable. Las pruebas nuevas se basan en las funciones y bancos de conocimientos de cada puesto; no se sustituyen por las evaluaciones de conocimiento.
 
 | Método | Endpoint | Acceso | Función |
 |---|---|---|---|
@@ -137,15 +137,16 @@ Hay evaluaciones de selección para los 11 puestos del catálogo, incluyendo Asi
 |---|---|---|---|
 | `GET` | `/api/evaluaciones-conocimiento/mi` | Empleado autenticado | Habilitar y consultar la evaluación e historial propios |
 | `POST` | `/api/evaluaciones-conocimiento/mi/responder` | Empleado autenticado | Entregar respuestas y calcular el resultado |
-| `GET` | `/api/evaluaciones-conocimiento/admin/catalogos` | Administrador autorizado | Obtener empleados, puestos y departamentos para filtros |
-| `GET` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas` | Administrador autorizado | Consultar las preguntas del puesto |
-| `POST` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas` | Administrador autorizado | Agregar una pregunta con puntaje máximo y opciones de puntaje completo, parcial o nulo |
-| `PUT` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas/<pregunta_id>` | Administrador autorizado | Editar una pregunta, su puntaje máximo y los puntajes de sus opciones |
-| `DELETE` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas/<pregunta_id>` | Administrador autorizado | Eliminar una pregunta (el puesto debe conservar al menos una) |
+| `GET` | `/api/evaluaciones-conocimiento/admin/catalogos` | Administrador autorizado | Obtener empleados, puestos con frecuencia/periodos, departamentos y frecuencias |
+| `PUT` | `/api/evaluaciones-conocimiento/admin/puestos/<puesto_id>/frecuencia` | Administrador autorizado | Cambiar la frecuencia del puesto (`mensual`, `quincenal` o `semanal`) |
+| `GET` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas?periodo=<periodo>` | Administrador autorizado | Consultar las preguntas del puesto en un periodo |
+| `POST` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas?periodo=<periodo>` | Administrador autorizado | Agregar una pregunta al periodo con puntaje máximo y opciones de puntaje completo, parcial o nulo |
+| `PUT` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas/<pregunta_id>?periodo=<periodo>` | Administrador autorizado | Editar una pregunta del periodo, su puntaje máximo y los puntajes de sus opciones |
+| `DELETE` | `/api/evaluaciones-conocimiento/admin/banco/<puesto_id>/preguntas/<pregunta_id>?periodo=<periodo>` | Administrador autorizado | Eliminar una pregunta del periodo |
 | `GET` | `/api/evaluaciones-conocimiento/admin` | Administrador autorizado | Consultar evaluaciones y pendientes, con filtros opcionales `empleado_id`, `puesto_id` y `departamento` |
 | `GET` | `/api/evaluaciones-conocimiento/admin/<id>` | Administrador autorizado | Consultar respuestas y calificación de una evaluación completada |
 
-El esquema nuevo está en `schema.sql`; para una base instalada, las migraciones agregan los departamentos, las evaluaciones mensuales y el banco de preguntas por puesto.
+El esquema nuevo está en `schema.sql`; para una base instalada, las migraciones agregan los departamentos, las evaluaciones de conocimiento, la frecuencia por puesto y el banco de preguntas por puesto y periodo.
 
 ## Sugerencias del personal
 

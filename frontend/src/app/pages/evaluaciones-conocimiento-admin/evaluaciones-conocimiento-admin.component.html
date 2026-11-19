@@ -13,11 +13,12 @@
   [bottomItems]="bottomItems"
   bottomActive="/admin/sugerencias"
 >
-    <div class="page-heading"><div><p class="eyebrow">ADMINISTRACIÓN / DESARROLLO</p><h1>Evaluación de conocimientos y desempeño</h1><p class="subheading">Seguimiento mensual, resultados y evolución por empleado y puesto.</p></div></div>
+    <div class="page-heading"><div><p class="eyebrow">ADMINISTRACIÓN / DESARROLLO</p><h1>Evaluación de conocimientos y desempeño</h1><p class="subheading">Frecuencia configurable por puesto, resultados y evolución por empleado.</p></div></div>
+    @if (aviso()) { <div class="alert alert-success" role="status">{{ aviso() }} <button type="button" (click)="aviso.set('')">×</button></div> }
     @if (error()) { <div class="alert alert-error" role="alert">{{ error() }} <button type="button" (click)="error.set('')">×</button></div> }
 
-    <section class="knowledge-kpis" aria-label="Indicadores del periodo actual">
-      <article class="knowledge-kpi"><span>PERIODO ACTUAL</span><strong>{{ periodoActual() ? formatoPeriodo(periodoActual()) : '—' }}</strong><small>{{ totalActuales() }} evaluaciones asignadas</small></article>
+    <section class="knowledge-kpis" aria-label="Indicadores de los periodos vigentes">
+      <article class="knowledge-kpi"><span>PERIODOS VIGENTES</span><strong>{{ etiquetaPeriodosVigentes() }}</strong><small>{{ totalActuales() }} evaluaciones asignadas</small></article>
       <article class="knowledge-kpi"><span>PENDIENTES</span><strong>{{ pendientesActuales() }}</strong><small>Empleados que aún deben responder</small></article>
       <article class="knowledge-kpi"><span>CUMPLIMIENTO</span><strong>{{ cumplimientoActual() }}%</strong><small>Evaluaciones completadas del periodo</small></article>
       <article class="knowledge-kpi"><span>PROMEDIO DE CONOCIMIENTO</span><strong>{{ promedioActual() === null ? '—' : promedioActual() + '%' }}</strong><small>Entre las evaluaciones completadas</small></article>
@@ -25,13 +26,24 @@
 
     <section class="knowledge-panel">
       <div class="section-heading">
-        <div><p class="eyebrow">ADMINISTRACIÓN / DESARROLLO</p><h2>Banco de preguntas por puesto</h2><p class="subheading">Los cambios se aplican a las evaluaciones pendientes del mes para todos los empleados del puesto.</p></div>
+        <div><p class="eyebrow">ADMINISTRACIÓN / DESARROLLO</p><h2>Frecuencia y banco por puesto</h2><p class="subheading">Define la frecuencia y carga las preguntas de cada periodo. Los periodos nuevos inician vacíos y no afectan el historial.</p></div>
       </div>
       <div class="knowledge-filters knowledge-bank-filter">
         <label>Puesto
-          <select [value]="puestoBanco()" [disabled]="cargandoBanco() || guardandoPregunta()" (change)="actualizarPuestoBanco($event)">
+          <select [disabled]="cargandoBanco() || guardandoPregunta() || guardandoFrecuencia()" (change)="actualizarPuestoBanco($event)">
             <option value="">Selecciona un puesto</option>
-            @for (puesto of puestos(); track puesto.id) { <option [value]="puesto.id">{{ puesto.nombre_puesto }}</option> }
+            @for (puesto of puestos(); track puesto.id) { <option [value]="puesto.id" [selected]="esPuestoBanco(puesto.id)">{{ puesto.nombre_puesto }}</option> }
+          </select>
+        </label>
+        <label>Frecuencia
+          <select [disabled]="!puestoBanco() || cargandoBanco() || guardandoPregunta() || guardandoFrecuencia()" (change)="actualizarFrecuencia($event)">
+            @for (frecuencia of frecuencias(); track frecuencia.valor) { <option [value]="frecuencia.valor" [selected]="frecuencia.valor === puestoBancoSeleccionado()?.frecuencia_evaluacion || (!puestoBancoSeleccionado() && frecuencia.valor === 'mensual')">{{ frecuencia.etiqueta }}</option> }
+          </select>
+        </label>
+        <label>Periodo del banco
+          <select [disabled]="!puestoBanco() || cargandoBanco() || guardandoPregunta() || guardandoFrecuencia()" (change)="actualizarPeriodoBanco($event)">
+            <option value="">Selecciona un periodo</option>
+            @for (periodo of puestoBancoSeleccionado()?.periodos || []; track periodo) { <option [value]="periodo" [selected]="periodo === periodoBanco()">{{ formatoPeriodo(periodo) }}</option> }
           </select>
         </label>
       </div>
@@ -40,11 +52,11 @@
         <div class="knowledge-empty">Cargando banco de preguntas…</div>
       } @else {
         <div class="question-bank-heading">
-          <span>{{ preguntasBanco().length }} preguntas</span>
-          <button class="button button-accent" type="button" [disabled]="!puestoBanco()" (click)="nuevaPregunta()">Agregar pregunta</button>
+          <span>{{ preguntasBanco().length }} preguntas · {{ formatoPeriodo(periodoBanco()) }}</span>
+          <button class="button button-accent" type="button" [disabled]="!puestoBanco() || !periodoBanco()" (click)="nuevaPregunta()">Agregar pregunta</button>
         </div>
         @if (!preguntasBanco().length) {
-          <p class="knowledge-intro">Este puesto aún no tiene preguntas. Agrega al menos una para habilitar sus evaluaciones mensuales.</p>
+          <p class="knowledge-intro">Este periodo aún no tiene preguntas. Agrégalas para habilitar las evaluaciones de {{ formatoPeriodo(periodoBanco()) }}.</p>
         }
         <div class="question-bank-list">
           @for (pregunta of preguntasBanco(); track pregunta.id; let index = $index) {
@@ -62,7 +74,7 @@
               </div>
               <div class="question-bank-actions">
                 <button class="details-button" type="button" (click)="editarPregunta(pregunta)">Editar</button>
-                <button class="details-button question-delete-button" type="button" [disabled]="preguntasBanco().length <= 1" (click)="eliminarPregunta(pregunta)">Eliminar</button>
+                <button class="details-button question-delete-button" type="button" (click)="eliminarPregunta(pregunta)">Eliminar</button>
               </div>
             </article>
           }
@@ -198,5 +210,5 @@
         }
       </section>
     }
-    <footer class="workspace-footer"><span>SURTIBÁSCULAS S.A. · EVALUACIONES MENSUALES</span><a routerLink="/admin">Volver al panel</a></footer>
+    <footer class="workspace-footer"><span>SURTIBÁSCULAS S.A. · EVALUACIONES DE CONOCIMIENTO</span><a routerLink="/admin">Volver al panel</a></footer>
   </app-shell>

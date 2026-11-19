@@ -8,10 +8,14 @@ import {
   EmpleadoConocimiento,
   EvaluacionConocimiento,
   EvaluacionesConocimientoService,
+  FrecuenciaConocimiento,
+  FrecuenciaEvaluacion,
   OpcionPreguntaInput,
   PreguntaBanco,
   PuestoConocimiento,
   TipoPuntuacionOpcion,
+  etiquetaFrecuenciaEvaluacion,
+  formatoPeriodoEvaluacion,
 } from '../../services/evaluaciones-conocimiento.service';
 
 @Component({
@@ -31,13 +35,15 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
   protected readonly empleados = signal<EmpleadoConocimiento[]>([]);
   protected readonly puestos = signal<PuestoConocimiento[]>([]);
   protected readonly departamentos = signal<string[]>([]);
+  protected readonly frecuencias = signal<FrecuenciaConocimiento[]>([]);
   protected readonly detalle = signal<EvaluacionConocimiento | null>(null);
-  protected readonly periodoActual = signal('');
   protected readonly filtroEmpleado = signal('');
   protected readonly filtroPuesto = signal('');
   protected readonly filtroDepartamento = signal('');
   protected readonly puestoBanco = signal('');
+  protected readonly periodoBanco = signal('');
   protected readonly preguntasBanco = signal<PreguntaBanco[]>([]);
+  protected readonly guardandoFrecuencia = signal(false);
   protected readonly cargandoBanco = signal(false);
   protected readonly mostrandoEditor = signal(false);
   protected readonly guardandoPregunta = signal(false);
@@ -51,14 +57,15 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
   protected readonly cargando = signal(true);
   protected readonly cargandoDetalle = signal(false);
   protected readonly error = signal('');
+  protected readonly aviso = signal('');
   protected readonly completadasActuales = computed(
-    () => this.evaluaciones().filter((item) => item.periodo === this.periodoActual() && item.estado === 'completada'),
+    () => this.evaluaciones().filter((item) => item.periodo === item.periodo_actual && item.estado === 'completada'),
   );
   protected readonly pendientesActuales = computed(
-    () => this.evaluaciones().filter((item) => item.periodo === this.periodoActual() && item.estado === 'pendiente').length,
+    () => this.evaluaciones().filter((item) => item.periodo === item.periodo_actual && item.estado === 'pendiente').length,
   );
   protected readonly cumplimientoActual = computed(() => {
-    const actuales = this.evaluaciones().filter((item) => item.periodo === this.periodoActual());
+    const actuales = this.evaluaciones().filter((item) => item.periodo === item.periodo_actual);
     if (!actuales.length) return 0;
     return Math.round((this.completadasActuales().length / actuales.length) * 100);
   });
@@ -68,7 +75,7 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
     return Math.round(completas.reduce((total, item) => total + (item.porcentaje ?? 0), 0) / completas.length);
   });
   protected readonly totalActuales = computed(
-    () => this.evaluaciones().filter((item) => item.periodo === this.periodoActual()).length,
+    () => this.evaluaciones().filter((item) => item.periodo === item.periodo_actual).length,
   );
   protected readonly evolucionEmpleado = computed(() => {
     const seleccionado = this.detalle();
@@ -76,6 +83,17 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
     return this.evaluaciones()
       .filter((item) => item.empleado_id === seleccionado.empleado_id && item.estado === 'completada')
       .sort((a, b) => a.periodo.localeCompare(b.periodo));
+  });
+  protected readonly puestoBancoSeleccionado = computed(
+    () => this.puestos().find((puesto) => String(puesto.id) === this.puestoBanco()) || null,
+  );
+  protected readonly etiquetaPeriodosVigentes = computed(() => {
+    const periodos = [...new Set(
+      this.evaluaciones()
+        .filter((item) => item.periodo === item.periodo_actual)
+        .map((item) => item.periodo),
+    )];
+    return periodos.length ? periodos.map(formatoPeriodoEvaluacion).join(' · ') : '—';
   });
 
   ngOnInit(): void {
@@ -113,9 +131,48 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
 
   protected actualizarPuestoBanco(event: Event): void {
     const puestoId = (event.target as HTMLSelectElement).value;
+    const puesto = this.puestos().find((item) => String(item.id) === puestoId);
     this.puestoBanco.set(puestoId);
+    this.periodoBanco.set(puesto?.periodo_actual || '');
     this.cancelarEdicionPregunta();
     this.cargarBanco();
+  }
+
+  protected actualizarPeriodoBanco(event: Event): void {
+    this.periodoBanco.set((event.target as HTMLSelectElement).value);
+    this.cancelarEdicionPregunta();
+    this.cargarBanco();
+  }
+
+  protected actualizarFrecuencia(event: Event): void {
+    const frecuencia = (event.target as HTMLSelectElement).value as FrecuenciaEvaluacion;
+    const puestoId = Number(this.puestoBanco());
+    if (!puestoId || !['mensual', 'quincenal', 'semanal'].includes(frecuencia)) return;
+    this.guardandoFrecuencia.set(true);
+    this.error.set('');
+    this.servicio.actualizarFrecuenciaPuestoAdmin(puestoId, frecuencia).subscribe({
+      next: ({ puesto, mensaje }) => {
+        this.puestos.update((puestos) => puestos.map((item) => item.id === puesto.id ? puesto : item));
+        this.periodoBanco.set(puesto.periodo_actual);
+        this.guardandoFrecuencia.set(false);
+        this.cancelarEdicionPregunta();
+        this.cargarBanco();
+        this.cargarEvaluaciones();
+        this.aviso.set(mensaje);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.error.set(error.error?.mensaje || 'No se pudo actualizar la frecuencia.');
+        this.guardandoFrecuencia.set(false);
+      },
+    });
+  }
+
+  protected etiquetaFrecuencia(frecuencia: FrecuenciaEvaluacion): string {
+    return etiquetaFrecuenciaEvaluacion(frecuencia);
+  }
+
+  protected esPuestoBanco(puestoId: number): boolean {
+    return String(puestoId) === this.puestoBanco();
   }
 
   protected nuevaPregunta(): void {
@@ -237,6 +294,11 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
     }
 
     const puestoId = Number(this.puestoBanco());
+    const periodo = this.periodoBanco();
+    if (!puestoId || !periodo) {
+      this.error.set('Selecciona un puesto y un periodo antes de guardar.');
+      return;
+    }
     const pregunta = {
       texto,
       opciones,
@@ -244,10 +306,11 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
     };
     const id = this.editandoPreguntaId();
     this.error.set('');
+    this.aviso.set('');
     this.guardandoPregunta.set(true);
     const solicitud = id === null
-      ? this.servicio.crearPreguntaAdmin(puestoId, pregunta)
-      : this.servicio.editarPreguntaAdmin(puestoId, id, pregunta);
+      ? this.servicio.crearPreguntaAdmin(puestoId, periodo, pregunta)
+      : this.servicio.editarPreguntaAdmin(puestoId, periodo, id, pregunta);
     solicitud.subscribe({
       next: () => {
         this.guardandoPregunta.set(false);
@@ -263,9 +326,14 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
   }
 
   protected eliminarPregunta(pregunta: PreguntaBanco): void {
-    if (!window.confirm(`¿Eliminar esta pregunta del puesto seleccionado?\n\n${pregunta.texto}`)) return;
+    if (!window.confirm(`¿Eliminar esta pregunta del periodo ${formatoPeriodoEvaluacion(this.periodoBanco())}?\n\n${pregunta.texto}`)) return;
     this.error.set('');
-    this.servicio.eliminarPreguntaAdmin(Number(this.puestoBanco()), pregunta.id).subscribe({
+    this.aviso.set('');
+    this.servicio.eliminarPreguntaAdmin(
+      Number(this.puestoBanco()),
+      this.periodoBanco(),
+      pregunta.id,
+    ).subscribe({
       next: () => {
         if (this.editandoPreguntaId() === pregunta.id) this.cancelarEdicionPregunta();
         this.cargarBanco();
@@ -287,12 +355,7 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
   }
 
   protected formatoPeriodo(periodo: string): string {
-    const [anio, mes] = periodo.split('-').map(Number);
-    return new Date(anio, mes - 1, 1).toLocaleDateString('es-GT', {
-      month: 'long',
-      year: 'numeric',
-      timeZone: 'America/Guatemala',
-    });
+    return formatoPeriodoEvaluacion(periodo);
   }
 
   protected formatoFecha(fecha: string | null): string {
@@ -307,12 +370,14 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
 
   private cargarCatalogos(): void {
     this.servicio.obtenerCatalogosAdmin().subscribe({
-      next: ({ empleados, puestos, departamentos }) => {
+      next: ({ empleados, puestos, departamentos, frecuencias }) => {
         this.empleados.set(empleados);
         this.puestos.set(puestos);
         this.departamentos.set(departamentos);
+        this.frecuencias.set(frecuencias || []);
         if (puestos.length) {
           this.puestoBanco.set(String(puestos[0].id));
+          this.periodoBanco.set(puestos[0].periodo_actual);
           this.cargarBanco();
         }
       },
@@ -329,8 +394,7 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
       puesto_id: this.filtroPuesto() ? Number(this.filtroPuesto()) : undefined,
       departamento: this.filtroDepartamento() || undefined,
     }).subscribe({
-      next: ({ periodo_actual: periodo, evaluaciones }) => {
-        this.periodoActual.set(periodo);
+      next: ({ evaluaciones }) => {
         this.evaluaciones.set(evaluaciones);
         this.cargando.set(false);
       },
@@ -343,20 +407,21 @@ export class EvaluacionesConocimientoAdminComponent implements OnInit {
 
   private cargarBanco(): void {
     const puestoId = Number(this.puestoBanco());
-    if (!puestoId) {
+    const periodo = this.periodoBanco();
+    if (!puestoId || !periodo) {
       this.preguntasBanco.set([]);
       this.cargandoBanco.set(false);
       return;
     }
     this.cargandoBanco.set(true);
-    this.servicio.obtenerBancoAdmin(puestoId).subscribe({
+    this.servicio.obtenerBancoAdmin(puestoId, periodo).subscribe({
       next: ({ preguntas }) => {
-        if (this.puestoBanco() !== String(puestoId)) return;
+        if (this.puestoBanco() !== String(puestoId) || this.periodoBanco() !== periodo) return;
         this.preguntasBanco.set(preguntas);
         this.cargandoBanco.set(false);
       },
       error: (error: HttpErrorResponse) => {
-        if (this.puestoBanco() !== String(puestoId)) return;
+        if (this.puestoBanco() !== String(puestoId) || this.periodoBanco() !== periodo) return;
         this.error.set(error.error?.mensaje || 'No se pudo cargar el banco de preguntas.');
         this.cargandoBanco.set(false);
       },

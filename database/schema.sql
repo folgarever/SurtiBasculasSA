@@ -15,7 +15,8 @@ CREATE TABLE puestos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     codigo_abreviatura VARCHAR(10) NOT NULL UNIQUE,
     nombre_puesto VARCHAR(100) NOT NULL,
-    departamento VARCHAR(100) NOT NULL DEFAULT 'General'
+    departamento VARCHAR(100) NOT NULL DEFAULT 'General',
+    frecuencia_evaluacion ENUM('mensual', 'quincenal', 'semanal') NOT NULL DEFAULT 'mensual'
 ) ENGINE=InnoDB;
 
 INSERT INTO puestos (codigo_abreviatura, nombre_puesto, departamento) VALUES
@@ -162,7 +163,7 @@ CREATE TABLE evaluaciones_conocimiento (
     id INT AUTO_INCREMENT PRIMARY KEY,
     empleado_id INT NOT NULL,
     puesto_id INT NOT NULL,
-    periodo CHAR(7) NOT NULL,
+    periodo VARCHAR(10) NOT NULL,
     preguntas JSON NOT NULL,
     respuestas JSON NULL,
     total_preguntas TINYINT UNSIGNED NOT NULL,
@@ -174,7 +175,7 @@ CREATE TABLE evaluaciones_conocimiento (
     resultado ENUM('Aprobado', 'Requiere refuerzo') NULL,
     fecha_realizacion TIMESTAMP NULL,
     creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_eval_conocimiento_periodo CHECK (periodo REGEXP '^[0-9]{4}-(0[1-9]|1[0-2])$'),
+    CONSTRAINT chk_eval_conocimiento_periodo CHECK (periodo REGEXP '^([0-9]{4}-(0[1-9]|1[0-2])|[0-9]{4}-(0[1-9]|1[0-2])-Q[12]|[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3]))$'),
     CONSTRAINT chk_eval_conocimiento_puntaje CHECK (porcentaje IS NULL OR porcentaje BETWEEN 0 AND 100),
     CONSTRAINT uq_eval_conocimiento_empleado_periodo UNIQUE (empleado_id, periodo),
     INDEX idx_eval_conocimiento_periodo_estado (periodo, estado),
@@ -192,6 +193,7 @@ CREATE TABLE evaluaciones_banco_inicializado (
 CREATE TABLE evaluaciones_banco_preguntas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     puesto_id INT NOT NULL,
+    periodo VARCHAR(10) NOT NULL,
     texto VARCHAR(1000) NOT NULL,
     opciones JSON NOT NULL,
     respuesta_correcta TINYINT UNSIGNED NOT NULL,
@@ -200,6 +202,7 @@ CREATE TABLE evaluaciones_banco_preguntas (
     creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_banco_preguntas_puesto_orden (puesto_id, orden, id),
+    INDEX idx_banco_preguntas_puesto_periodo (puesto_id, periodo, orden, id),
     FOREIGN KEY (puesto_id) REFERENCES puestos(id)
 ) ENGINE=InnoDB;
 

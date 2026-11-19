@@ -27,7 +27,7 @@ Si tu cuenta es `ADMIN` pero no aparece el menú completo, cierra sesión y vuel
 | Permiso | Cuentas |
 |---|---|
 | Administración general | Todas las cuentas con rol `ADMIN` |
-| Evaluación de personal, evaluaciones mensuales y pruebas de selección | Solo `SUR-GG-001` y `SUR-AC-002` |
+| Evaluación de personal, evaluaciones de conocimiento y pruebas de selección | Solo `SUR-GG-001` y `SUR-AC-002` |
 | Portal del candidato | Usuarios `CANDIDATO-AAAA-NNN` creados desde Pruebas de selección |
 
 Si intentas abrir una ruta sin permiso, el sistema te devuelve al inicio o muestra un error de acceso. No intentes eludirlo: la autorización también se valida en el backend.
@@ -50,7 +50,7 @@ La barra lateral izquierda reúne los módulos disponibles para tu cuenta:
 | Empleados | `/admin/empleados` | Directorio de personal, altas, ediciones y bajas |
 | Control de asistencia | `/rrhh` | Marcaciones, incidencias y reportes |
 | Evaluación de personal | `/evaluaciones` | Evaluaciones generales del personal |
-| Evaluaciones mensuales | `/admin/evaluaciones-conocimiento` | Banco de preguntas y resultados mensuales |
+| Evaluaciones de conocimiento | `/admin/evaluaciones-conocimiento` | Frecuencia por puesto, banco por periodo y resultados |
 | Pruebas de selección | `/admin/evaluaciones-seleccion` | Candidatos, plantillas editables y resultados |
 | Sugerencias | `/admin/sugerencias` | Buzón de sugerencias del personal |
 
@@ -75,7 +75,7 @@ Además incluye:
 
 - Gráfico de asistencia de los últimos siete días: marcaciones contra atrasos.
 - Ranking de los puestos más numerosos, con un máximo de seis y enlace **Ver personal**.
-- Panel **Pendientes** con accesos a sugerencias sin responder, incidencias vigentes y, si tu cuenta tiene permiso de evaluaciones, evaluaciones mensuales y candidatos en registro.
+- Panel **Pendientes** con accesos a sugerencias sin responder, incidencias vigentes y, si tu cuenta tiene permiso de evaluaciones, evaluaciones por periodo y candidatos en registro.
 - Actividad reciente de los últimos seis eventos, con fecha y hora de actualización.
 - Accesos rápidos a los módulos principales.
 
@@ -215,38 +215,50 @@ Al seleccionar un empleado se filtra el historial. Al dejarlo vacío se muestran
 
 ---
 
-## 7. Evaluaciones mensuales de conocimiento
+## 7. Evaluaciones de conocimiento
 
 Ruta: `/admin/evaluaciones-conocimiento`.
 
-Disponible solo para `SUR-GG-001` y `SUR-AC-002`. Cada empleado responde una evaluación por mes según su puesto activo. Es independiente de las pruebas de selección.
+Disponible solo para `SUR-GG-001` y `SUR-AC-002`. Cada empleado responde una evaluación según la frecuencia de su puesto activo. Es independiente de las pruebas de selección.
+
+### Frecuencia y periodos
+
+En **Frecuencia y banco por puesto** elige primero el puesto y después la frecuencia:
+
+| Frecuencia | Periodo | Ejemplo |
+|---|---|---|
+| Mensual | `YYYY-MM` | `2026-11` |
+| Quincenal | `YYYY-MM-Q1` para días 1–15 y `YYYY-MM-Q2` para días 16–fin de mes | `2026-11-Q2` |
+| Semanal | `YYYY-Www`, semana ISO con año ISO | `2026-W47` |
+
+La hora de referencia es `America/Guatemala`. El cambio de frecuencia solo aplica hacia adelante: las evaluaciones ya creadas conservan su periodo y no se regeneran. El selector **Periodo del banco** muestra el periodo vigente y los tres siguientes; los periodos nuevos empiezan vacíos hasta que ADMIN agregue preguntas.
 
 ### Panel administrativo
 
-Los indicadores se calculan para el periodo actual:
+Los indicadores se calculan con el periodo vigente de cada puesto, por lo que pueden coexistir formatos distintos:
 
 | Indicador | Significado |
 |---|---|
-| Periodo actual | Mes devuelto por el servidor y total de evaluaciones asignadas |
-| Pendientes | Evaluaciones del mes aún sin responder |
-| Cumplimiento | Completadas entre totales del mes, en porcentaje |
+| Periodos vigentes | Periodos activos según las frecuencias configuradas y total de evaluaciones asignadas |
+| Pendientes | Evaluaciones del periodo vigente de cada puesto aún sin responder |
+| Cumplimiento | Completadas entre totales de los periodos vigentes, en porcentaje |
 | Promedio de conocimiento | Media de porcentajes de evaluaciones completadas; muestra `—` si no hay ninguna |
 
 La tabla muestra empleado, puesto y departamento, periodo, puntos obtenidos y totales, porcentaje, resultado, estado y botón **Ver respuestas**, habilitado solo para evaluaciones completadas.
 
 Puedes filtrar por empleado, puesto y departamento. Los departamentos son una clasificación asignada a los puestos, no una estructura organizacional independiente.
 
-**Atención:** consultar el panel tiene efecto de escritura. Al listar, el sistema habilita automáticamente las evaluaciones pendientes del mes para los empleados activos. El servidor usa `INSERT IGNORE`, por lo que no duplica la evaluación del mes aunque el empleado también abra su portal. Si un puesto no tiene preguntas en el banco, ese empleado no aparece como pendiente.
+**Atención:** consultar el panel tiene efecto de escritura. Al listar, el sistema habilita automáticamente las evaluaciones del periodo vigente para los empleados activos. El servidor usa `INSERT IGNORE`, por lo que no duplica una evaluación aunque el empleado también abra su portal. Si el banco del puesto y periodo está vacío, ese empleado no aparece como pendiente.
 
 ### Ver respuestas
 
-El detalle muestra cada pregunta, la opción elegida, la correcta, los puntos de cada opción y el puntaje máximo. Incluye un resumen porcentual, el total de respuestas correctas y una barra de evolución mensual del empleado.
+El detalle muestra cada pregunta, la opción elegida, la correcta, los puntos de cada opción y el puntaje máximo. Incluye un resumen porcentual, el total de respuestas correctas y una barra de evolución por periodo del empleado.
 
 El resultado se calcula al entregar: puntos obtenidos entre puntos posibles. Con **70% o más** se marca **Aprobado**; de lo contrario, **Requiere refuerzo**. Una evaluación entregada no puede enviarse de nuevo.
 
-### Banco de preguntas por puesto
+### Banco de preguntas por puesto y periodo
 
-1. Entra a **Banco de preguntas por puesto** y elige el puesto.
+1. Entra a **Frecuencia y banco por puesto**, elige el puesto y el periodo que quieres preparar.
 2. Para agregar una pregunta, escribe el texto, hasta 1000 caracteres.
 3. Define el puntaje máximo: mayor que 0, hasta `9999.99`, con máximo dos decimales.
 4. Agrega entre 2 y 10 opciones, de hasta 300 caracteres cada una.
@@ -256,9 +268,9 @@ El resultado se calcula al entregar: puntos obtenidos entre puntos posibles. Con
    - **Incorrecta · 0 puntos**.
 6. Guarda. Para editar, carga la pregunta en el mismo editor; para eliminar, confirma la acción.
 
-El máximo es 255 preguntas por puesto y el mínimo una. El botón Eliminar se deshabilita cuando solo queda una pregunta.
+El máximo es 255 preguntas por puesto y periodo. Puedes dejar un periodo vacío; mientras no tenga preguntas, no se habilitarán evaluaciones para ese puesto y periodo.
 
-**Regla importante:** cualquier cambio en el banco reescribe el cuestionario de todas las evaluaciones **pendientes** del mes para ese puesto y actualiza `total_preguntas`. Las evaluaciones **completadas** conservan su copia original: no se recalculan. Haz los cambios antes de que los empleados respondan y pídeles recargar si estaban respondiendo en ese momento.
+**Regla importante:** cualquier cambio en el banco reescribe el cuestionario de todas las evaluaciones **pendientes** de ese puesto y periodo y actualiza `total_preguntas`. Las evaluaciones **completadas** conservan su copia original: no se recalculan. Haz los cambios antes de que los empleados respondan y pídeles recargar si estaban respondiendo en ese momento.
 
 ---
 
@@ -266,7 +278,7 @@ El máximo es 255 preguntas por puesto y el mínimo una. El botón Eliminar se d
 
 Ruta: `/admin/evaluaciones-seleccion`.
 
-Disponible solo para `SUR-GG-001` y `SUR-AC-002`. Este módulo es independiente de la evaluación mensual: no comparte registros ni puntajes.
+Disponible solo para `SUR-GG-001` y `SUR-AC-002`. Este módulo es independiente de las evaluaciones de conocimiento: no comparte registros ni puntajes.
 
 ### Conceptos clave
 
@@ -469,7 +481,7 @@ La respuesta queda visible de inmediato para el empleado y se registra con tu us
 | `/admin/empleados` | Empleados | ADMIN |
 | `/rrhh` | Control de asistencia | ADMIN o RRHH |
 | `/evaluaciones` | Evaluación de personal | Cuentas autorizadas |
-| `/admin/evaluaciones-conocimiento` | Evaluaciones mensuales | Cuentas autorizadas |
+| `/admin/evaluaciones-conocimiento` | Evaluaciones de conocimiento | Cuentas autorizadas |
 | `/admin/evaluaciones-seleccion` | Pruebas de selección | Cuentas autorizadas |
 | `/admin/sugerencias` | Sugerencias | ADMIN |
 | `/seleccion-candidato` | Portal del aspirante | Cuenta de candidato |
