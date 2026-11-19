@@ -54,6 +54,7 @@ export class EmpleadosComponent implements OnInit {
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
+  protected readonly esGerenteGeneral = this.auth.esGerenteGeneral();
   protected readonly empleados = signal<EmpleadoAdministracion[]>([]);
   protected readonly puestos = signal<Puesto[]>([]);
   protected readonly busqueda = signal('');
@@ -154,8 +155,7 @@ export class EmpleadosComponent implements OnInit {
   protected puedeEditar(empleado: EmpleadoAdministracion): boolean {
     if (empleado.id === this.usuario?.id) return false;
     if (empleado.rol !== 'ADMIN') return true;
-    return this.usuario?.codigo_empleado === 'SUR-GG-001'
-      && empleado.codigo_empleado === 'SUR-AC-002';
+    return this.esGerenteGeneral && empleado.codigo_empleado === 'SUR-AC-002';
   }
 
   protected puedeDarBaja(empleado: EmpleadoAdministracion): boolean {
@@ -187,6 +187,10 @@ export class EmpleadosComponent implements OnInit {
 
   protected puestoProtegido(): boolean {
     return this.empleadoSeleccionado()?.rol === 'ADMIN';
+  }
+
+  protected esPuestoAdmin(puesto: Puesto): boolean {
+    return Number(puesto.es_admin) === 1 || puesto.es_admin === true;
   }
 
   protected alternarVisibilidadContrasenaEmpleado(): void {

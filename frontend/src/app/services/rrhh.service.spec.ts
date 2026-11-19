@@ -40,6 +40,28 @@ describe('RrhhService', () => {
     incidencias.flush({ incidencias: [] });
   });
 
+  it('envía la contraseña de confirmación al crear y editar puestos', () => {
+    const datos = {
+      codigo_abreviatura: 'COOR',
+      nombre_puesto: 'Coordinador',
+      departamento: 'Operaciones',
+      frecuencia_evaluacion: 'mensual' as const,
+      es_admin: true,
+      contrasena_admin: 'secreta',
+    };
+    servicio.registrarPuesto(datos).subscribe();
+    servicio.actualizarPuesto(3, datos).subscribe();
+
+    const alta = httpMock.expectOne(`${baseUrl}/administracion/puestos`);
+    const edicion = httpMock.expectOne(`${baseUrl}/administracion/puestos/3`);
+    expect(alta.request.method).toBe('POST');
+    expect(edicion.request.method).toBe('PUT');
+    expect(alta.request.body.contrasena_admin).toBe('secreta');
+    expect(edicion.request.body.es_admin).toBe(true);
+    alta.flush({ mensaje: 'Puesto registrado correctamente.', puesto: { id: 3, ...datos } });
+    edicion.flush({ mensaje: 'Puesto actualizado correctamente.', puesto: { id: 3, ...datos } });
+  });
+
   it('envía el filtro de empleado al reporte de asistencias', () => {
     servicio.obtenerAsistencias({ empleado_id: 4 }).subscribe();
     servicio.descargarExcel({ empleado_id: 4 }).subscribe();

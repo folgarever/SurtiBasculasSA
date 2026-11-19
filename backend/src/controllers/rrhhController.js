@@ -106,11 +106,205 @@ async function obtenerEmpleadoAdministracion(req, res, next) {
 async function obtenerPuestos(req, res, next) {
   try {
     const [puestos] = await pool.execute(
-      'SELECT id, codigo_abreviatura, nombre_puesto FROM puestos ORDER BY nombre_puesto ASC'
+      `SELECT id, codigo_abreviatura, nombre_puesto, departamento,
+              frecuencia_evaluacion, es_admin
+       FROM puestos ORDER BY nombre_puesto ASC`
     );
     return res.json({ puestos });
   } catch (error) {
     return next(error);
+  }
+}
+
+function validarDatosPuesto(body) {
+  const codigo = typeof body?.codigo_abreviatura === 'string'
+    ? body.codigo_abreviatura.trim().toUpperCase()
+    : '';
+  const nombre = typeof body?.nombre_puesto === 'string' ? body.nombre_puesto.trim() : '';
+  const departamento = typeof body?.departamento === 'string' ? body.departamento.trim() : '';
+  const frecuencia = body?.frecuencia_evaluacion;
+  const esAdmin = body?.es_admin === true || body?.es_admin === 1
+    ? 1
+    : body?.es_admin === false || body?.es_admin === 0 ? 0 : null;
+
+  if (
+    !/^[A-Z0-9]{1,10}$/.test(codigo)
+    || nombre.length < 2
+    || nombre.length > 100
+    || departamento.length < 1
+    || departamento.length > 100
+    || !['mensual', 'quincenal', 'semanal'].includes(frecuencia)
+    || esAdmin === null
+  ) {
+    return null;
+  }
+
+  return {
+    codigo_abreviatura: codigo,
+    nombre_puesto: nombre,
+    departamento,
+    frecuencia_evaluacion: frecuencia,
+    es_admin: esAdmin
+  };
+}
+
+async function registrarPuesto(req, res, next) {
+  const datos = validarDatosPuesto(req.body);
+  if (!datos) {
+    return res.status(400).json({
+      mensaje: 'Revisa el código (1 a 10 letras o números), nombre, departamento, frecuencia y permiso ADMIN.'
+    });
+  }
+
+  let connection;
+  let transaccionIniciada = false;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    transaccionIniciada = true;
+
+    const [existentes] = await connection.execute(
+      'SELECT id FROM puestos WHERE codigo_abreviatura = ? LIMIT 1',
+      [datos.codigo_abreviatura]
+    );
+    if (existentes[0]) {
+      await connection.rollback();
+      transaccionIniciada = false;
+      return res.status(409).json({
+        mensaje: 'Ya existe un puesto con esa abreviatura. Elige un código diferente.'
+      });
+    }
+
+    const [resultado] = await connection.execute(
+      `INSERT INTO puestos
+         (codigo_abreviatura, nombre_puesto, departamento, frecuencia_evaluacion, es_admin)
+       VALUES (?, ?, ?, ?, ?)`,
+      [datos.codigo_abreviatura, datos.nombre_puesto, datos.departamento,
+        datos.frecuencia_evaluacion, datos.es_admin]
+    );
+
+    await connection.commit();
+    transaccionIniciada = false;
+    return res.status(201).json({
+      mensaje: 'Puesto registrado correctamente.',
+      puesto: { id: resultado.insertId, ...datos }
+    });
+  } catch (error) {
+    if (connection && transaccionIniciada) await connection.rollback();
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ mensaje: 'Ya existe un puesto con esa abreviatura.' });
+    }
+    return next(error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function actualizarPuesto(req, res, next) {
+  const puestoId = Number(req.params.id);
+  const datos = validarDatosPuesto(req.body);
+  if (!Number.isInteger(puestoId) || puestoId < 1 || !datos) {
+    return res.status(400).json({
+      mensaje: 'Revisa el identificador, el código, nombre, departamento, frecuencia y permiso ADMIN.'
+    });
+  }
+
+  let connection;
+  let transaccionIniciada = false;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    transaccionIniciada = true;
+
+    const [puestos] = await connection.execute(
+      `SELECT id, codigo_abreviatura, es_admin
+       FROM puestos WHERE id = ? FOR UPDATE`,
+      [puestoId]
+    );
+    const puesto = puestos[0];
+    if (!puesto) {
+      await connection.rollback();
+      transaccionIniciada = false;
+      return res.status(404).json({ mensaje: 'Puesto no encontrado.' });
+    }
+
+    const [cuentasProtegidas] = await connection.execute(
+      `SELECT COUNT(*) AS total
+       FROM empleados
+       WHERE puesto_id = ? AND activo = 1 AND codigo_empleado IN (?, ?)`,
+      [puestoId, CODIGO_GERENTE_GENERAL, CODIGO_ADMIN_RRHH]
+    );
+    if (
+      Number(cuentasProtegidas[0].total) > 0
+      && (
+        puesto.codigo_abreviatura !== datos.codigo_abreviatura
+        || Number(puesto.es_admin) === 1 && datos.es_admin === 0
+      )
+    ) {
+      await connection.rollback();
+      transaccionIniciada = false;
+      return res.status(400).json({
+        mensaje: 'Este puesto pertenece a una cuenta ADMIN protegida: no se puede cambiar su código ni quitarle el permiso ADMIN.'
+      });
+    }
+
+    const [duplicados] = await connection.execute(
+      'SELECT id FROM puestos WHERE codigo_abreviatura = ? AND id <> ? LIMIT 1',
+      [datos.codigo_abreviatura, puestoId]
+    );
+    if (duplicados[0]) {
+      await connection.rollback();
+      transaccionIniciada = false;
+      return res.status(409).json({
+        mensaje: 'Ya existe otro puesto con esa abreviatura.'
+      });
+    }
+
+    await connection.execute(
+      `UPDATE puestos
+       SET codigo_abreviatura = ?, nombre_puesto = ?, departamento = ?,
+           frecuencia_evaluacion = ?, es_admin = ?
+       WHERE id = ?`,
+      [datos.codigo_abreviatura, datos.nombre_puesto, datos.departamento,
+        datos.frecuencia_evaluacion, datos.es_admin, puestoId]
+    );
+
+    let empleadosActualizados = 0;
+    if (Number(puesto.es_admin) !== datos.es_admin) {
+      const nombreRol = datos.es_admin === 1 ? 'ADMIN' : 'Empleado';
+      const [roles] = await connection.execute(
+        'SELECT id FROM roles WHERE nombre = ? LIMIT 1',
+        [nombreRol]
+      );
+      if (!roles[0]) {
+        throw new Error(`No existe el rol ${nombreRol}.`);
+      }
+      const [propagacion] = await connection.execute(
+        `UPDATE empleados
+         SET rol_id = ?
+         WHERE puesto_id = ? AND activo = 1
+           AND codigo_empleado NOT IN (?, ?)`,
+        [roles[0].id, puestoId, CODIGO_GERENTE_GENERAL, CODIGO_ADMIN_RRHH]
+      );
+      empleadosActualizados = propagacion.affectedRows || 0;
+    }
+
+    await connection.commit();
+    transaccionIniciada = false;
+    return res.json({
+      mensaje: empleadosActualizados > 0
+        ? `Puesto actualizado. El rol de ${empleadosActualizados} empleado(s) se ajustó al nuevo permiso.`
+        : 'Puesto actualizado correctamente.',
+      puesto: { id: puestoId, ...datos }
+    });
+  } catch (error) {
+    if (connection && transaccionIniciada) await connection.rollback();
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ mensaje: 'Ya existe otro puesto con esa abreviatura.' });
+    }
+    return next(error);
+  } finally {
+    if (connection) connection.release();
   }
 }
 
@@ -141,7 +335,7 @@ async function registrarEmpleado(req, res, next) {
     transaccionIniciada = true;
 
     const [puestos] = await connection.execute(
-      'SELECT codigo_abreviatura FROM puestos WHERE id = ? FOR UPDATE',
+      'SELECT codigo_abreviatura, es_admin FROM puestos WHERE id = ? FOR UPDATE',
       [idPuesto]
     );
     if (!puestos[0]) {
@@ -150,14 +344,25 @@ async function registrarEmpleado(req, res, next) {
       return res.status(400).json({ mensaje: 'El puesto seleccionado no existe.' });
     }
 
+    const destinoAdmin = Number(puestos[0].es_admin) === 1;
+    if (destinoAdmin && req.usuario?.codigo_empleado !== CODIGO_GERENTE_GENERAL) {
+      await connection.rollback();
+      transaccionIniciada = false;
+      return res.status(403).json({
+        mensaje: 'Solo el Gerente General puede asignar un puesto con permisos de ADMIN.'
+      });
+    }
+
+    const nombreRol = destinoAdmin ? 'ADMIN' : 'Empleado';
     const [roles] = await connection.execute(
-      "SELECT id FROM roles WHERE nombre = 'Empleado' LIMIT 1"
+      'SELECT id FROM roles WHERE nombre = ? LIMIT 1',
+      [nombreRol]
     );
     const [horarios] = await connection.execute(
       'SELECT id FROM horarios ORDER BY id ASC LIMIT 1'
     );
     if (!roles[0] || !horarios[0]) {
-      throw new Error('No hay un rol de empleado o un horario configurado.');
+      throw new Error('No hay un rol configurado o un horario configurado.');
     }
 
     const prefijo = `SUR-${puestos[0].codigo_abreviatura}-`;
@@ -250,6 +455,7 @@ async function actualizarEmpleado(req, res, next) {
     }
 
     let codigoEmpleado = empleado.codigo_empleado;
+    let rolId = null;
     if (Number(empleado.puesto_id) !== idPuesto) {
       if (empleado.rol === 'ADMIN') {
         await connection.rollback();
@@ -260,7 +466,7 @@ async function actualizarEmpleado(req, res, next) {
       }
 
       const [puestos] = await connection.execute(
-        'SELECT codigo_abreviatura FROM puestos WHERE id = ? FOR UPDATE',
+        'SELECT codigo_abreviatura, es_admin FROM puestos WHERE id = ? FOR UPDATE',
         [idPuesto]
       );
       if (!puestos[0]) {
@@ -268,6 +474,23 @@ async function actualizarEmpleado(req, res, next) {
         transaccionIniciada = false;
         return res.status(400).json({ mensaje: 'El puesto seleccionado no existe.' });
       }
+
+      const destinoAdmin = Number(puestos[0].es_admin) === 1;
+      if (destinoAdmin && req.usuario?.codigo_empleado !== CODIGO_GERENTE_GENERAL) {
+        await connection.rollback();
+        transaccionIniciada = false;
+        return res.status(403).json({
+          mensaje: 'Solo el Gerente General puede asignar un puesto con permisos de ADMIN.'
+        });
+      }
+      const [roles] = await connection.execute(
+        'SELECT id FROM roles WHERE nombre = ? LIMIT 1',
+        [destinoAdmin ? 'ADMIN' : 'Empleado']
+      );
+      if (!roles[0]) {
+        throw new Error('No hay un rol configurado.');
+      }
+      rolId = roles[0].id;
 
       const prefijo = `SUR-${puestos[0].codigo_abreviatura}-`;
       const [secuencias] = await connection.execute(
@@ -281,6 +504,10 @@ async function actualizarEmpleado(req, res, next) {
 
     const asignaciones = ['codigo_empleado = ?', 'nombre = ?', 'puesto_id = ?', 'activo = ?'];
     const valores = [codigoEmpleado, nombreEmpleado, idPuesto, estadoActivo];
+    if (rolId !== null) {
+      asignaciones.push('rol_id = ?');
+      valores.push(rolId);
+    }
     if (actualizarPassword) {
       asignaciones.push('password_hash = ?');
       valores.push(await bcrypt.hash(password, 10));
@@ -652,6 +879,8 @@ module.exports = {
   obtenerEmpleadoAdministracion,
   obtenerDetalleEmpleado,
   obtenerPuestos,
+  registrarPuesto,
+  actualizarPuesto,
   registrarEmpleado,
   actualizarEmpleado,
   eliminarEmpleado,

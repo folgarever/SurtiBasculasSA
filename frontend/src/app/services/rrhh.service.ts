@@ -109,6 +109,18 @@ export interface Puesto {
   id: number;
   codigo_abreviatura: string;
   nombre_puesto: string;
+  departamento?: string;
+  frecuencia_evaluacion?: 'mensual' | 'quincenal' | 'semanal';
+  es_admin?: number | boolean;
+}
+
+export interface DatosPuesto {
+  codigo_abreviatura: string;
+  nombre_puesto: string;
+  departamento: string;
+  frecuencia_evaluacion: 'mensual' | 'quincenal' | 'semanal';
+  es_admin: boolean;
+  contrasena_admin: string;
 }
 
 export interface DatosEmpleado {
@@ -146,6 +158,18 @@ export class RrhhService {
 
   obtenerEmpleadosAdministracion(): Observable<{ empleados: EmpleadoAdministracion[] }> {
     return this.http.get<{ empleados: EmpleadoAdministracion[] }>(`${this.baseUrl}/administracion/empleados`);
+  }
+
+  registrarPuesto(datos: DatosPuesto): Observable<{ mensaje: string; puesto: Puesto }> {
+    return this.http.post<{ mensaje: string; puesto: Puesto }>(
+      `${this.baseUrl}/administracion/puestos`, datos
+    );
+  }
+
+  actualizarPuesto(id: number, datos: DatosPuesto): Observable<{ mensaje: string; puesto: Puesto }> {
+    return this.http.put<{ mensaje: string; puesto: Puesto }>(
+      `${this.baseUrl}/administracion/puestos/${id}`, datos
+    );
   }
 
   obtenerDetalleEmpleado(id: number): Observable<DetalleEmpleado> {

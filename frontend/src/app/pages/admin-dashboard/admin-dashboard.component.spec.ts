@@ -47,6 +47,7 @@ describe('AdminDashboardComponent', () => {
                   getUsuario: () => ({ nombre: 'Héctor', rol: 'ADMIN' }),
           hasEvaluationRole: () => true,
           hasAdminRole: () => true,
+          esGerenteGeneral: () => true,
         } },
         {
           provide: NotificacionesService,

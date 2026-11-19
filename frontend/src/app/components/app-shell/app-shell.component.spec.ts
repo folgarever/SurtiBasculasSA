@@ -11,6 +11,7 @@ describe('AppShellComponent', () => {
     hasAdminRole: vi.fn(),
     hasRrhhRole: vi.fn(),
     hasEvaluationRole: vi.fn(),
+    esGerenteGeneral: vi.fn(),
     isCandidate: vi.fn(),
     logout: vi.fn(),
   };
@@ -20,6 +21,7 @@ describe('AppShellComponent', () => {
     auth.hasAdminRole.mockReturnValue(false);
     auth.hasRrhhRole.mockReturnValue(false);
     auth.hasEvaluationRole.mockReturnValue(false);
+    auth.esGerenteGeneral.mockReturnValue(false);
     auth.isCandidate.mockReturnValue(false);
     await TestBed.configureTestingModule({
       imports: [AppShellComponent],
@@ -63,6 +65,14 @@ describe('AppShellComponent', () => {
 
     auth.hasEvaluationRole.mockReturnValue(false);
     expect(enlaces(crear())).not.toContain('Evaluación de personal');
+  });
+
+  it('muestra la gestión de puestos solo al Gerente General', () => {
+    auth.esGerenteGeneral.mockReturnValue(true);
+    expect(enlaces(crear())).toContain('Puestos y permisos');
+
+    auth.esGerenteGeneral.mockReturnValue(false);
+    expect(enlaces(crear())).not.toContain('Puestos y permisos');
   });
 
   it('muestra el foro correcto según el rol', () => {

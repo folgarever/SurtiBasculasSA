@@ -3,12 +3,14 @@ import { CanActivateFn, provideRouter, Router, UrlTree } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { authGuard } from './auth.guard';
 import { employeeGuard } from './employee.guard';
+import { gerenteGuard } from './gerente.guard';
 
 describe('guards de acceso', () => {
   const auth = {
     isAuthenticated: vi.fn(),
     isCandidate: vi.fn(),
     hasAdminRole: vi.fn(),
+    esGerenteGeneral: vi.fn(),
   };
 
   beforeEach(() => {
@@ -45,6 +47,15 @@ describe('guards de acceso', () => {
     auth.isCandidate.mockReturnValue(false);
     auth.hasAdminRole.mockReturnValue(true);
     expect(url(ejecutar(employeeGuard))).toBe('/admin/sugerencias');
+  });
+
+  it('reserva la gestión de puestos al Gerente General', () => {
+    auth.isAuthenticated.mockReturnValue(true);
+    auth.esGerenteGeneral.mockReturnValue(true);
+    expect(ejecutar(gerenteGuard)).toBe(true);
+
+    auth.esGerenteGeneral.mockReturnValue(false);
+    expect(url(ejecutar(gerenteGuard))).toBe('/admin');
   });
 
   it('permite el foro al personal no administrador', () => {

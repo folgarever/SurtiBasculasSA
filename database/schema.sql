@@ -16,21 +16,22 @@ CREATE TABLE puestos (
     codigo_abreviatura VARCHAR(10) NOT NULL UNIQUE,
     nombre_puesto VARCHAR(100) NOT NULL,
     departamento VARCHAR(100) NOT NULL DEFAULT 'General',
-    frecuencia_evaluacion ENUM('mensual', 'quincenal', 'semanal') NOT NULL DEFAULT 'mensual'
+    frecuencia_evaluacion ENUM('mensual', 'quincenal', 'semanal') NOT NULL DEFAULT 'mensual',
+    es_admin TINYINT(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB;
 
-INSERT INTO puestos (codigo_abreviatura, nombre_puesto, departamento) VALUES
-    ('GG', 'Gerente General', 'Gerencia'),
-    ('AC', 'Asistente Comercial y RR. HH.', 'Comercial y Recursos Humanos'),
-    ('VEN', 'Vendedor', 'Comercial y Recursos Humanos'),
-    ('AUXC', 'Auxiliar Contable', 'Administración y Finanzas'),
-    ('JM', 'Jefe de Mantenimiento', 'Mantenimiento'),
-    ('TEC', 'Técnico', 'Mantenimiento'),
-    ('AUXTEC', 'Auxiliar Técnico', 'Mantenimiento'),
-    ('DC', 'Director de Calidad', 'Calidad y Metrología'),
-    ('MET', 'Metrológico', 'Calidad y Metrología'),
-    ('AUXLAB', 'Auxiliar de Laboratorio', 'Calidad y Metrología'),
-    ('ASISTADM', 'Asistente administrativo y contable', 'Administración y Finanzas');
+INSERT INTO puestos (codigo_abreviatura, nombre_puesto, departamento, es_admin) VALUES
+    ('GG', 'Gerente General', 'Gerencia', 1),
+    ('AC', 'Asistente Comercial y RR. HH.', 'Comercial y Recursos Humanos', 1),
+    ('VEN', 'Vendedor', 'Comercial y Recursos Humanos', 0),
+    ('AUXC', 'Auxiliar Contable', 'Administración y Finanzas', 0),
+    ('JM', 'Jefe de Mantenimiento', 'Mantenimiento', 0),
+    ('TEC', 'Técnico', 'Mantenimiento', 0),
+    ('AUXTEC', 'Auxiliar Técnico', 'Mantenimiento', 0),
+    ('DC', 'Director de Calidad', 'Calidad y Metrología', 0),
+    ('MET', 'Metrológico', 'Calidad y Metrología', 0),
+    ('AUXLAB', 'Auxiliar de Laboratorio', 'Calidad y Metrología', 0),
+    ('ASISTADM', 'Asistente administrativo y contable', 'Administración y Finanzas', 0);
 
 CREATE TABLE horarios (
     id INT AUTO_INCREMENT PRIMARY KEY,

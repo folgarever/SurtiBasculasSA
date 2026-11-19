@@ -38,6 +38,7 @@ Ejecuta **una sola vez**, en este orden, las migraciones que falten:
 14. `2026-11-18-sugerencias-anonimas.sql`
 15. `2026-11-19-sugerencias-folio.sql`
 16. `2026-11-20-horas-extras-justificacion.sql`
+17. `2026-11-21-puestos-admin.sql`
 
 La migración 12 crea `seleccion_plantillas` con la definición vigente en `definicion`, agrega `definicion_snapshot` a `candidatos_seleccion_intentos` y elimina cualquier esquema de versiones anterior. También agrega `activo` a las cuentas de candidato y los campos de archivado/auditoría a `candidatos_seleccion`. Los intentos ya entregados conservan en `definicion_snapshot` la prueba exacta con la que se calificaron. Las cuentas existentes quedan activas. Después de aplicarla, las plantillas se generan desde el config actual la primera vez que se editan desde Administración; no hay que cargarlas a mano. Esta migración es idempotente: puede ejecutarse aunque el esquema anterior de versiones ya exista.
 
@@ -48,6 +49,8 @@ La migración 14 agrega `sugerencias.anonima` (`TINYINT(1)`, valor `0` por omisi
 La migración 15 agrega `sugerencias.folio` (`VARCHAR(20)`, único) con formato `SG-AAAA-NNNNN`, calculado a partir del año de creación y del identificador. Las sugerencias existentes se completan automáticamente. La columna queda nullable porque el alta toma el `id` recién generado para construir el folio; el backend la llena de inmediato y las consultas la derivan como respaldo. Esta migración es idempotente y su actualización usa `WHERE id > 0` para funcionar con `SQL_SAFE_UPDATES=1`.
 
 La migración 16 agrega `marcaciones.horas_extras` (`SMALLINT UNSIGNED`, valor `0` por omisión) y `marcaciones.justificacion_horas_extras` (`TEXT`, nullable), y amplía `estado_entrada` con `tolerancia`. Las marcaciones existentes posteriores a las 18:00 reciben horas completas calculadas desde esa hora; no se inventa una justificación para las filas antiguas. Registra las salidas desde las 18:00 con motivo obligatorio y calcula solo horas completas. Esta migración es idempotente y su actualización usa `WHERE id > 0` para funcionar con `SQL_SAFE_UPDATES=1`.
+
+La migración 17 agrega `puestos.es_admin` (`TINYINT(1)`, valor `0` por omisión) para decidir qué puestos otorgan rol `ADMIN` al dar de alta empleados. Los puestos `GG` y `AC` quedan marcados automáticamente para conservar la jerarquía de las cuentas `SUR-GG-001` y `SUR-AC-002`. No cambia `empleados.rol_id`: la propagación a empleados activos se hace desde la pantalla **Puestos y permisos** al editar el indicador. Esta migración es idempotente y su actualización usa `WHERE id > 0` para funcionar con `SQL_SAFE_UPDATES=1`.
 
 Antes de cada una, comprueba con `SHOW TABLES;` y `SHOW COLUMNS FROM <tabla>;` si ya fue aplicada. Varias migraciones usan `CREATE TABLE` o `ALTER TABLE` directos y no son idempotentes.
 
@@ -65,8 +68,8 @@ SHOW CREATE TABLE candidatos_seleccion;
 
 ## Después de migrar
 
-1. Verifica tablas y columnas nuevas con `SHOW CREATE TABLE`. Para la migración 16 confirma `SHOW COLUMNS FROM marcaciones` e incluye `horas_extras`, `justificacion_horas_extras` y el valor `tolerancia` en `estado_entrada`.
+1. Verifica tablas y columnas nuevas con `SHOW CREATE TABLE`. Para la migración 16 confirma `SHOW COLUMNS FROM marcaciones` e incluye `horas_extras`, `justificacion_horas_extras` y el valor `tolerancia` en `estado_entrada`. Para la migración 17 confirma `SHOW COLUMNS FROM puestos` e incluye `es_admin`.
 2. Reinicia la API para descartar cachés de conexión.
-3. Los dos administradores (`SUR-GG-001`, `SUR-AC-002`) deben iniciar sesión de nuevo para recibir el rol actualizado en el JWT.
+3. Los administradores (`SUR-GG-001`, `SUR-AC-002` y cualquier cuenta cuyo puesto tenga `es_admin = 1`) deben iniciar sesión de nuevo para recibir el rol actualizado en el JWT.
 4. Ejecuta `npm --prefix frontend run build`, `npm --prefix frontend test -- --watch=false` y `npm --prefix backend test`.
 5. Registra en el historial de despliegues el commit aplicado y la fecha del backup.

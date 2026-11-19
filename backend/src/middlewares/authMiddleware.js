@@ -1,7 +1,10 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const pool = require('../config/db');
-const { CODIGOS_ADMINISTRADORES } = require('../config/authorization');
+const {
+  CODIGO_GERENTE_GENERAL,
+  CODIGOS_ADMINISTRADORES
+} = require('../config/authorization');
 
 async function verificarToken(req, res, next) {
   const authorization = req.headers.authorization;
@@ -36,7 +39,7 @@ async function verificarToken(req, res, next) {
     if (claims.id) {
       const [empleados] = await pool.execute(
         `SELECT e.id, e.codigo_empleado, e.nombre, e.rol_id,
-                p.nombre_puesto, r.nombre AS nombre_rol
+                p.nombre_puesto, p.es_admin, r.nombre AS nombre_rol
          FROM empleados e
          INNER JOIN puestos p ON p.id = e.puesto_id
          INNER JOIN roles r ON r.id = e.rol_id
@@ -49,8 +52,11 @@ async function verificarToken(req, res, next) {
         return res.status(401).json({ mensaje: 'La cuenta ya no está activa.' });
       }
 
-      const esAdministrador = CODIGOS_ADMINISTRADORES.includes(empleado.codigo_empleado)
-        && empleado.nombre_rol === 'ADMIN';
+      const esAdministrador = empleado.nombre_rol === 'ADMIN'
+        && (
+          Number(empleado.es_admin) === 1
+          || CODIGOS_ADMINISTRADORES.includes(empleado.codigo_empleado)
+        );
       req.usuario = {
         ...claims,
         id: empleado.id,
@@ -121,6 +127,17 @@ async function verificarContrasenaAdmin(req, res, next) {
   }
 }
 
+function permitirGerenteGeneral(req, res, next) {
+  if (
+    req.usuario?.role !== 'ADMIN'
+    || req.usuario?.codigo_empleado !== CODIGO_GERENTE_GENERAL
+  ) {
+    return res.status(403).json({ mensaje: 'Solo el Gerente General puede administrar los puestos.' });
+  }
+
+  return next();
+}
+
 function permitirEvaluaciones(req, res, next) {
   if (
     req.usuario?.role !== 'ADMIN'
@@ -147,6 +164,7 @@ module.exports = {
   verificarToken,
   permitirRoles,
   verificarContrasenaAdmin,
+  permitirGerenteGeneral,
   permitirEvaluaciones,
   permitirCandidato,
 };

@@ -2,7 +2,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const jwt = require('jsonwebtoken');
 const pool = require('../src/config/db');
-const { verificarToken, permitirEvaluaciones } = require('../src/middlewares/authMiddleware');
+const {
+  verificarToken,
+  permitirEvaluaciones,
+  permitirGerenteGeneral
+} = require('../src/middlewares/authMiddleware');
 
 const verificarOriginal = jwt.verify;
 const ejecutarOriginal = pool.execute;
@@ -55,6 +59,49 @@ test('verificarToken refresca el rol y el código desde la base de datos', async
   assert.equal(req.usuario.role, 'ADMIN');
   assert.equal(req.usuario.rol_id, 4);
   assert.equal(req.usuario.codigo_empleado, 'SUR-AC-002');
+});
+
+test('verificarToken otorga ADMIN a un puesto marcado como administrador', async () => {
+  jwt.verify = () => ({ id: 9, codigo_empleado: 'SUR-COOR-004', role: 'EMPLOYEE' });
+  pool.execute = async () => [[{
+    id: 9,
+    codigo_empleado: 'SUR-COOR-004',
+    nombre: 'Coordinador',
+    rol_id: 4,
+    nombre_puesto: 'Coordinador de Operaciones',
+    es_admin: 1,
+    nombre_rol: 'ADMIN',
+  }]];
+
+  const req = { headers: { authorization: 'Bearer token' } };
+  const res = crearRespuesta();
+  let paso = false;
+
+  await verificarToken(req, res, () => { paso = true; });
+
+  assert.equal(paso, true);
+  assert.equal(req.usuario.role, 'ADMIN');
+  assert.equal(req.usuario.rol, 'ADMIN');
+});
+
+test('permitirGerenteGeneral solo acepta al Gerente General', () => {
+  const permitido = crearRespuesta();
+  const rechazado = crearRespuesta();
+  let paso = false;
+
+  permitirGerenteGeneral(
+    { usuario: { role: 'ADMIN', codigo_empleado: 'SUR-GG-001' } },
+    permitido,
+    () => { paso = true; }
+  );
+  permitirGerenteGeneral(
+    { usuario: { role: 'ADMIN', codigo_empleado: 'SUR-AC-002' } },
+    rechazado,
+    () => { paso = false; }
+  );
+
+  assert.equal(paso, true);
+  assert.equal(rechazado.codigo, 403);
 });
 
 test('verificarToken rechaza empleados dados de baja', async () => {

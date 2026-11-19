@@ -26,8 +26,9 @@ Si tu cuenta es `ADMIN` pero no aparece el menú completo, cierra sesión y vuel
 
 | Permiso | Cuentas |
 |---|---|
-| Administración general | Todas las cuentas con rol `ADMIN` |
-| Evaluación de personal, evaluaciones de conocimiento y pruebas de selección | Solo `SUR-GG-001` y `SUR-AC-002` |
+| Administración general | Todas las cuentas con rol `ADMIN`; al dar de alta, el rol se deriva del indicador `ADMIN` del puesto |
+| Evaluación de personal, evaluaciones de conocimiento y pruebas de selección | Solo `SUR-GG-001` y `SUR-AC-002`, aunque el puesto tenga indicador `ADMIN` |
+| Crear y editar puestos y decidir su indicador `ADMIN` | Solo `SUR-GG-001`, siempre con contraseña |
 | Portal del candidato | Usuarios `CANDIDATO-AAAA-NNN` creados desde Pruebas de selección |
 
 Si intentas abrir una ruta sin permiso, el sistema te devuelve al inicio o muestra un error de acceso. No intentes eludirlo: la autorización también se valida en el backend.
@@ -48,6 +49,7 @@ La barra lateral izquierda reúne los módulos disponibles para tu cuenta:
 |---|---|---|
 | Dashboard | `/admin` | Indicadores del día y actividad reciente |
 | Empleados | `/admin/empleados` | Directorio de personal, altas, ediciones, bajas y ficha integral |
+| Puestos y permisos | `/admin/puestos` | Solo Gerente General: catálogo e indicador `ADMIN` por puesto |
 | Control de asistencia | `/rrhh` | Marcaciones, incidencias y reportes |
 | Evaluación de personal | `/evaluaciones` | Evaluaciones generales del personal |
 | Evaluaciones de conocimiento | `/admin/evaluaciones-conocimiento` | Frecuencia por puesto, banco por periodo y resultados |
@@ -107,7 +109,7 @@ Escribe código, nombre, puesto o rol en el buscador. El filtro es instantáneo.
 3. Escribe tu **contraseña de administrador** para confirmar.
 4. Pulsa **Registrar empleado**.
 
-El código de acceso se genera automáticamente con el formato `SUR-<abreviatura>-###`. El alta siempre crea la cuenta con rol **Empleado** y su primer horario. Si no hay puestos configurados, el botón permanece deshabilitado.
+El código de acceso se genera automáticamente con el formato `SUR-<abreviatura>-###`. El alta crea la cuenta con el rol que corresponda al puesto: **ADMIN** si el puesto tiene el indicador activo y **Empleado** si no. Solo `SUR-GG-001` puede elegir puestos con indicador `ADMIN` al dar de alta; para el resto aparecen deshabilitados. Si no hay puestos configurados, el botón permanece deshabilitado.
 
 ### Editar
 
@@ -148,7 +150,38 @@ La ficha es de solo lectura: no modifica la información. Está disponible para 
 
 ---
 
-## 5. Control de asistencia
+## 5. Puestos y permisos
+
+Ruta: `/admin/puestos`. Disponible solo para `SUR-GG-001`.
+
+Cada puesto define la abreviatura usada en el código de acceso, el nombre, el departamento, la frecuencia de evaluaciones de conocimiento y si otorga permiso `ADMIN`. La tabla muestra todos los puestos y cuántos tienen ese indicador.
+
+### Crear un puesto
+
+1. Pulsa **Agregar puesto**.
+2. Escribe la abreviatura (1 a 10 letras o números, sin espacios). Se usa en `SUR-<abreviatura>-###`, así que no debe repetirse.
+3. Completa nombre, departamento y frecuencia de evaluación (mensual, quincenal o semanal).
+4. Marca **Puesto con permisos de ADMIN** solo si las personas de ese puesto deben administrar el sistema.
+5. Escribe tu **contraseña de Gerente General** y pulsa **Registrar puesto**.
+
+### Editar un puesto
+
+1. Pulsa el lápiz en la fila del puesto.
+2. Ajusta los datos. Si el puesto pertenece a `SUR-GG-001` o `SUR-AC-002`, la abreviatura y el indicador `ADMIN` aparecen bloqueados para no romper sus códigos de acceso. En los demás puestos, cambiar la abreviatura afecta a las altas nuevas; no reescribe el código de quienes ya están registrados.
+3. Confirma con tu contraseña y pulsa **Guardar cambios**.
+
+### Qué ocurre al cambiar el indicador `ADMIN`
+
+- Si lo activas, los empleados **activos** del puesto pasan a rol `ADMIN` y pueden usar administración general, directorio, asistencia, sugerencias y ficha integral.
+- Si lo desactivas, esos empleados vuelven a rol **Empleado**.
+- El sistema muestra cuántos empleados se actualizaron. Las cuentas `SUR-GG-001` y `SUR-AC-002` nunca se modifican.
+- Los permisos se refrescan desde la base de datos en cada petición: la persona debe cerrar sesión y volver a entrar para ver los cambios en el menú y en su JWT.
+
+**Importante:** un puesto nuevo con indicador `ADMIN` **no** habilita evaluaciones de personal, conocimiento ni selección. Esos módulos siguen limitados a `SUR-GG-001` y `SUR-AC-002`. La contraseña se pide en cada alta o edición; si es incorrecta, la operación se rechaza.
+
+---
+
+## 6. Control de asistencia
 
 Ruta: `/rrhh`.
 
@@ -198,7 +231,7 @@ Toda corrección queda registrada en auditoría con valores anteriores y nuevos,
 
 ---
 
-## 6. Evaluación de personal
+## 7. Evaluación de personal
 
 Ruta: `/evaluaciones`.
 
@@ -233,7 +266,7 @@ Al seleccionar un empleado se filtra el historial. Al dejarlo vacío se muestran
 
 ---
 
-## 7. Evaluaciones de conocimiento
+## 8. Evaluaciones de conocimiento
 
 Ruta: `/admin/evaluaciones-conocimiento`.
 
@@ -298,7 +331,7 @@ El máximo es 255 preguntas por puesto y periodo, contando las existentes más l
 
 ---
 
-## 8. Pruebas de selección
+## 9. Pruebas de selección
 
 Ruta: `/admin/evaluaciones-seleccion`.
 
@@ -450,7 +483,7 @@ El editor de plantillas vigentes, la baja lógica de cuentas y la auditoría de 
 
 ---
 
-## 9. Sugerencias del personal
+## 10. Sugerencias del personal
 
 Ruta: `/admin/sugerencias`.
 
@@ -468,7 +501,7 @@ La respuesta queda visible de inmediato para el empleado y se registra con tu us
 
 ---
 
-## 10. Buenas prácticas y resolución de problemas
+## 11. Buenas prácticas y resolución de problemas
 
 ### Seguridad
 
@@ -499,12 +532,13 @@ La respuesta queda visible de inmediato para el empleado y se registra con tu us
 
 ---
 
-## 11. Referencia rápida de rutas
+## 12. Referencia rápida de rutas
 
 | Ruta | Módulo | Permiso |
 |---|---|---|
 | `/admin` | Dashboard | ADMIN |
 | `/admin/empleados` | Empleados | ADMIN |
+| `/admin/puestos` | Puestos y permisos | Solo `SUR-GG-001` |
 | `/rrhh` | Control de asistencia | ADMIN o RRHH |
 | `/evaluaciones` | Evaluación de personal | Cuentas autorizadas |
 | `/admin/evaluaciones-conocimiento` | Evaluaciones de conocimiento | Cuentas autorizadas |

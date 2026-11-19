@@ -23,6 +23,7 @@ describe('EvaluacionesComponent', () => {
             hasAdminRole: () => true,
             hasRrhhRole: () => true,
             hasEvaluationRole: () => true,
+            esGerenteGeneral: () => false,
             isCandidate: () => false,
             logout: vi.fn(),
           },

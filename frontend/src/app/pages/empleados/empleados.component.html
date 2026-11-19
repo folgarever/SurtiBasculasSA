@@ -87,8 +87,9 @@
         <label for="empleado-puesto">Puesto</label>
         <select id="empleado-puesto" formControlName="puesto_id" required>
           <option value="">Selecciona un puesto</option>
-          @for (puesto of puestos(); track puesto.id) { <option [value]="puesto.id">{{ puesto.nombre_puesto }}</option> }
+          @for (puesto of puestos(); track puesto.id) { <option [value]="puesto.id" [disabled]="!esGerenteGeneral && esPuestoAdmin(puesto)">{{ puesto.nombre_puesto }}{{ esPuestoAdmin(puesto) ? ' · ADMIN' : '' }}</option> }
         </select>
+        @if (!esGerenteGeneral) { <p class="helper-text">Solo el Gerente General puede asignar puestos con permisos de ADMIN.</p> }
         @if (puestoProtegido()) { <p class="helper-text">El puesto de una cuenta administradora se conserva para mantener su código y permisos.</p> }
         @if (puestos().length === 0) { <p class="helper-text">No hay puestos disponibles para registrar.</p> }
 

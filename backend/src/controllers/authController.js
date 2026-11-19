@@ -19,7 +19,7 @@ async function login(req, res, next) {
   try {
     const [empleados] = await pool.execute(
       `SELECT e.id, e.codigo_empleado, e.nombre, e.password_hash, e.rol_id,
-              p.nombre_puesto, r.nombre AS nombre_rol
+              p.nombre_puesto, p.es_admin, r.nombre AS nombre_rol
        FROM empleados e
        INNER JOIN puestos p ON p.id = e.puesto_id
        INNER JOIN roles r ON r.id = e.rol_id
@@ -47,7 +47,9 @@ async function login(req, res, next) {
       puesto: empleado.nombre_puesto,
       rol: empleado.nombre_rol,
       rol_id: empleado.rol_id,
-      role: codigoAdministrador && empleado.nombre_rol === 'ADMIN' ? 'ADMIN' : 'EMPLOYEE'
+      role: empleado.nombre_rol === 'ADMIN' && (
+        Number(empleado.es_admin) === 1 || codigoAdministrador
+      ) ? 'ADMIN' : 'EMPLOYEE'
     };
     const token = jwt.sign(perfil, process.env.JWT_SECRET, { expiresIn: '8h' });
 

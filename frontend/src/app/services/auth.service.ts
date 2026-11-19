@@ -128,6 +128,11 @@ export class AuthService {
     return (this.getPayload() ?? this.getUsuario())?.role === 'ADMIN';
   }
 
+  esGerenteGeneral(): boolean {
+    const usuario = this.getPayload() ?? this.getUsuario();
+    return this.hasAdminRole() && usuario?.codigo_empleado === 'SUR-GG-001';
+  }
+
   hasEvaluationRole(): boolean {
     const usuario = this.getPayload() ?? this.getUsuario();
     return usuario?.role === 'ADMIN'

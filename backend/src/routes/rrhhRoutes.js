@@ -1,5 +1,10 @@
 const express = require('express');
-const { verificarToken, permitirRoles, verificarContrasenaAdmin } = require('../middlewares/authMiddleware');
+const {
+  verificarToken,
+  permitirRoles,
+  verificarContrasenaAdmin,
+  permitirGerenteGeneral
+} = require('../middlewares/authMiddleware');
 const {
   obtenerTodasAsistencias,
   obtenerEmpleadosActivos,
@@ -7,6 +12,8 @@ const {
   obtenerEmpleadoAdministracion,
   obtenerDetalleEmpleado,
   obtenerPuestos,
+  registrarPuesto,
+  actualizarPuesto,
   registrarEmpleado,
   actualizarEmpleado,
   eliminarEmpleado,
@@ -25,6 +32,20 @@ router.get('/administracion/empleados', permitirRoles('ADMIN'), obtenerEmpleados
 router.get('/administracion/empleados/:id/detalle', permitirRoles('ADMIN'), obtenerDetalleEmpleado);
 router.get('/administracion/empleados/:id', permitirRoles('ADMIN'), obtenerEmpleadoAdministracion);
 router.get('/administracion/puestos', permitirRoles('ADMIN'), obtenerPuestos);
+router.post(
+  '/administracion/puestos',
+  permitirRoles('ADMIN'),
+  permitirGerenteGeneral,
+  verificarContrasenaAdmin,
+  registrarPuesto
+);
+router.put(
+  '/administracion/puestos/:id',
+  permitirRoles('ADMIN'),
+  permitirGerenteGeneral,
+  verificarContrasenaAdmin,
+  actualizarPuesto
+);
 router.post('/administracion/empleados', permitirRoles('ADMIN'), verificarContrasenaAdmin, registrarEmpleado);
 router.put('/administracion/empleados/:id', permitirRoles('ADMIN'), verificarContrasenaAdmin, actualizarEmpleado);
 router.delete('/administracion/empleados/:id', permitirRoles('ADMIN'), verificarContrasenaAdmin, eliminarEmpleado);

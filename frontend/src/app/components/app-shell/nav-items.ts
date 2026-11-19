@@ -1,4 +1,4 @@
-export type NavVisibility = 'always' | 'admin' | 'rrhh' | 'evaluation' | 'employee';
+export type NavVisibility = 'always' | 'admin' | 'rrhh' | 'evaluation' | 'employee' | 'gerente';
 
 export interface NavItem {
   label: string;
@@ -10,6 +10,7 @@ export interface NavItem {
 export const NAV_ADMIN: NavItem[] = [
   { label: 'Dashboard', route: '/admin', icon: 'lucideLayoutDashboard' },
   { label: 'Empleados', route: '/admin/empleados', icon: 'lucideUsers' },
+  { label: 'Puestos y permisos', route: '/admin/puestos', icon: 'lucideShieldCheck', visible: 'gerente' },
   { label: 'Control de asistencia', route: '/rrhh', icon: 'lucideClipboardCheck' },
   { label: 'Evaluación de personal', route: '/evaluaciones', icon: 'lucideUserRoundCog', visible: 'evaluation' },
   { label: 'Evaluaciones de conocimiento', route: '/admin/evaluaciones-conocimiento', icon: 'lucideClipboardCheck', visible: 'evaluation' },
