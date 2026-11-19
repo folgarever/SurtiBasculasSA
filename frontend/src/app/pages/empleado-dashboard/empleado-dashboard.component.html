@@ -23,6 +23,13 @@
       <div class="attendance-action"><p>¿Listo para registrar?</p><span>Tu marcación se guardará con la hora oficial del servidor.</span><button class="button button-light" type="button" (click)="registrar()" [disabled]="marcando()">{{ marcando() ? 'Registrando…' : 'Registrar marcación' }} <ng-icon name="lucideArrowRight" size="17" /></button></div>
     </section>
 
+    <a class="suggestion-tracker-card" routerLink="/sugerencias">
+      <span class="tracker-icon"><ng-icon name="lucideLightbulb" size="22" /></span>
+      <span class="tracker-copy"><span class="eyebrow">MIS SUGERENCIAS</span><strong>{{ respuestasNuevas() > 0 ? 'Tienes respuestas nuevas' : 'Seguimiento de tus propuestas' }}</strong><small>Consulta el estado y las respuestas de la administración.</small></span>
+      @if (respuestasNuevas() > 0) { <span class="state-pill state-new">{{ respuestasNuevas() }} {{ respuestasNuevas() === 1 ? 'nueva' : 'nuevas' }}</span> }
+      <ng-icon name="lucideArrowRight" size="17" />
+    </a>
+
     @if (aviso(); as mensaje) {
       <div class="alert" [class.alert-success]="mensaje.tipo === 'success'" [class.alert-error]="mensaje.tipo === 'error'" role="status">{{ mensaje.texto }} <button type="button" aria-label="Cerrar aviso" (click)="aviso.set(null)">×</button></div>
     }

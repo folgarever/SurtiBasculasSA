@@ -4,12 +4,30 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { SugerenciasService } from './sugerencias.service';
+import {
+  contarRespuestasNuevas,
+  marcadorRespuesta,
+  Sugerencia,
+  SugerenciasService,
+  sugerenciaRespondida,
+} from './sugerencias.service';
 
 describe('SugerenciasService', () => {
   const baseUrl = '/api/sugerencias';
   let servicio: SugerenciasService;
   let httpMock: HttpTestingController;
+
+  const anonimaRespondida: Sugerencia = {
+    id: 3,
+    folio: 'SG-2026-00003',
+    titulo: 'Más mesas',
+    descripcion: 'Debería haber más mesas en el comedor.',
+    anonima: true,
+    creado_en: '2026-11-18 09:15:00',
+    respuesta: 'Se instalarán mesas el próximo mes.',
+    respondido_en: '2026-11-18 14:30:00',
+    respondido_por: 'Mafer García',
+  };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -17,6 +35,7 @@ describe('SugerenciasService', () => {
     });
     servicio = TestBed.inject(SugerenciasService);
     httpMock = TestBed.inject(HttpTestingController);
+    localStorage.clear();
   });
 
   afterEach(() => {
@@ -30,16 +49,22 @@ describe('SugerenciasService', () => {
       descripcion: 'Debería haber más mesas en el comedor.',
       anonima: true,
     };
-    servicio.crearSugerencia(datos).subscribe();
+    servicio.crearSugerencia(datos).subscribe(({ sugerencia }) => {
+      expect(sugerencia.folio).toBe('SG-2026-00003');
+    });
 
     const peticion = httpMock.expectOne(`${baseUrl}/mis-sugerencias`);
     expect(peticion.request.method).toBe('POST');
     expect(peticion.request.body).toEqual(datos);
-    peticion.flush({ mensaje: 'Tu sugerencia fue enviada.' });
+    peticion.flush({
+      mensaje: 'Tu sugerencia fue enviada.',
+      sugerencia: { id: 3, folio: 'SG-2026-00003' },
+    });
   });
 
-  it('obtiene las sugerencias propias con anonimato y respuesta', () => {
+  it('obtiene las sugerencias propias con folio, anonimato y respuesta', () => {
     servicio.obtenerMisSugerencias().subscribe(({ sugerencias }) => {
+      expect(sugerencias[0].folio).toBe('SG-2026-00003');
       expect(sugerencias[0].anonima).toBe(true);
       expect(sugerencias[0].respuesta).toBe('Se instalarán mesas el próximo mes.');
       expect(sugerencias[0].respondido_por).toBe('Mafer García');
@@ -47,18 +72,7 @@ describe('SugerenciasService', () => {
 
     const peticion = httpMock.expectOne(`${baseUrl}/mis-sugerencias`);
     expect(peticion.request.method).toBe('GET');
-    peticion.flush({
-      sugerencias: [{
-        id: 3,
-        titulo: 'Más mesas',
-        descripcion: 'Debería haber más mesas en el comedor.',
-        anonima: true,
-        creado_en: '2026-11-18 09:15:00',
-        respuesta: 'Se instalarán mesas el próximo mes.',
-        respondido_en: '2026-11-18 14:30:00',
-        respondido_por: 'Mafer García',
-      }],
-    });
+    peticion.flush({ sugerencias: [anonimaRespondida] });
   });
 
   it('obtiene sugerencias ADMIN con la identidad enmascarada', () => {
@@ -74,20 +88,10 @@ describe('SugerenciasService', () => {
     expect(peticion.request.method).toBe('GET');
     peticion.flush({
       sugerencias: [
-        {
-          id: 3,
-          titulo: 'Más mesas',
-          descripcion: 'Debería haber más mesas en el comedor.',
-          anonima: true,
-          creado_en: '2026-11-18 09:15:00',
-          respuesta: null,
-          respondido_en: null,
-          respondido_por: null,
-          empleado: 'Anónimo',
-          codigo_empleado: null,
-        },
+        { ...anonimaRespondida, respuesta: null, respondido_en: null, respondido_por: null, empleado: 'Anónimo', codigo_empleado: null },
         {
           id: 2,
+          folio: 'SG-2026-00002',
           titulo: 'Mejor señal',
           descripcion: 'La señal de internet es inestable.',
           anonima: false,
@@ -100,5 +104,17 @@ describe('SugerenciasService', () => {
         },
       ],
     });
+  });
+
+  it('cuenta una respuesta como nueva hasta que su marcador se guarda como vista', () => {
+    expect(sugerenciaRespondida(anonimaRespondida)).toBe(true);
+    expect(contarRespuestasNuevas([anonimaRespondida], {})).toBe(1);
+
+    const vistas = { [anonimaRespondida.id]: marcadorRespuesta(anonimaRespondida) };
+    expect(contarRespuestasNuevas([anonimaRespondida], vistas)).toBe(0);
+
+    const sinRespuesta: Sugerencia = { ...anonimaRespondida, respuesta: null, respondido_en: null };
+    expect(sugerenciaRespondida(sinRespuesta)).toBe(false);
+    expect(contarRespuestasNuevas([sinRespuesta], {})).toBe(0);
   });
 });

@@ -58,7 +58,7 @@
   html[data-theme="dark"] .sidebar-link.is-active,
   html[data-theme="dark"] .sidebar-link.is-active:hover { background: #a71f28; color: #fff; }
 
-  html[data-theme="dark"] :is(.table-frame, .modal-panel, .knowledge-panel, .knowledge-history, .knowledge-kpi, .suggestion-card, .suggestion-form-card) {
+  html[data-theme="dark"] :is(.table-frame, .modal-panel, .knowledge-panel, .knowledge-history, .knowledge-kpi, .suggestion-card, .suggestion-form-card, .suggestion-tracker-card) {
     background: var(--color-paper);
     border-color: var(--color-hairline);
   }
@@ -67,7 +67,7 @@
   html[data-theme="dark"] td { color: var(--color-ink-soft); border-color: var(--color-hairline); }
   html[data-theme="dark"] tbody tr:hover { background: var(--color-surface-alt); }
   html[data-theme="dark"] :is(.table-empty, .employee-code, .protected-account, .helper-text, .selection-count) { color: var(--color-mid-gray); }
-  html[data-theme="dark"] :is(.criteria-section, .specialized-section, .knowledge-question, .question-editor, .knowledge-empty, .employee-toggle, .generated-code, .suggestion-response, .modal-context, .detail-comments) {
+  html[data-theme="dark"] :is(.criteria-section, .specialized-section, .knowledge-question, .question-editor, .knowledge-empty, .employee-toggle, .generated-code, .suggestion-response, .timeline-step, .modal-context, .detail-comments) {
     background: var(--color-surface-alt);
     border-color: var(--color-hairline);
     color: var(--color-ink-soft);
@@ -90,6 +90,7 @@
 
   html[data-theme="dark"] :is(.alert-success, .state-good, .knowledge-result, .knowledge-options .option-correct, .candidate-notice) { background: #193b30; border-color: #397c60; color: #b7ebca; }
   html[data-theme="dark"] :is(.state-warn, .knowledge-options .option-partial, .selection-internal-note) { background: #47391f; border-color: #947333; color: #ffe2a3; }
+  html[data-theme="dark"] :is(.state-new, .alert-info) { background: #24384d; border-color: #517392; color: #cfe4fa; }
   html[data-theme="dark"] :is(.alert-error, .knowledge-result.result-needs-work, .knowledge-options .option-incorrect, .candidate-error) { background: #482a30; border-color: #a95860; color: #ffd2d2; }
   html[data-theme="dark"] :is(.field-error, .required-mark, .question-delete-button) { color: #ffb4b4; }
 

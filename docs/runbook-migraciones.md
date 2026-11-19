@@ -36,12 +36,15 @@ Ejecuta **una sola vez**, en este orden, las migraciones que falten:
 12. `2026-11-18-plantillas-seleccion.sql`
 13. `2026-11-18-frecuencia-evaluaciones-conocimiento.sql`
 14. `2026-11-18-sugerencias-anonimas.sql`
+15. `2026-11-19-sugerencias-folio.sql`
 
 La migración 12 crea `seleccion_plantillas` con la definición vigente en `definicion`, agrega `definicion_snapshot` a `candidatos_seleccion_intentos` y elimina cualquier esquema de versiones anterior. También agrega `activo` a las cuentas de candidato y los campos de archivado/auditoría a `candidatos_seleccion`. Los intentos ya entregados conservan en `definicion_snapshot` la prueba exacta con la que se calificaron. Las cuentas existentes quedan activas. Después de aplicarla, las plantillas se generan desde el config actual la primera vez que se editan desde Administración; no hay que cargarlas a mano. Esta migración es idempotente: puede ejecutarse aunque el esquema anterior de versiones ya exista.
 
 La migración 13 agrega `puestos.frecuencia_evaluacion` (mensual por omisión), `evaluaciones_banco_preguntas.periodo`, amplía la restricción de formato de `evaluaciones_conocimiento.periodo` a mensual, quincenal y semanal, y crea índices por puesto y periodo. Las preguntas existentes se asocian al periodo mensual vigente al momento de aplicarla. No modifica evaluaciones ya creadas. Esta migración también es idempotente; el enunciado usa `WHERE id > 0` para funcionar con `SQL_SAFE_UPDATES=1`.
 
 La migración 14 agrega `sugerencias.anonima` (`TINYINT(1)`, valor `0` por omisión) para permitir sugerencias y quejas anónimas. Las sugerencias existentes quedan como nominativas. El vínculo interno con el empleado se conserva para que el autor vea sus respuestas; el enmascaramiento de identidad se hace en las consultas del foro ADMIN y de la actividad reciente. Esta migración es idempotente.
+
+La migración 15 agrega `sugerencias.folio` (`VARCHAR(20)`, único) con formato `SG-AAAA-NNNNN`, calculado a partir del año de creación y del identificador. Las sugerencias existentes se completan automáticamente. La columna queda nullable porque el alta toma el `id` recién generado para construir el folio; el backend la llena de inmediato y las consultas la derivan como respaldo. Esta migración es idempotente y su actualización usa `WHERE id > 0` para funcionar con `SQL_SAFE_UPDATES=1`.
 
 Antes de cada una, comprueba con `SHOW TABLES;` y `SHOW COLUMNS FROM <tabla>;` si ya fue aplicada. Varias migraciones usan `CREATE TABLE` o `ALTER TABLE` directos y no son idempotentes.
 

@@ -438,7 +438,7 @@ Ruta: `/admin/sugerencias`.
 
 Los empleados envían sugerencias o quejas desde `/sugerencias`, con la opción de marcarlas como anónimas. Al entrar verás contadores de total y pendientes; las sugerencias aparecen primero las sin responder y luego las más recientes.
 
-Cada tarjeta muestra fecha de envío en español, zona `America/Guatemala`, título, estado, autor y descripción. En las anónimas se muestra **Anónima** en lugar del empleado y su código. Si ya fue respondida, muestra fecha, texto y nombre de quien respondió.
+Cada tarjeta muestra el folio `SG-AAAA-NNNNN`, la fecha de envío en español (zona `America/Guatemala`), título, estado, autor y descripción. En las anónimas se muestra **Anónima** en lugar del empleado y su código. La línea **Enviada → En revisión → Respondida** indica el avance. Si ya fue respondida, muestra fecha, texto y nombre de quien respondió.
 
 Cuando el empleado elige **Enviar de forma anónima**, el sistema conserva el vínculo interno con su cuenta para que pueda ver el seguimiento, pero el foro administrativo y la actividad reciente muestran **Anónimo** en lugar de su nombre. Puedes responder normalmente: la respuesta queda en el historial del autor sin revelar su identidad en el foro.
 
@@ -446,7 +446,7 @@ Cuando el empleado elige **Enviar de forma anónima**, el sistema conserva el v�
 2. Lee la sugerencia y escribe o actualiza la respuesta, de 1 a 5000 caracteres.
 3. Pulsa **Enviar respuesta** o **Actualizar respuesta**.
 
-La respuesta queda visible de inmediato para el empleado y se registra con tu usuario y fecha. Solo se puede responder o actualizar: no hay borrado ni cambio manual de estado. Responde con información concreta y evita incluir datos de otros empleados.
+La respuesta queda visible de inmediato para el empleado y se registra con tu usuario y fecha. En `/sugerencias`, el empleado ve el folio, la misma línea de estado, un botón **Actualizar** y un aviso cuando hay respuestas nuevas. Solo se puede responder o actualizar: no hay borrado ni cambio manual de estado. Responde con información concreta y evita incluir datos de otros empleados.
 
 ---
 

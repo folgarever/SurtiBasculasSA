@@ -826,6 +826,7 @@ tbody tr:hover { background: var(--color-surface-alt); }
 .state-pill { min-height: 24px; padding: 0 10px; border-radius: var(--radius-badge); background: var(--color-secondary-soft); color: var(--color-secondary); font-size: .67rem; font-weight: 500; }
 .state-good { background: #e8f3ec; color: #25643a; }
 .state-warn { background: #fff3df; color: #895b13; }
+.state-new { border-color: #bcd4ea; background: #e7f1fb; color: #23527c; }
 .summary-note .status-dot { background: #368258; box-shadow: 0 0 0 3px #e8f3ec; }
 .filter-bar { border-color: var(--color-border); border-radius: 14px; background: var(--color-paper); }
 .search-field, .date-filter, .employee-search {
@@ -841,6 +842,7 @@ tbody tr:hover { background: var(--color-surface-alt); }
 .alert { border-radius: 12px; }
 .alert-success { border-color: #cce3d3; background: #e8f3ec; color: #25643a; }
 .alert-error { border-color: #efd2cf; background: #fbeeed; color: #92221c; }
+.alert-info { border-color: #c8dcec; background: #eaf3fa; color: #23527c; }
 .workspace-footer { border-top-color: var(--color-border); color: var(--color-mid-gray); }
 .workspace-footer a:hover { color: var(--color-primary); }
 
@@ -1392,6 +1394,7 @@ tbody tr:hover { background: var(--color-surface-alt); }
 
 .records-section, .table-frame, .summary-strip, .evaluation-panel, .evaluation-detail,
 .knowledge-panel, .knowledge-history, .knowledge-kpi, .suggestion-form-card, .suggestion-card,
+.suggestion-tracker-card, .timeline-step,
 .modal-panel, .login-form-wrap {
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-3xl);

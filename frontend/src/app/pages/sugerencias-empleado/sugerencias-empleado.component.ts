@@ -1,13 +1,21 @@
 import { AppShellComponent } from '../../components/app-shell/app-shell.component';
 import { NAV_EMPLEADO, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideSend, lucideUsers } from '@ng-icons/lucide';
+import { lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideRefreshCw, lucideSend, lucideUsers } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
-import { Sugerencia, SugerenciasService } from '../../services/sugerencias.service';
+import {
+  contarRespuestasNuevas,
+  guardarRespuestasVistas,
+  leerRespuestasVistas,
+  marcadorRespuesta,
+  Sugerencia,
+  sugerenciaRespondida,
+  SugerenciasService,
+} from '../../services/sugerencias.service';
 
 function longitudRecortada(minimo: number, maximo: number): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -22,19 +30,23 @@ function longitudRecortada(minimo: number, maximo: number): ValidatorFn {
   selector: 'app-sugerencias-empleado',
   standalone: true,
   imports: [AppShellComponent, ReactiveFormsModule, RouterLink, NgIcon],
-  providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideSend, lucideUsers })],
+  providers: [provideIcons({ lucideClipboardCheck, lucideLayoutDashboard, lucideLightbulb, lucideLogOut, lucideRefreshCw, lucideSend, lucideUsers })],
   templateUrl: './sugerencias-empleado.component.html',
 })
 export class SugerenciasEmpleadoComponent implements OnInit {
   protected readonly navItems = NAV_EMPLEADO;
   protected readonly bottomItems = [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO];
+  protected readonly respondida = sugerenciaRespondida;
   private readonly formBuilder = inject(FormBuilder);
   private readonly servicio = inject(SugerenciasService);
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
   protected readonly sugerencias = signal<Sugerencia[]>([]);
+  protected readonly vistas = signal<Record<number, string>>(leerRespuestasVistas());
+  protected readonly nuevasRespuestas = computed(() => contarRespuestasNuevas(this.sugerencias(), this.vistas()));
   protected readonly cargando = signal(true);
+  protected readonly actualizando = signal(false);
   protected readonly enviando = signal(false);
   protected readonly error = signal('');
   protected readonly aviso = signal('');
@@ -48,6 +60,28 @@ export class SugerenciasEmpleadoComponent implements OnInit {
     this.cargarSugerencias();
   }
 
+  protected actualizar(): void {
+    if (this.actualizando()) return;
+    this.cargarSugerencias(true);
+  }
+
+  protected esNueva(sugerencia: Sugerencia): boolean {
+    return sugerenciaRespondida(sugerencia)
+      && this.vistas()[sugerencia.id] !== marcadorRespuesta(sugerencia);
+  }
+
+  protected marcarComoLeidas(): void {
+    const actualizadas = { ...this.vistas() };
+    for (const sugerencia of this.sugerencias()) {
+      if (sugerenciaRespondida(sugerencia)) {
+        actualizadas[sugerencia.id] = marcadorRespuesta(sugerencia);
+      }
+    }
+    guardarRespuestasVistas(actualizadas);
+    this.vistas.set(actualizadas);
+    this.aviso.set('Respuestas marcadas como leídas.');
+  }
+
   protected enviar(): void {
     this.error.set('');
     this.aviso.set('');
@@ -58,9 +92,9 @@ export class SugerenciasEmpleadoComponent implements OnInit {
 
     this.enviando.set(true);
     this.servicio.crearSugerencia(this.formulario.getRawValue()).subscribe({
-      next: ({ mensaje }) => {
+      next: ({ mensaje, sugerencia }) => {
         this.formulario.reset();
-        this.aviso.set(mensaje);
+        this.aviso.set(sugerencia.folio ? `${mensaje} Folio: ${sugerencia.folio}.` : mensaje);
         this.enviando.set(false);
         this.cargarSugerencias();
       },
@@ -79,16 +113,20 @@ export class SugerenciasEmpleadoComponent implements OnInit {
     });
   }
 
-  private cargarSugerencias(): void {
+  private cargarSugerencias(manual = false): void {
     this.cargando.set(true);
+    this.actualizando.set(manual);
     this.servicio.obtenerMisSugerencias().subscribe({
       next: ({ sugerencias }) => {
         this.sugerencias.set(sugerencias);
         this.cargando.set(false);
+        this.actualizando.set(false);
+        if (manual) this.aviso.set('Lista actualizada.');
       },
       error: (error: HttpErrorResponse) => {
         this.error.set(error.error?.mensaje || 'No se pudieron cargar tus sugerencias.');
         this.cargando.set(false);
+        this.actualizando.set(false);
       },
     });
   }

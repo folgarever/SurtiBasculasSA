@@ -28,14 +28,19 @@ test.afterEach(() => {
   pool.execute = ejecutarOriginal;
 });
 
-test('crearSugerencia persiste el indicador de anonimato', async () => {
-  let consulta = '';
-  let parametros = [];
+function mockCreacion() {
+  const consultas = [];
   pool.execute = async (sql, params) => {
-    consulta = sql;
-    parametros = params;
-    return [{ insertId: 12 }];
+    consultas.push({ sql, params });
+    if (sql.startsWith('INSERT')) return [{ insertId: 12 }];
+    if (sql.startsWith('UPDATE')) return [{ affectedRows: 1 }];
+    return [[{ folio: 'SG-2026-00012' }]];
   };
+  return consultas;
+}
+
+test('crearSugerencia persiste el indicador de anonimato y asigna el folio', async () => {
+  const consultas = mockCreacion();
 
   const res = crearRespuesta();
   await crearSugerencia({
@@ -48,27 +53,27 @@ test('crearSugerencia persiste el indicador de anonimato', async () => {
   }, res, (error) => { throw error; });
 
   assert.equal(res.codigo, 201);
-  assert.match(consulta, /INSERT INTO sugerencias \(empleado_id, titulo, descripcion, anonima\)/);
-  assert.deepEqual(parametros, [
+  assert.equal(consultas.length, 3);
+  assert.match(consultas[0].sql, /INSERT INTO sugerencias \(empleado_id, titulo, descripcion, anonima\)/);
+  assert.deepEqual(consultas[0].params, [
     7,
     'Más mesas',
     'Debería haber más mesas en el comedor.',
     true,
   ]);
+  assert.match(consultas[1].sql, /CONCAT\('SG-', DATE_FORMAT\(creado_en, '%Y'\), '-', LPAD\(id, 5, '0'\)\)/);
+  assert.deepEqual(consultas[1].params, [12]);
+  assert.equal(res.cuerpo.sugerencia.folio, 'SG-2026-00012');
 });
 
 test('crearSugerencia usa false por omisión y rechaza valores no booleanos', async () => {
-  let parametros = [];
-  pool.execute = async (sql, params) => {
-    parametros = params;
-    return [{ insertId: 13 }];
-  };
+  const consultas = mockCreacion();
 
   await crearSugerencia({
     usuario: { id: 7 },
     body: { titulo: 'Mejor señal', descripcion: 'La señal de internet es inestable.' },
   }, crearRespuesta(), (error) => { throw error; });
-  assert.equal(parametros[3], false);
+  assert.equal(consultas[0].params[3], false);
 
   const res = crearRespuesta();
   pool.execute = async () => { throw new Error('No debió consultar la base de datos'); };
@@ -87,6 +92,7 @@ test('crearSugerencia usa false por omisión y rechaza valores no booleanos', as
 test('obtenerMisSugerencias devuelve anonima y la respuesta del administrador', async () => {
   pool.execute = async () => [[{
     id: 3,
+    folio: 'SG-2026-00003',
     titulo: 'Más mesas',
     descripcion: 'Debería haber más mesas en el comedor.',
     anonima: 1,
@@ -100,6 +106,7 @@ test('obtenerMisSugerencias devuelve anonima y la respuesta del administrador', 
   await obtenerMisSugerencias({ usuario: { id: 7 } }, res, (error) => { throw error; });
 
   assert.equal(res.codigo, 200);
+  assert.equal(res.cuerpo.sugerencias[0].folio, 'SG-2026-00003');
   assert.equal(res.cuerpo.sugerencias[0].anonima, true);
   assert.equal(res.cuerpo.sugerencias[0].respuesta, 'Se instalarán mesas el próximo mes.');
   assert.equal(res.cuerpo.sugerencias[0].respondido_por, 'Mafer García');
@@ -112,6 +119,7 @@ test('obtenerTodasLasSugerencias oculta la identidad de las anónimas', async ()
     return [[
       {
         id: 3,
+        folio: 'SG-2026-00003',
         titulo: 'Más mesas',
         descripcion: 'Debería haber más mesas en el comedor.',
         anonima: 1,
@@ -124,6 +132,7 @@ test('obtenerTodasLasSugerencias oculta la identidad de las anónimas', async ()
       },
       {
         id: 2,
+        folio: 'SG-2026-00002',
         titulo: 'Mejor señal',
         descripcion: 'La señal de internet es inestable.',
         anonima: 0,
@@ -143,6 +152,8 @@ test('obtenerTodasLasSugerencias oculta la identidad de las anónimas', async ()
   assert.equal(res.codigo, 200);
   assert.match(consulta, /CASE WHEN s\.anonima = 1 THEN 'Anónimo' ELSE e\.nombre END/);
   assert.doesNotMatch(consulta, /e\.id AS empleado_id/);
+  assert.match(consulta, /COALESCE\(s\.folio,/);
+  assert.equal(res.cuerpo.sugerencias[0].folio, 'SG-2026-00003');
   assert.equal(res.cuerpo.sugerencias[0].anonima, true);
   assert.equal(res.cuerpo.sugerencias[0].empleado, 'Anónimo');
   assert.equal(res.cuerpo.sugerencias[0].codigo_empleado, null);

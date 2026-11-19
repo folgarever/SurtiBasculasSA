@@ -6,7 +6,7 @@ import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideClipboardCheck, lucideLayoutDashboard, lucideLogOut, lucideMessageSquare, lucideSend, lucideUserRoundCog, lucideUsers } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
-import { Sugerencia, SugerenciasService } from '../../services/sugerencias.service';
+import { Sugerencia, sugerenciaRespondida, SugerenciasService } from '../../services/sugerencias.service';
 
 type FiltroSugerencias = 'todas' | 'pendientes' | 'respondidas';
 
@@ -20,6 +20,7 @@ type FiltroSugerencias = 'todas' | 'pendientes' | 'respondidas';
 export class SugerenciasAdminComponent implements OnInit {
   protected readonly navItems = NAV_ADMIN;
   protected readonly bottomItems = [SUGERENCIAS_ADMIN];
+  protected readonly respondida = sugerenciaRespondida;
   private readonly servicio = inject(SugerenciasService);
   private readonly auth = inject(AuthService);
 
@@ -31,10 +32,10 @@ export class SugerenciasAdminComponent implements OnInit {
   protected readonly guardandoId = signal<number | null>(null);
   protected readonly error = signal('');
   protected readonly aviso = signal('');
-  protected readonly pendientes = computed(() => this.sugerencias().filter((sugerencia) => !sugerencia.respuesta).length);
+  protected readonly pendientes = computed(() => this.sugerencias().filter((sugerencia) => !sugerenciaRespondida(sugerencia)).length);
   protected readonly sugerenciasFiltradas = computed(() => this.sugerencias().filter((sugerencia) => {
-    if (this.filtro() === 'pendientes') return !sugerencia.respuesta;
-    if (this.filtro() === 'respondidas') return Boolean(sugerencia.respuesta);
+    if (this.filtro() === 'pendientes') return !sugerenciaRespondida(sugerencia);
+    if (this.filtro() === 'respondidas') return sugerenciaRespondida(sugerencia);
     return true;
   }));
 

@@ -3,6 +3,7 @@ import { NAV_EMPLEADO, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from '../../com
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideArrowRight,
@@ -16,11 +17,12 @@ import {
 import { interval } from 'rxjs';
 import { AsistenciaService, Marcacion, ResultadoMarcacion } from '../../services/asistencia.service';
 import { AuthService } from '../../services/auth.service';
+import { contarRespuestasNuevas, leerRespuestasVistas, SugerenciasService } from '../../services/sugerencias.service';
 
 @Component({
   selector: 'app-empleado-dashboard',
   standalone: true,
-  imports: [AppShellComponent, NgIcon],
+  imports: [AppShellComponent, NgIcon, RouterLink],
   providers: [provideIcons({
     lucideArrowRight,
     lucideClipboardCheck,
@@ -36,6 +38,7 @@ export class EmpleadoDashboardComponent implements OnInit {
   protected readonly navItems = NAV_EMPLEADO;
   protected readonly bottomItems = [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO];
   private readonly asistencia = inject(AsistenciaService);
+  private readonly sugerencias = inject(SugerenciasService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -44,6 +47,7 @@ export class EmpleadoDashboardComponent implements OnInit {
   protected readonly fechaActual = signal('');
   protected readonly historial = signal<Marcacion[]>([]);
   protected readonly cargando = signal(true);
+  protected readonly respuestasNuevas = signal(0);
   protected readonly marcando = signal(false);
   protected readonly aviso = signal<{ tipo: 'success' | 'error'; texto: string } | null>(null);
 
@@ -51,6 +55,7 @@ export class EmpleadoDashboardComponent implements OnInit {
     this.actualizarReloj();
     interval(1000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.actualizarReloj());
     this.cargarHistorial();
+    this.cargarRespuestasNuevas();
   }
 
   protected registrar(): void {
@@ -93,6 +98,15 @@ export class EmpleadoDashboardComponent implements OnInit {
         this.cargando.set(false);
       },
       error: () => this.cargando.set(false),
+    });
+  }
+
+  private cargarRespuestasNuevas(): void {
+    this.sugerencias.obtenerMisSugerencias().subscribe({
+      next: ({ sugerencias }) => {
+        this.respuestasNuevas.set(contarRespuestasNuevas(sugerencias, leerRespuestasVistas()));
+      },
+      error: () => this.respuestasNuevas.set(0),
     });
   }
 

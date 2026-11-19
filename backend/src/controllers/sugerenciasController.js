@@ -22,10 +22,26 @@ function normalizarSugerencia(sugerencia) {
   return { ...sugerencia, anonima: Boolean(sugerencia.anonima) };
 }
 
+async function asignarFolio(id) {
+  await pool.execute(
+    `UPDATE sugerencias
+     SET folio = CONCAT('SG-', DATE_FORMAT(creado_en, '%Y'), '-', LPAD(id, 5, '0'))
+     WHERE id = ?`,
+    [id]
+  );
+  const [filas] = await pool.execute(
+    'SELECT folio FROM sugerencias WHERE id = ? LIMIT 1',
+    [id]
+  );
+  return filas[0]?.folio || null;
+}
+
 async function obtenerMisSugerencias(req, res, next) {
   try {
     const [sugerencias] = await pool.execute(
-      `SELECT s.id, s.titulo, s.descripcion, s.anonima, s.creado_en,
+      `SELECT s.id,
+              COALESCE(s.folio, CONCAT('SG-', DATE_FORMAT(s.creado_en, '%Y'), '-', LPAD(s.id, 5, '0'))) AS folio,
+              s.titulo, s.descripcion, s.anonima, s.creado_en,
               s.respuesta, s.respondido_en, admin.nombre AS respondido_por
        FROM sugerencias s
        LEFT JOIN empleados admin ON admin.id = s.respondido_por
@@ -59,9 +75,10 @@ async function crearSugerencia(req, res, next) {
       'INSERT INTO sugerencias (empleado_id, titulo, descripcion, anonima) VALUES (?, ?, ?, ?)',
       [req.usuario.id, titulo.trim(), descripcion.trim(), anonima]
     );
+    const folio = await asignarFolio(resultado.insertId);
     return res.status(201).json({
       mensaje: 'Tu sugerencia fue enviada.',
-      sugerencia: { id: resultado.insertId }
+      sugerencia: { id: resultado.insertId, folio }
     });
   } catch (error) {
     return next(error);
@@ -71,7 +88,9 @@ async function crearSugerencia(req, res, next) {
 async function obtenerTodasLasSugerencias(req, res, next) {
   try {
     const [sugerencias] = await pool.execute(
-      `SELECT s.id, s.titulo, s.descripcion, s.anonima, s.creado_en,
+      `SELECT s.id,
+              COALESCE(s.folio, CONCAT('SG-', DATE_FORMAT(s.creado_en, '%Y'), '-', LPAD(s.id, 5, '0'))) AS folio,
+              s.titulo, s.descripcion, s.anonima, s.creado_en,
               s.respuesta, s.respondido_en, admin.nombre AS respondido_por,
               CASE WHEN s.anonima = 1 THEN 'Anónimo' ELSE e.nombre END AS empleado,
               CASE WHEN s.anonima = 1 THEN NULL ELSE e.codigo_empleado END AS codigo_empleado

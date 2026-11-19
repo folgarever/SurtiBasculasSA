@@ -41,20 +41,25 @@
         <div class="suggestion-cards">
           @for (sugerencia of sugerenciasFiltradas(); track sugerencia.id) {
             <article class="suggestion-card">
-              <div class="suggestion-card-heading"><div><p class="eyebrow">ENVIADA {{ formatoFecha(sugerencia.creado_en) }}{{ sugerencia.anonima ? ' · ANÓNIMA' : '' }}</p><h2>{{ sugerencia.titulo }}</h2></div><span class="state-pill" [class.state-good]="sugerencia.respuesta" [class.state-warn]="!sugerencia.respuesta">{{ sugerencia.respuesta ? 'Respondida' : 'Pendiente' }}</span></div>
+              <div class="suggestion-card-heading"><div><p class="eyebrow">FOLIO {{ sugerencia.folio }} · ENVIADA {{ formatoFecha(sugerencia.creado_en) }}{{ sugerencia.anonima ? ' · ANÓNIMA' : '' }}</p><h2>{{ sugerencia.titulo }}</h2></div><span class="state-pill" [class.state-good]="respondida(sugerencia)" [class.state-warn]="!respondida(sugerencia)">{{ respondida(sugerencia) ? 'Respondida' : 'Pendiente' }}</span></div>
               @if (sugerencia.anonima) {
                 <p class="suggestion-author"><strong>Anónima</strong> · Identidad del autor oculta</p>
               } @else {
                 <p class="suggestion-author"><strong>{{ sugerencia.empleado }}</strong> · {{ sugerencia.codigo_empleado }}</p>
               }
               <p class="suggestion-description">{{ sugerencia.descripcion }}</p>
-              @if (sugerencia.respuesta) {
+              <ol class="suggestion-timeline" aria-label="Estado del seguimiento">
+                <li class="timeline-step timeline-done"><span>Enviada</span><small>{{ formatoFecha(sugerencia.creado_en) }}</small></li>
+                <li class="timeline-step" [class.timeline-done]="respondida(sugerencia)"><span>En revisión</span><small>{{ respondida(sugerencia) ? 'Revisada' : 'Esperando respuesta' }}</small></li>
+                <li class="timeline-step" [class.timeline-done]="respondida(sugerencia)"><span>Respondida</span><small>{{ sugerencia.respondido_en ? formatoFecha(sugerencia.respondido_en) : 'Pendiente' }}</small></li>
+              </ol>
+              @if (respondida(sugerencia)) {
                 <div class="suggestion-response"><p class="eyebrow">RESPUESTA REGISTRADA {{ formatoFecha(sugerencia.respondido_en || '') }}</p><p>{{ sugerencia.respuesta }}</p><span>— {{ sugerencia.respondido_por }}</span></div>
               }
               <div class="suggestion-reply">
-                <label [for]="'respuesta-' + sugerencia.id">{{ sugerencia.respuesta ? 'Actualizar respuesta' : 'Responder (opcional)' }}</label>
+                <label [for]="'respuesta-' + sugerencia.id">{{ respondida(sugerencia) ? 'Actualizar respuesta' : 'Responder (opcional)' }}</label>
                 <textarea [id]="'respuesta-' + sugerencia.id" rows="3" maxlength="5000" [value]="respuestas()[sugerencia.id] ?? sugerencia.respuesta ?? ''" (input)="actualizarRespuesta(sugerencia.id, $event)" placeholder="Escribe una respuesta para el empleado…"></textarea>
-                <div class="suggestion-form-actions"><span class="helper-text">Máximo 5,000 caracteres.</span><button class="button button-accent" type="button" [disabled]="guardandoId() !== null" (click)="guardarRespuesta(sugerencia)"><ng-icon name="lucideSend" size="16" /> {{ guardandoId() === sugerencia.id ? 'Guardando…' : sugerencia.respuesta ? 'Actualizar respuesta' : 'Enviar respuesta' }}</button></div>
+                <div class="suggestion-form-actions"><span class="helper-text">Máximo 5,000 caracteres.</span><button class="button button-accent" type="button" [disabled]="guardandoId() !== null" (click)="guardarRespuesta(sugerencia)"><ng-icon name="lucideSend" size="16" /> {{ guardandoId() === sugerencia.id ? 'Guardando…' : respondida(sugerencia) ? 'Actualizar respuesta' : 'Enviar respuesta' }}</button></div>
               </div>
             </article>
           }
