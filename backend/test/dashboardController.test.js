@@ -24,7 +24,8 @@ test.afterEach(() => {
   pool.execute = ejecutarOriginal;
 });
 
-test('obtenerResumenAdmin devuelve indicadores reales y actividad reciente', async () => {
+test('obtenerResumenAdmin devuelve indicadores reales y actividad reciente', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 10, 18, 12).getTime() });
   const consultas = [
     [[{
       periodo: '2026-11',
@@ -83,9 +84,9 @@ test('obtenerResumenAdmin devuelve indicadores reales y actividad reciente', asy
   assert.equal(res.cuerpo.distribucion_puestos[0].puesto, 'Técnico');
   assert.equal(res.cuerpo.actividad_reciente[0].estado, 'Pendiente');
   assert.equal(res.cuerpo.comparativo.puntualidad_ayer, 88);
-  assert.equal(res.cuerpo.tendencias.asistencia.length, 7);
-  assert.equal(res.cuerpo.tendencias.sugerencias.at(-1), 3);
-  assert.equal(res.cuerpo.tendencias.evaluaciones.at(-1), 2);
+  assert.deepEqual(res.cuerpo.tendencias.asistencia, [8, 0, 0, 0, 0, 0, 10]);
+  assert.deepEqual(res.cuerpo.tendencias.sugerencias, [0, 0, 0, 0, 0, 0, 3]);
+  assert.deepEqual(res.cuerpo.tendencias.evaluaciones, [0, 0, 0, 0, 0, 0, 2]);
   assert.match(consultasSql[3], /CASE WHEN s\.anonima = 1 THEN 'Anónimo' ELSE e\.nombre END/);
   assert.equal(consultas.length, 0);
 });
