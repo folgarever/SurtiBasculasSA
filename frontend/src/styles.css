@@ -166,6 +166,9 @@ td { height: 58px; padding: 10px 18px; border-top: 1px solid #edf0ed; color: #38
 .suggestion-form input, .suggestion-form textarea, .suggestion-reply textarea { width: 100%; min-height: 42px; padding: 10px 11px; border: 1px solid #d5ddd8; border-radius: 2px; outline: none; background: white; color: var(--ink); font-size: .79rem; }
 .suggestion-form textarea, .suggestion-reply textarea { min-height: 100px; resize: vertical; line-height: 1.55; }
 .suggestion-form input:focus, .suggestion-form textarea:focus, .suggestion-reply textarea:focus { border-color: var(--green); box-shadow: 0 0 0 2px rgba(17,102,83,.1); }
+.suggestion-form > label.suggestion-anonymous { display: inline-flex; align-items: center; gap: 8px; margin: 14px 0 0; }
+.suggestion-form > label.suggestion-anonymous input[type="checkbox"] { width: 16px; min-height: 16px; padding: 0; border: 0; background: transparent; accent-color: var(--green); box-shadow: none; }
+.suggestion-form > label.suggestion-anonymous input[type="checkbox"]:focus { border: 0; box-shadow: none; }
 .suggestion-form-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 15px; }
 .suggestion-form-actions .helper-text { margin: 0; }
 .suggestion-list-section { margin-top: 28px; }

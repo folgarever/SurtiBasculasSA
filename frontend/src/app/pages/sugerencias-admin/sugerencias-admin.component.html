@@ -41,8 +41,12 @@
         <div class="suggestion-cards">
           @for (sugerencia of sugerenciasFiltradas(); track sugerencia.id) {
             <article class="suggestion-card">
-              <div class="suggestion-card-heading"><div><p class="eyebrow">ENVIADA {{ formatoFecha(sugerencia.creado_en) }}</p><h2>{{ sugerencia.titulo }}</h2></div><span class="state-pill" [class.state-good]="sugerencia.respuesta" [class.state-warn]="!sugerencia.respuesta">{{ sugerencia.respuesta ? 'Respondida' : 'Pendiente' }}</span></div>
-              <p class="suggestion-author"><strong>{{ sugerencia.empleado }}</strong> · {{ sugerencia.codigo_empleado }}</p>
+              <div class="suggestion-card-heading"><div><p class="eyebrow">ENVIADA {{ formatoFecha(sugerencia.creado_en) }}{{ sugerencia.anonima ? ' · ANÓNIMA' : '' }}</p><h2>{{ sugerencia.titulo }}</h2></div><span class="state-pill" [class.state-good]="sugerencia.respuesta" [class.state-warn]="!sugerencia.respuesta">{{ sugerencia.respuesta ? 'Respondida' : 'Pendiente' }}</span></div>
+              @if (sugerencia.anonima) {
+                <p class="suggestion-author"><strong>Anónima</strong> · Identidad del autor oculta</p>
+              } @else {
+                <p class="suggestion-author"><strong>{{ sugerencia.empleado }}</strong> · {{ sugerencia.codigo_empleado }}</p>
+              }
               <p class="suggestion-description">{{ sugerencia.descripcion }}</p>
               @if (sugerencia.respuesta) {
                 <div class="suggestion-response"><p class="eyebrow">RESPUESTA REGISTRADA {{ formatoFecha(sugerencia.respondido_en || '') }}</p><p>{{ sugerencia.respuesta }}</p><span>— {{ sugerencia.respondido_por }}</span></div>

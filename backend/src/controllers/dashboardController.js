@@ -71,7 +71,9 @@ async function obtenerResumenAdmin(req, res, next) {
 
     const [actividad] = await pool.execute(`
       SELECT * FROM (
-        SELECT 'sugerencia' AS tipo, s.id, e.nombre AS persona, s.titulo AS titulo,
+        SELECT 'sugerencia' AS tipo, s.id,
+               CASE WHEN s.anonima = 1 THEN 'Anónimo' ELSE e.nombre END AS persona,
+               s.titulo AS titulo,
                CASE WHEN s.respondido_en IS NULL THEN 'Pendiente' ELSE 'Respondida' END AS estado,
                s.creado_en AS fecha
         FROM sugerencias s

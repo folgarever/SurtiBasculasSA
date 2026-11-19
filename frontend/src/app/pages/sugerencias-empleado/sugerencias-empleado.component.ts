@@ -41,6 +41,7 @@ export class SugerenciasEmpleadoComponent implements OnInit {
   protected readonly formulario = this.formBuilder.nonNullable.group({
     titulo: ['', [Validators.required, longitudRecortada(3, 150)]],
     descripcion: ['', [Validators.required, longitudRecortada(10, 5000)]],
+    anonima: [false],
   });
 
   ngOnInit(): void {

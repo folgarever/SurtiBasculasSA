@@ -7,6 +7,7 @@ export interface Sugerencia {
   id: number;
   titulo: string;
   descripcion: string;
+  anonima: boolean;
   creado_en: string;
   respuesta: string | null;
   respondido_en: string | null;
@@ -24,7 +25,7 @@ export class SugerenciasService {
     return this.http.get<{ sugerencias: Sugerencia[] }>(`${this.baseUrl}/mis-sugerencias`);
   }
 
-  crearSugerencia(datos: { titulo: string; descripcion: string }): Observable<{ mensaje: string }> {
+  crearSugerencia(datos: { titulo: string; descripcion: string; anonima: boolean }): Observable<{ mensaje: string }> {
     return this.http.post<{ mensaje: string }>(`${this.baseUrl}/mis-sugerencias`, datos);
   }
 

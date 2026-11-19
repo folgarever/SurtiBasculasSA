@@ -54,7 +54,11 @@ test('obtenerResumenAdmin devuelve indicadores reales y actividad reciente', asy
       fecha: '2026-11-18 09:15:00',
     }]],
   ];
-  pool.execute = async () => consultas.shift();
+  const consultasSql = [];
+  pool.execute = async (sql) => {
+    consultasSql.push(sql);
+    return consultas.shift();
+  };
 
   const res = crearRespuesta();
   await obtenerResumenAdmin({}, res, (error) => { throw error; });
@@ -66,5 +70,6 @@ test('obtenerResumenAdmin devuelve indicadores reales y actividad reciente', asy
   assert.equal(res.cuerpo.asistencia_semanal.length, 2);
   assert.equal(res.cuerpo.distribucion_puestos[0].puesto, 'Técnico');
   assert.equal(res.cuerpo.actividad_reciente[0].estado, 'Pendiente');
+  assert.match(consultasSql[3], /CASE WHEN s\.anonima = 1 THEN 'Anónimo' ELSE e\.nombre END/);
   assert.equal(consultas.length, 0);
 });

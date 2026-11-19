@@ -327,6 +327,7 @@ CREATE TABLE sugerencias (
     empleado_id INT NOT NULL,
     titulo VARCHAR(150) NOT NULL,
     descripcion TEXT NOT NULL,
+    anonima TINYINT(1) NOT NULL DEFAULT 0,
     creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     respuesta TEXT NULL,
     respondido_por INT NULL,

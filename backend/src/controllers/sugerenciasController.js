@@ -13,10 +13,19 @@ function validarTexto(value, minimo, maximo) {
     && value.trim().length <= maximo;
 }
 
+function interpretarAnonima(value) {
+  if (value === undefined) return false;
+  return typeof value === 'boolean' ? value : null;
+}
+
+function normalizarSugerencia(sugerencia) {
+  return { ...sugerencia, anonima: Boolean(sugerencia.anonima) };
+}
+
 async function obtenerMisSugerencias(req, res, next) {
   try {
     const [sugerencias] = await pool.execute(
-      `SELECT s.id, s.titulo, s.descripcion, s.creado_en,
+      `SELECT s.id, s.titulo, s.descripcion, s.anonima, s.creado_en,
               s.respuesta, s.respondido_en, admin.nombre AS respondido_por
        FROM sugerencias s
        LEFT JOIN empleados admin ON admin.id = s.respondido_por
@@ -24,14 +33,18 @@ async function obtenerMisSugerencias(req, res, next) {
        ORDER BY s.creado_en DESC, s.id DESC`,
       [req.usuario.id]
     );
-    return res.json({ sugerencias });
+    return res.json({ sugerencias: sugerencias.map(normalizarSugerencia) });
   } catch (error) {
     return next(error);
   }
 }
 
 async function crearSugerencia(req, res, next) {
-  const { titulo, descripcion } = req.body || {};
+  const { titulo, descripcion, anonima: anonimaSolicitada } = req.body || {};
+  const anonima = interpretarAnonima(anonimaSolicitada);
+  if (anonima === null) {
+    return res.status(400).json({ mensaje: 'El campo anonima debe ser verdadero o falso.' });
+  }
   if (
     !validarTexto(titulo, 3, LONGITUD_MAXIMA_TITULO)
     || !validarTexto(descripcion, 10, LONGITUD_MAXIMA_TEXTO)
@@ -43,8 +56,8 @@ async function crearSugerencia(req, res, next) {
 
   try {
     const [resultado] = await pool.execute(
-      'INSERT INTO sugerencias (empleado_id, titulo, descripcion) VALUES (?, ?, ?)',
-      [req.usuario.id, titulo.trim(), descripcion.trim()]
+      'INSERT INTO sugerencias (empleado_id, titulo, descripcion, anonima) VALUES (?, ?, ?, ?)',
+      [req.usuario.id, titulo.trim(), descripcion.trim(), anonima]
     );
     return res.status(201).json({
       mensaje: 'Tu sugerencia fue enviada.',
@@ -58,15 +71,16 @@ async function crearSugerencia(req, res, next) {
 async function obtenerTodasLasSugerencias(req, res, next) {
   try {
     const [sugerencias] = await pool.execute(
-      `SELECT s.id, s.titulo, s.descripcion, s.creado_en,
+      `SELECT s.id, s.titulo, s.descripcion, s.anonima, s.creado_en,
               s.respuesta, s.respondido_en, admin.nombre AS respondido_por,
-              e.id AS empleado_id, e.nombre AS empleado, e.codigo_empleado
+              CASE WHEN s.anonima = 1 THEN 'Anónimo' ELSE e.nombre END AS empleado,
+              CASE WHEN s.anonima = 1 THEN NULL ELSE e.codigo_empleado END AS codigo_empleado
        FROM sugerencias s
        INNER JOIN empleados e ON e.id = s.empleado_id
        LEFT JOIN empleados admin ON admin.id = s.respondido_por
        ORDER BY (s.respuesta IS NOT NULL) ASC, s.creado_en DESC, s.id DESC`
     );
-    return res.json({ sugerencias });
+    return res.json({ sugerencias: sugerencias.map(normalizarSugerencia) });
   } catch (error) {
     return next(error);
   }

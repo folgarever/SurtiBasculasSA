@@ -22,7 +22,7 @@
 
     <section class="suggestion-form-card">
       <div class="section-heading"><div><p class="eyebrow">TU VOZ CUENTA</p><h2>Enviar una sugerencia</h2></div></div>
-      <p class="suggestion-intro">Describe tu idea con respeto y detalle. La sugerencia será visible para la administración y quedará asociada a tu cuenta.</p>
+      <p class="suggestion-intro">Describe tu idea o queja con respeto y detalle. Puedes enviarla con tu nombre o de forma anónima; en ambos casos podrás ver aquí la respuesta de la administración.</p>
       <form class="suggestion-form" [formGroup]="formulario" (ngSubmit)="enviar()">
         <label for="sugerencia-titulo">Título</label>
         <input id="sugerencia-titulo" type="text" formControlName="titulo" maxlength="150" placeholder="Resume tu idea en pocas palabras" required>
@@ -31,6 +31,12 @@
         <label for="sugerencia-descripcion">Descripción</label>
         <textarea id="sugerencia-descripcion" formControlName="descripcion" rows="5" maxlength="5000" placeholder="¿Qué propones y cómo podría ayudar a mejorar el trabajo?" required></textarea>
         @if (formulario.controls.descripcion.touched && formulario.controls.descripcion.invalid) { <span class="field-error">La descripción debe tener entre 10 y 5,000 caracteres.</span> }
+
+        <label class="suggestion-anonymous">
+          <input id="sugerencia-anonima" type="checkbox" formControlName="anonima">
+          <span>Enviar de forma anónima</span>
+        </label>
+        <span class="helper-text">Si activas esta opción, la administración no verá tu nombre ni tu código. Tus respuestas seguirán apareciendo en esta sección.</span>
 
         <div class="suggestion-form-actions"><span class="helper-text">No incluyas información personal o confidencial de otras personas.</span><button class="button button-accent" type="submit" [disabled]="enviando()"><ng-icon name="lucideSend" size="16" /> {{ enviando() ? 'Enviando…' : 'Enviar sugerencia' }}</button></div>
       </form>
@@ -46,10 +52,10 @@
         <div class="suggestion-cards">
           @for (sugerencia of sugerencias(); track sugerencia.id) {
             <article class="suggestion-card">
-              <div class="suggestion-card-heading"><div><p class="eyebrow">ENVIADA {{ formatoFecha(sugerencia.creado_en) }}</p><h3>{{ sugerencia.titulo }}</h3></div><span class="state-pill" [class.state-good]="sugerencia.respuesta" [class.state-warn]="!sugerencia.respuesta">{{ sugerencia.respuesta ? 'Con respuesta' : 'En revisión' }}</span></div>
+              <div class="suggestion-card-heading"><div><p class="eyebrow">ENVIADA {{ formatoFecha(sugerencia.creado_en) }}{{ sugerencia.anonima ? ' · ANÓNIMA' : '' }}</p><h3>{{ sugerencia.titulo }}</h3></div><span class="state-pill" [class.state-good]="sugerencia.respuesta" [class.state-warn]="!sugerencia.respuesta">{{ sugerencia.respuesta ? 'Con respuesta' : 'En revisión' }}</span></div>
               <p class="suggestion-description">{{ sugerencia.descripcion }}</p>
               @if (sugerencia.respuesta) {
-                <div class="suggestion-response"><p class="eyebrow">RESPUESTA DE ADMINISTRACIÓN · {{ formatoFecha(sugerencia.respondido_en || '') }}</p><p>{{ sugerencia.respuesta }}</p><span>— {{ sugerencia.respondido_por }}</span></div>
+                <div class="suggestion-response"><p class="eyebrow">RESPUESTA DE ADMINISTRACIÓN · {{ formatoFecha(sugerencia.respondido_en || '') }}</p><p>{{ sugerencia.respuesta }}</p><span>— {{ sugerencia.respondido_por }}</span>@if (sugerencia.anonima) { <span> · Envío anónimo</span> }</div>
               }
             </article>
           }

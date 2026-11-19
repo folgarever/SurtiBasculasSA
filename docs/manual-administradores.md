@@ -436,9 +436,11 @@ El editor de plantillas vigentes, la baja lógica de cuentas y la auditoría de 
 
 Ruta: `/admin/sugerencias`.
 
-Los empleados envían sugerencias desde `/sugerencias`. Al entrar verás contadores de total y pendientes; las sugerencias aparecen primero las sin responder y luego las más recientes.
+Los empleados envían sugerencias o quejas desde `/sugerencias`, con la opción de marcarlas como anónimas. Al entrar verás contadores de total y pendientes; las sugerencias aparecen primero las sin responder y luego las más recientes.
 
-Cada tarjeta muestra fecha de envío en español, zona `America/Guatemala`, título, estado, empleado con su código y descripción. Si ya fue respondida, muestra fecha, texto y nombre de quien respondió.
+Cada tarjeta muestra fecha de envío en español, zona `America/Guatemala`, título, estado, autor y descripción. En las anónimas se muestra **Anónima** en lugar del empleado y su código. Si ya fue respondida, muestra fecha, texto y nombre de quien respondió.
+
+Cuando el empleado elige **Enviar de forma anónima**, el sistema conserva el vínculo interno con su cuenta para que pueda ver el seguimiento, pero el foro administrativo y la actividad reciente muestran **Anónimo** en lugar de su nombre. Puedes responder normalmente: la respuesta queda en el historial del autor sin revelar su identidad en el foro.
 
 1. Usa los filtros **Todas**, **Pendientes** o **Respondidas**.
 2. Lee la sugerencia y escribe o actualiza la respuesta, de 1 a 5000 caracteres.
