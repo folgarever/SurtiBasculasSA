@@ -47,7 +47,7 @@ La barra lateral izquierda reúne los módulos disponibles para tu cuenta:
 | Módulo | Ruta | Uso principal |
 |---|---|---|
 | Dashboard | `/admin` | Indicadores del día y actividad reciente |
-| Empleados | `/admin/empleados` | Directorio de personal, altas, ediciones y bajas |
+| Empleados | `/admin/empleados` | Directorio de personal, altas, ediciones, bajas y ficha integral |
 | Control de asistencia | `/rrhh` | Marcaciones, incidencias y reportes |
 | Evaluación de personal | `/evaluaciones` | Evaluaciones generales del personal |
 | Evaluaciones de conocimiento | `/admin/evaluaciones-conocimiento` | Frecuencia por puesto, banco por periodo y resultados |
@@ -94,7 +94,7 @@ No hay formularios ni acciones destructivas en esta pantalla. «Incidencias vige
 
 Ruta: `/admin/empleados`.
 
-Muestra el total de empleados registrados y activos, un buscador y una tabla con empleado, puesto, rol, estado y acciones.
+Muestra el total de empleados registrados y activos, un buscador y una tabla con empleado, puesto, rol, estado y acciones. El ícono de portapapeles abre la ficha integral del empleado; solo está disponible para cuentas ADMIN.
 
 ### Buscar
 
@@ -137,6 +137,15 @@ La baja es lógica: se conservan asistencia y evaluaciones.
 
 Tu contraseña se verifica en cada alta, edición o baja. Si es incorrecta verás: «La contraseña del administrador es incorrecta.». Los modales se cierran con X, Escape o clic fuera solo cuando no se está guardando.
 
+### Ver detalle del empleado
+
+1. Pulsa el ícono de portapapeles en la fila del empleado.
+2. Se abre `/admin/empleados/<id>` con la ficha del personal.
+3. Revisa los indicadores de puntualidad de 30 días y las tablas de marcaciones recientes, evaluaciones de personal, evaluaciones de conocimiento e incidencias.
+4. Pulsa **Volver al directorio** para regresar.
+
+La ficha es de solo lectura: no modifica la información. Está disponible para cualquier ADMIN y no requiere los permisos reforzados del módulo de evaluaciones.
+
 ---
 
 ## 5. Control de asistencia
@@ -152,13 +161,21 @@ Permite consultar marcaciones, corregir registros, registrar incidencias y expor
 3. Pulsa **Filtrar**.
 4. Pulsa **Limpiar** para volver al estado inicial.
 
-La tabla muestra empleado, puesto, fecha, entrada con estado (Puntual/Atraso), salida con estado (Normal/Anticipada o Pendiente) y un lápiz de corrección.
+La tabla muestra empleado, puesto, fecha, entrada con estado (Puntual/Tolerancia/Atraso), salida con estado (Normal/Anticipada/Horas extra o Pendiente), horas extras completas, justificación escrita al marcar y un lápiz de corrección.
+
+### Reglas de marcación
+
+- La entrada entre 08:00 y 08:15 se considera **Tolerancia de entrada**: no cuenta como atraso y puntualidad la trata como puntual.
+- La salida hasta las 17:59 no pide justificación y no genera horas extras.
+- Desde las 18:00 la salida exige una justificación de 4 a 1000 caracteres; si el empleado no la escribe, el sistema rechaza la marcación antes de guardarla.
+- Las horas extras se contabilizan solo en horas completas: 18:45 = 0 horas, 19:30 = 1 hora, 20:59 = 2 horas.
+- RRHH puede corregir horas, horas extras y justificación. Cada cambio queda en auditoría con el motivo correspondiente.
 
 ### Corregir una marcación
 
 1. Pulsa el lápiz en la fila correspondiente.
 2. Elige qué marcación corregir: **Hora de entrada** o **Hora de salida**.
-3. Indica la nueva fecha y hora.
+3. Indica la nueva fecha y hora. Si corres, ajusta las **horas extras** y la **justificación**.
 4. Escribe un motivo de al menos 4 caracteres.
 5. Guarda.
 

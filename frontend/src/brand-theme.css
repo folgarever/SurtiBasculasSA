@@ -1578,6 +1578,61 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .login-submit:not(:disabled):hover { transform: none; }
 }
 
+.attendance-justificacion {
+  display: grid;
+  gap: 6px;
+  max-width: 420px;
+  margin: 4px 0 8px;
+  color: #e9eef5;
+  font-size: .78rem;
+}
+.attendance-justificacion span { display: flex; align-items: center; gap: 7px; }
+.attendance-justificacion strong { color: #ffd2d2; font-size: .65rem; letter-spacing: .08em; }
+.attendance-justificacion textarea {
+  width: 100%;
+  min-height: 58px;
+  padding: 9px 11px;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 10px;
+  background: rgba(255,255,255,.1);
+  color: #fff;
+  font: inherit;
+  resize: vertical;
+}
+.attendance-justificacion textarea::placeholder { color: #c5cfdb; }
+.attendance-justificacion small { color: #c5cfdb; line-height: 1.4; }
+.attendance-rules { max-width: 420px; margin: 0 0 12px; line-height: 1.55; }
+.extra-cell { font-weight: 600; }
+.extra-cell.extra-active, .extra-note:not(:empty) { color: var(--color-ember, var(--red)); }
+.extra-note { max-width: 260px; white-space: pre-wrap; word-break: break-word; }
+
+.detail-state { padding: 36px; border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); color: var(--color-ink-soft); text-align: center; }
+.detail-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 22px;
+  padding: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+.detail-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+.detail-identity { flex: 1 1 auto; min-width: 0; }
+.detail-identity h2 { margin: 4px 0; font-size: 1.5rem; }
+.detail-identity p:last-child { margin-bottom: 0; color: var(--color-ink-soft); font-size: .85rem; }
+
 .theme-control { position: relative; }
 .theme-trigger {
   display: inline-flex;

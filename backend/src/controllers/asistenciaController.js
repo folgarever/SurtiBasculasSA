@@ -2,6 +2,55 @@ const pool = require('../config/db');
 
 const ZONA_HORARIA = 'America/Guatemala';
 
+const HORA_ENTRADA_REFERENCIA = '08:00:00';
+const TOLERANCIA_ENTRADA = '08:15:00';
+const TOLERANCIA_SALIDA = '18:00:00';
+const MINIMO_JUSTIFICACION = 4;
+const MAXIMO_JUSTIFICACION = 1000;
+
+function normalizarJustificacion(valor) {
+  return typeof valor === 'string' ? valor.trim() : '';
+}
+
+function esHoraValida(hora) {
+  return typeof hora === 'string' && /^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(hora);
+}
+
+function clasificarEntrada(hora, horaReferencia) {
+  const referencia = esHoraValida(horaReferencia) ? horaReferencia : HORA_ENTRADA_REFERENCIA;
+  return hora > referencia && hora <= TOLERANCIA_ENTRADA
+    ? 'tolerancia'
+    : hora <= referencia
+      ? 'puntual'
+      : 'atraso';
+}
+
+function calcularSalida(hora, horaReferencia) {
+  const [horas, minutos, segundos] = hora.split(':').map(Number);
+  const totalSegundos = horas * 3600 + minutos * 60 + segundos;
+  const [horasReferencia, minutosReferencia] = (
+    esHoraValida(horaReferencia) ? horaReferencia : '17:00:00'
+  ).split(':').map(Number);
+  const referenciaSegundos = horasReferencia * 3600 + minutosReferencia * 60;
+
+  if (totalSegundos < referenciaSegundos) {
+    return { estado: 'anticipada', horasExtras: 0, requiereJustificacion: false };
+  }
+
+  const requiereJustificacion = hora >= TOLERANCIA_SALIDA;
+  if (!requiereJustificacion) {
+    return { estado: 'normal', horasExtras: 0, requiereJustificacion: false };
+  }
+
+  const [horasTolerancia] = TOLERANCIA_SALIDA.split(':').map(Number);
+  const segundosExtras = totalSegundos - horasTolerancia * 3600;
+  return {
+    estado: 'normal',
+    horasExtras: Math.max(0, Math.floor(segundosExtras / 3600)),
+    requiereJustificacion: true
+  };
+}
+
 function fechaHoraLocal() {
   const partes = new Intl.DateTimeFormat('en-CA', {
     timeZone: ZONA_HORARIA,
@@ -51,7 +100,7 @@ async function registrarMarcacion(req, res, next) {
     );
 
     if (!marcaciones[0]) {
-      const estadoEntrada = ahora.hora <= String(empleados[0].hora_entrada) ? 'puntual' : 'atraso';
+      const estadoEntrada = clasificarEntrada(ahora.hora, String(empleados[0].hora_entrada));
       await connection.execute(
         `INSERT INTO marcaciones (empleado_id, fecha, hora_entrada, estado_entrada)
          VALUES (?, ?, ?, ?)`,
@@ -66,13 +115,39 @@ async function registrarMarcacion(req, res, next) {
       return res.status(400).json({ mensaje: 'La entrada y salida de hoy ya fueron registradas.' });
     }
 
-    const estadoSalida = ahora.hora >= String(empleados[0].hora_salida) ? 'normal' : 'anticipada';
+    const salida = calcularSalida(ahora.hora, String(empleados[0].hora_salida));
+    const justificacion = normalizarJustificacion(req.body?.justificacion);
+
+    if (salida.requiereJustificacion && (
+      justificacion.length < MINIMO_JUSTIFICACION ||
+      justificacion.length > MAXIMO_JUSTIFICACION
+    )) {
+      await connection.rollback();
+      return res.status(400).json({
+        mensaje: 'Debes justificar tu salida después de las 18:00 (mínimo 4 caracteres).'
+      });
+    }
+
     await connection.execute(
-      'UPDATE marcaciones SET hora_salida = ?, estado_salida = ? WHERE id = ?',
-      [ahora.fechaHora, estadoSalida, marcaciones[0].id]
+      `UPDATE marcaciones
+       SET hora_salida = ?, estado_salida = ?, horas_extras = ?, justificacion_horas_extras = ?
+       WHERE id = ?`,
+      [
+        ahora.fechaHora,
+        salida.estado,
+        salida.horasExtras,
+        salida.requiereJustificacion ? justificacion : null,
+        marcaciones[0].id
+      ]
     );
     await connection.commit();
-    return res.json({ tipo: 'salida', hora: ahora.fechaHora, estado: estadoSalida });
+    return res.json({
+      tipo: 'salida',
+      hora: ahora.fechaHora,
+      estado: salida.estado,
+      horas_extras: salida.horasExtras,
+      justificacion_horas_extras: salida.requiereJustificacion ? justificacion : null
+    });
   } catch (error) {
     if (connection) await connection.rollback();
     return next(error);
@@ -84,7 +159,8 @@ async function registrarMarcacion(req, res, next) {
 async function obtenerHistorialEmpleado(req, res, next) {
   try {
     const [marcaciones] = await pool.execute(
-      `SELECT id, fecha, hora_entrada, hora_salida, estado_entrada, estado_salida
+      `SELECT id, fecha, hora_entrada, hora_salida, estado_entrada, estado_salida,
+              horas_extras, justificacion_horas_extras
        FROM marcaciones
        WHERE empleado_id = ?
        ORDER BY fecha DESC, id DESC
@@ -98,4 +174,9 @@ async function obtenerHistorialEmpleado(req, res, next) {
   }
 }
 
-module.exports = { registrarMarcacion, obtenerHistorialEmpleado };
+module.exports = {
+  registrarMarcacion,
+  obtenerHistorialEmpleado,
+  clasificarEntrada,
+  calcularSalida
+};

@@ -8,6 +8,7 @@ export interface FiltrosAsistencia {
   busqueda?: string;
   fecha_inicio?: string;
   fecha_fin?: string;
+  empleado_id?: number;
 }
 
 export interface DatosCorreccion {
@@ -15,6 +16,8 @@ export interface DatosCorreccion {
   motivo: string;
   hora_entrada?: string;
   hora_salida?: string;
+  horas_extras?: number;
+  justificacion_horas_extras?: string | null;
 }
 
 export interface DatosIncidencia {
@@ -36,6 +39,70 @@ export interface EmpleadoAdministracion extends EmpleadoRrhh {
   nombre_puesto: string;
   puesto_id: number;
   rol: string;
+}
+
+export interface IncidenciaRrhh {
+  id: number;
+  empleado_id: number;
+  codigo_empleado?: string;
+  nombre?: string;
+  fecha_inicio: string;
+  fecha_fin: string;
+  tipo: 'permiso_oficial' | 'ausencia_justificada' | 'suspension' | 'vacaciones';
+  motivo: string;
+  registrado_por: number;
+}
+
+export interface DetalleEmpleado {
+  empleado: EmpleadoAdministracion;
+  indicadores: {
+    dias_registrados_30d: number;
+    atrasos_30d: number;
+    puntualidad_30d: number;
+    horas_extras_30d: number;
+  };
+  asistencias: Marcacion[];
+  evaluaciones: EvaluacionEmpleado[];
+  conocimiento: ConocimientoEmpleado[];
+  incidencias: IncidenciaRrhh[];
+}
+
+export interface EvaluacionEmpleado {
+  id: number;
+  fecha_evaluacion: string;
+  periodo: string;
+  presentacion: number;
+  desempeno: number;
+  atencion_cliente: number;
+  puntualidad: number;
+  conocimientos: number;
+  promedio_general: number;
+  comentarios?: string | null;
+  observaciones?: Record<string, string> | null;
+  supervision_operaciones?: number | null;
+  gestion_liderazgo_campo?: number | null;
+  control_calidad_calibracion?: number | null;
+  gestion_recursos_inventario?: number | null;
+  atencion_tecnica_cliente?: number | null;
+  liderazgo_personal?: number | null;
+  toma_decisiones_presion?: number | null;
+  pensamiento_analitico?: number | null;
+  organizacion_planificacion?: number | null;
+}
+
+export interface ConocimientoEmpleado {
+  id: number;
+  periodo: string;
+  estado: 'pendiente' | 'completada';
+  total_preguntas: number;
+  respuestas_correctas: number | null;
+  puntos_obtenidos: number | null;
+  puntos_totales: number | null;
+  porcentaje: number | null;
+  resultado: 'Aprobado' | 'Requiere refuerzo' | null;
+  fecha_realizacion: string | null;
+  nombre_puesto: string;
+  departamento: string;
 }
 
 export interface Puesto {
@@ -69,6 +136,7 @@ export class RrhhService {
     if (filtros.busqueda) params = params.set('codigo_empleado', filtros.busqueda);
     if (filtros.fecha_inicio) params = params.set('fecha_inicio', filtros.fecha_inicio);
     if (filtros.fecha_fin) params = params.set('fecha_fin', filtros.fecha_fin);
+    if (filtros.empleado_id !== undefined) params = params.set('empleado_id', filtros.empleado_id);
     return this.http.get<{ asistencias: Marcacion[] }>(`${this.baseUrl}/asistencias`, { params });
   }
 
@@ -78,6 +146,16 @@ export class RrhhService {
 
   obtenerEmpleadosAdministracion(): Observable<{ empleados: EmpleadoAdministracion[] }> {
     return this.http.get<{ empleados: EmpleadoAdministracion[] }>(`${this.baseUrl}/administracion/empleados`);
+  }
+
+  obtenerDetalleEmpleado(id: number): Observable<DetalleEmpleado> {
+    return this.http.get<DetalleEmpleado>(`${this.baseUrl}/administracion/empleados/${id}/detalle`);
+  }
+
+  obtenerIncidencias(empleadoId: number): Observable<{ incidencias: IncidenciaRrhh[] }> {
+    return this.http.get<{ incidencias: IncidenciaRrhh[] }>(`${this.baseUrl}/incidencias`, {
+      params: new HttpParams().set('empleado_id', empleadoId),
+    });
   }
 
   obtenerPuestos(): Observable<{ puestos: Puesto[] }> {
@@ -123,6 +201,7 @@ export class RrhhService {
     if (filtros.busqueda) params = params.set('codigo_empleado', filtros.busqueda);
     if (filtros.fecha_inicio) params = params.set('fecha_inicio', filtros.fecha_inicio);
     if (filtros.fecha_fin) params = params.set('fecha_fin', filtros.fecha_fin);
+    if (filtros.empleado_id !== undefined) params = params.set('empleado_id', filtros.empleado_id);
     return this.http.get(`${this.baseUrl}/exportar-excel`, { params, responseType: 'blob' });
   }
 }

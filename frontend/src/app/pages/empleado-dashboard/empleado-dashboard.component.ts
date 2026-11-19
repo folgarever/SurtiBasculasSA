@@ -1,7 +1,7 @@
 import { AppShellComponent } from '../../components/app-shell/app-shell.component';
 import { NAV_EMPLEADO, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -49,7 +49,10 @@ export class EmpleadoDashboardComponent implements OnInit {
   protected readonly cargando = signal(true);
   protected readonly respuestasNuevas = signal(0);
   protected readonly marcando = signal(false);
+  protected readonly justificacion = signal('');
   protected readonly aviso = signal<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+  protected readonly requiereJustificacion = computed(() => this.horaActual().slice(0, 5) >= '18:00');
+  protected readonly justificacionValida = computed(() => this.justificacion().trim().length >= 4);
 
   ngOnInit(): void {
     this.actualizarReloj();
@@ -60,13 +63,28 @@ export class EmpleadoDashboardComponent implements OnInit {
 
   protected registrar(): void {
     if (this.marcando()) return;
+    if (this.requiereJustificacion() && !this.justificacionValida()) {
+      this.aviso.set({
+        tipo: 'error',
+        texto: 'Para salir después de las 18:00 escribe el motivo de tu salida (mínimo 4 caracteres).',
+      });
+      return;
+    }
+
     this.marcando.set(true);
     this.aviso.set(null);
-    this.asistencia.registrarMarcacion().subscribe({
+    this.asistencia.registrarMarcacion(this.justificacion().trim() || undefined).subscribe({
       next: (resultado: ResultadoMarcacion) => {
         const accion = resultado.tipo === 'entrada' ? 'Entrada' : 'Salida';
-        const estado = this.etiquetaEstado(resultado.estado);
-        this.aviso.set({ tipo: 'success', texto: `${accion} registrada: ${estado} · ${resultado.hora.slice(11, 16)}` });
+        const estado = this.etiquetaEstado(resultado.estado, resultado.horas_extras);
+        const extras = resultado.horas_extras
+          ? ` · ${resultado.horas_extras} ${resultado.horas_extras === 1 ? 'hora extra' : 'horas extras'}`
+          : '';
+        this.aviso.set({
+          tipo: 'success',
+          texto: `${accion} registrada: ${estado} · ${resultado.hora.slice(11, 16)}${extras}`,
+        });
+        if (resultado.tipo === 'salida') this.justificacion.set('');
         this.marcando.set(false);
         this.cargarHistorial();
       },
@@ -77,11 +95,29 @@ export class EmpleadoDashboardComponent implements OnInit {
     });
   }
 
-  protected etiquetaEstado(estado: string | null): string {
+  protected actualizarJustificacion(event: Event): void {
+    this.justificacion.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  protected etiquetaEstado(estado: string | null, horasExtras = 0): string {
+    if (horasExtras > 0) return 'Salida con horas extra';
     const etiquetas: Record<string, string> = {
-      puntual: 'Puntual', atraso: 'Atraso', normal: 'Salida normal', anticipada: 'Salida anticipada',
+      puntual: 'Puntual',
+      tolerancia: 'Tolerancia de entrada',
+      atraso: 'Atraso',
+      normal: 'Salida normal',
+      anticipada: 'Salida anticipada',
     };
     return estado ? etiquetas[estado] || estado : 'Pendiente';
+  }
+
+  protected etiquetaSalida(item: Marcacion): string {
+    return this.etiquetaEstado(item.estado_salida, item.horas_extras);
+  }
+
+  protected formatoExtras(horas: number | undefined): string {
+    if (!horas) return '—';
+    return `${horas} ${horas === 1 ? 'hora' : 'horas'}`;
   }
 
   protected formatoFecha(fecha: string): string {

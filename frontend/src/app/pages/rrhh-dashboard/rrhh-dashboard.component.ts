@@ -70,8 +70,10 @@ export class RrhhDashboardComponent implements OnInit {
     fecha_fin: [''],
   });
   protected readonly correccionForm = this.formBuilder.nonNullable.group({
-    campo: ['hora_entrada' as 'hora_entrada' | 'hora_salida', Validators.required],
-    hora: ['', Validators.required],
+    campo: ['hora_entrada' as 'hora_entrada' | 'hora_salida' | 'horas_extras' | 'justificacion_horas_extras', Validators.required],
+    hora: [''],
+    horas_extras: [0],
+    justificacion: [''],
     motivo: ['', [Validators.required, Validators.minLength(4)]],
   });
   protected readonly incidenciaForm = this.formBuilder.nonNullable.group({
@@ -101,7 +103,13 @@ export class RrhhDashboardComponent implements OnInit {
 
   protected abrirCorreccion(item: Marcacion): void {
     this.seleccionada.set(item);
-    this.correccionForm.reset({ campo: 'hora_entrada', hora: '', motivo: '' });
+    this.correccionForm.reset({
+      campo: 'hora_entrada',
+      hora: '',
+      horas_extras: item.horas_extras || 0,
+      justificacion: item.justificacion_horas_extras || '',
+      motivo: '',
+    });
     this.modal.set('correccion');
   }
 
@@ -117,14 +125,21 @@ export class RrhhDashboardComponent implements OnInit {
   protected guardarCorreccion(): void {
     this.correccionForm.markAllAsTouched();
     const item = this.seleccionada();
-    if (this.correccionForm.invalid || !item || this.guardando()) return;
-
     const value = this.correccionForm.getRawValue();
+    if (this.correccionForm.invalid || !item || this.guardando()) return;
+    if ((value.campo === 'hora_entrada' || value.campo === 'hora_salida') && !value.hora) return;
+
     const datos: DatosCorreccion = {
       marcacion_id: item.id,
       motivo: value.motivo.trim(),
-      [value.campo]: value.hora.replace('T', ' '),
     };
+    if (value.campo === 'hora_entrada' || value.campo === 'hora_salida') {
+      datos[value.campo] = value.hora.replace('T', ' ');
+    } else if (value.campo === 'horas_extras') {
+      datos.horas_extras = Number(value.horas_extras);
+    } else {
+      datos.justificacion_horas_extras = value.justificacion.trim() || null;
+    }
     this.guardando.set(true);
     this.rrhh.corregirMarcacion(datos).subscribe({
       next: (response) => {
@@ -189,9 +204,21 @@ export class RrhhDashboardComponent implements OnInit {
     return value ? value.slice(11, 16) : '—';
   }
 
-  protected etiquetaEstado(estado: string | null): string {
-    const etiquetas: Record<string, string> = { puntual: 'Puntual', atraso: 'Atraso', normal: 'Normal', anticipada: 'Anticipada' };
+  protected etiquetaEstado(estado: string | null, horasExtras = 0): string {
+    if (horasExtras > 0) return 'Horas extra';
+    const etiquetas: Record<string, string> = {
+      puntual: 'Puntual',
+      tolerancia: 'Tolerancia',
+      atraso: 'Atraso',
+      normal: 'Normal',
+      anticipada: 'Anticipada',
+    };
     return estado ? etiquetas[estado] || estado : 'Pendiente';
+  }
+
+  protected formatoExtras(horas: number | undefined): string {
+    if (!horas) return '—';
+    return `${horas} ${horas === 1 ? 'hora' : 'horas'}`;
   }
 
   private obtenerFiltros(): FiltrosAsistencia {

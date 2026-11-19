@@ -20,7 +20,20 @@
 
     <section class="attendance-band">
       <div class="clock-block"><p class="eyebrow">HORA DE GUATEMALA <span class="live-indicator">EN VIVO</span></p><time class="digital-clock">{{ horaActual() }}</time><p class="clock-caption">America / Guatemala · UTC−6</p></div>
-      <div class="attendance-action"><p>¿Listo para registrar?</p><span>Tu marcación se guardará con la hora oficial del servidor.</span><button class="button button-light" type="button" (click)="registrar()" [disabled]="marcando()">{{ marcando() ? 'Registrando…' : 'Registrar marcación' }} <ng-icon name="lucideArrowRight" size="17" /></button></div>
+      <div class="attendance-action">
+        <p>¿Listo para registrar?</p>
+        <span>Tu marcación se guardará con la hora oficial del servidor.</span>
+        @if (requiereJustificacion()) {
+          <label class="attendance-justificacion" for="justificacion-salida">
+            <span>Justificación de salida <strong>OBLIGATORIA</strong></span>
+            <textarea id="justificacion-salida" rows="2" maxlength="1000" [value]="justificacion()" (input)="actualizarJustificacion($event)" placeholder="Describe por qué marcás tu salida después de las 18:00" required></textarea>
+            <small>Se registra con tu marcación y puede ser revisada por Recursos Humanos.</small>
+          </label>
+        } @else {
+          <p class="attendance-rules">Tolerancia de entrada 08:00–08:15 · salida sin justificación hasta las 18:00 · horas extras completas a partir de las 18:00.</p>
+        }
+        <button class="button button-light" type="button" (click)="registrar()" [disabled]="marcando() || (requiereJustificacion() && !justificacionValida())">{{ marcando() ? 'Registrando…' : 'Registrar marcación' }} <ng-icon name="lucideArrowRight" size="17" /></button>
+      </div>
     </section>
 
     <a class="suggestion-tracker-card" routerLink="/sugerencias">
@@ -38,20 +51,22 @@
     <section class="table-frame">
       <div class="table-scroll">
         <table>
-          <thead><tr><th>Fecha</th><th>Entrada</th><th>Estado</th><th>Salida</th><th>Estado</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Entrada</th><th>Estado</th><th>Salida</th><th>Estado</th><th>Extras</th><th>Justificación</th></tr></thead>
           <tbody>
             @if (cargando()) {
-              <tr><td colspan="5" class="table-empty">Cargando historial…</td></tr>
+              <tr><td colspan="7" class="table-empty">Cargando historial…</td></tr>
             } @else if (historial().length === 0) {
-              <tr><td colspan="5" class="table-empty">Aún no hay marcaciones registradas.</td></tr>
+              <tr><td colspan="7" class="table-empty">Aún no hay marcaciones registradas.</td></tr>
             } @else {
               @for (item of historial(); track item.id) {
                 <tr>
                   <td class="date-cell">{{ formatoFecha(item.fecha) }}</td>
                   <td>{{ item.hora_entrada?.slice(11, 16) || '—' }}</td>
-                  <td><span class="state-pill" [class.state-good]="item.estado_entrada === 'puntual'" [class.state-warn]="item.estado_entrada === 'atraso'">{{ etiquetaEstado(item.estado_entrada) }}</span></td>
+                  <td><span class="state-pill" [class.state-good]="item.estado_entrada === 'puntual' || item.estado_entrada === 'tolerancia'" [class.state-warn]="item.estado_entrada === 'atraso'">{{ etiquetaEstado(item.estado_entrada) }}</span></td>
                   <td>{{ item.hora_salida?.slice(11, 16) || '—' }}</td>
-                  <td><span class="state-pill" [class.state-good]="item.estado_salida === 'normal'" [class.state-warn]="item.estado_salida === 'anticipada'">{{ etiquetaEstado(item.estado_salida) }}</span></td>
+                  <td><span class="state-pill" [class.state-good]="item.estado_salida === 'normal'" [class.state-warn]="item.estado_salida === 'anticipada' && !item.horas_extras" [class.state-new]="item.horas_extras">{{ etiquetaSalida(item) }}</span></td>
+                  <td class="extra-cell" [class.extra-active]="item.horas_extras">{{ formatoExtras(item.horas_extras) }}</td>
+                  <td class="extra-note">{{ item.justificacion_horas_extras || '—' }}</td>
                 </tr>
               }
             }

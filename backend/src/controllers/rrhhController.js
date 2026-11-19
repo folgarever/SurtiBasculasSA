@@ -19,6 +19,10 @@ function filtrosReporte(query) {
     condiciones.push('(e.codigo_empleado LIKE ? OR e.nombre LIKE ?)');
     parametros.push(`%${query.codigo_empleado}%`, `%${query.codigo_empleado}%`);
   }
+  if (query.empleado_id && /^\d+$/.test(String(query.empleado_id))) {
+    condiciones.push('m.empleado_id = ?');
+    parametros.push(Number(query.empleado_id));
+  }
 
   return {
     where: condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '',
@@ -28,7 +32,8 @@ function filtrosReporte(query) {
 
 const consultaAsistencias = `
   SELECT m.id, e.id AS empleado_id, e.codigo_empleado, e.nombre, p.nombre_puesto, m.fecha,
-         m.hora_entrada, m.hora_salida, m.estado_entrada, m.estado_salida
+         m.hora_entrada, m.hora_salida, m.estado_entrada, m.estado_salida,
+         m.horas_extras, m.justificacion_horas_extras
   FROM marcaciones m
   INNER JOIN empleados e ON e.id = m.empleado_id
   INNER JOIN puestos p ON p.id = e.puesto_id
@@ -71,6 +76,28 @@ async function obtenerEmpleadosAdministracion(req, res, next) {
        ORDER BY e.nombre ASC`
     );
     return res.json({ empleados });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function obtenerEmpleadoAdministracion(req, res, next) {
+  try {
+    const [empleados] = await pool.execute(
+      `SELECT e.id, e.codigo_empleado, e.nombre, e.puesto_id, e.activo, p.nombre_puesto, r.nombre AS rol
+       FROM empleados e
+       INNER JOIN puestos p ON p.id = e.puesto_id
+       INNER JOIN roles r ON r.id = e.rol_id
+       WHERE e.id = ?
+       LIMIT 1`,
+      [req.params.id]
+    );
+
+    if (!empleados[0]) {
+      return res.status(404).json({ mensaje: 'Empleado no encontrado.' });
+    }
+
+    return res.json({ empleado: empleados[0] });
   } catch (error) {
     return next(error);
   }
@@ -304,12 +331,22 @@ async function eliminarEmpleado(req, res, next) {
 }
 
 async function corregirMarcacion(req, res, next) {
-  const { marcacion_id: marcacionId, hora_entrada: horaEntrada, hora_salida: horaSalida, motivo } = req.body || {};
-  const camposPermitidos = ['hora_entrada', 'hora_salida'];
+  const {
+    marcacion_id: marcacionId,
+    hora_entrada: horaEntrada,
+    hora_salida: horaSalida,
+    horas_extras: horasExtras,
+    justificacion_horas_extras: justificacionExtras,
+    motivo
+  } = req.body || {};
+  const camposPermitidos = ['hora_entrada', 'hora_salida', 'horas_extras', 'justificacion_horas_extras'];
   const camposRecibidos = camposPermitidos.filter((campo) => Object.hasOwn(req.body || {}, campo));
 
   if (!marcacionId || camposRecibidos.length === 0 || !String(motivo || '').trim()) {
-    return res.status(400).json({ mensaje: 'Indica la marcación, al menos una hora a corregir y el motivo.' });
+    return res.status(400).json({ mensaje: 'Indica la marcación, al menos un campo a corregir y el motivo.' });
+  }
+  if (camposRecibidos.includes('horas_extras') && !/^\d+$/.test(String(horasExtras))) {
+    return res.status(400).json({ mensaje: 'Las horas extras deben ser un número entero.' });
   }
 
   let connection;
@@ -318,7 +355,8 @@ async function corregirMarcacion(req, res, next) {
     await connection.beginTransaction();
 
     const [filas] = await connection.execute(
-      'SELECT id, hora_entrada, hora_salida FROM marcaciones WHERE id = ? FOR UPDATE',
+      `SELECT id, hora_entrada, hora_salida, horas_extras, justificacion_horas_extras
+       FROM marcaciones WHERE id = ? FOR UPDATE`,
       [marcacionId]
     );
     if (!filas[0]) {
@@ -327,10 +365,16 @@ async function corregirMarcacion(req, res, next) {
     }
 
     const anterior = filas[0];
-    const nuevaEntrada = camposRecibidos.includes('hora_entrada') ? horaEntrada || null : anterior.hora_entrada;
-    const nuevaSalida = camposRecibidos.includes('hora_salida') ? horaSalida || null : anterior.hora_salida;
+    const valoresPorCampo = {
+      hora_entrada: camposRecibidos.includes('hora_entrada') ? horaEntrada || null : anterior.hora_entrada,
+      hora_salida: camposRecibidos.includes('hora_salida') ? horaSalida || null : anterior.hora_salida,
+      horas_extras: camposRecibidos.includes('horas_extras') ? Number(horasExtras) : anterior.horas_extras,
+      justificacion_horas_extras: camposRecibidos.includes('justificacion_horas_extras')
+        ? String(justificacionExtras || '').trim() || null
+        : anterior.justificacion_horas_extras
+    };
     const asignaciones = camposRecibidos.map((campo) => `${campo} = ?`).join(', ');
-    const valores = camposRecibidos.map((campo) => campo === 'hora_entrada' ? nuevaEntrada : nuevaSalida);
+    const valores = camposRecibidos.map((campo) => valoresPorCampo[campo]);
 
     await connection.execute(
       `UPDATE marcaciones SET ${asignaciones} WHERE id = ?`,
@@ -342,7 +386,8 @@ async function corregirMarcacion(req, res, next) {
         hora_entrada_nueva, hora_salida_nueva, motivo_modificacion)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [marcacionId, req.usuario.id, anterior.hora_entrada, anterior.hora_salida,
-        nuevaEntrada, nuevaSalida, String(motivo).trim()]
+        valoresPorCampo.hora_entrada, valoresPorCampo.hora_salida,
+        `${String(motivo).trim()} | extras: ${anterior.horas_extras ?? 0} → ${valoresPorCampo.horas_extras ?? 0} | justificación: ${valoresPorCampo.justificacion_horas_extras ?? '-'}`]
     );
 
     await connection.commit();
@@ -352,6 +397,137 @@ async function corregirMarcacion(req, res, next) {
     return next(error);
   } finally {
     if (connection) connection.release();
+  }
+}
+
+async function obtenerDetalleEmpleado(req, res, next) {
+  const empleadoId = Number(req.params.id);
+  if (!Number.isInteger(empleadoId) || empleadoId <= 0) {
+    return res.status(400).json({ mensaje: 'El identificador del empleado no es válido.' });
+  }
+
+  try {
+    const [
+      [empleados],
+      [asistencias],
+      [indicadores],
+      [evaluaciones],
+      [conocimiento],
+      [incidencias]
+    ] = await Promise.all([
+      pool.execute(
+        `SELECT e.id, e.codigo_empleado, e.nombre, e.puesto_id, e.activo, p.nombre_puesto, r.nombre AS rol
+         FROM empleados e
+         INNER JOIN puestos p ON p.id = e.puesto_id
+         INNER JOIN roles r ON r.id = e.rol_id
+         WHERE e.id = ?
+         LIMIT 1`,
+        [empleadoId]
+      ),
+      pool.execute(
+        `SELECT id, fecha, hora_entrada, hora_salida, estado_entrada, estado_salida,
+                horas_extras, justificacion_horas_extras
+         FROM marcaciones
+         WHERE empleado_id = ?
+         ORDER BY fecha DESC, id DESC
+         LIMIT 60`,
+        [empleadoId]
+      ),
+      pool.execute(
+        `SELECT COUNT(*) AS dias_registrados,
+                SUM(estado_entrada = 'atraso') AS atrasos,
+                SUM(estado_entrada IN ('puntual', 'tolerancia')) AS entradas_puntuales,
+                SUM(horas_extras) AS horas_extras
+         FROM marcaciones
+         WHERE empleado_id = ? AND fecha >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)`,
+        [empleadoId]
+      ),
+      pool.execute(
+        `SELECT ev.id, ev.fecha_evaluacion, ev.periodo, ev.presentacion, ev.desempeno,
+                ev.atencion_cliente, ev.puntualidad, ev.conocimientos, ev.comentarios,
+                ev.observaciones,
+                ROUND((ev.presentacion + ev.desempeno + ev.atencion_cliente
+                  + ev.puntualidad + ev.conocimientos) / 5, 2) AS promedio_general,
+                ej.supervision_operaciones, ej.gestion_liderazgo_campo,
+                ej.control_calidad_calibracion, ej.gestion_recursos_inventario,
+                ej.atencion_tecnica_cliente, ej.liderazgo_personal,
+                ej.toma_decisiones_presion, ej.pensamiento_analitico,
+                ej.organizacion_planificacion
+         FROM evaluaciones ev
+         LEFT JOIN evaluaciones_jefatura ej ON ej.evaluacion_id = ev.id
+         WHERE ev.empleado_id = ?
+         ORDER BY ev.fecha_evaluacion DESC, ev.id DESC`,
+        [empleadoId]
+      ),
+      pool.execute(
+        `SELECT ec.id, ec.periodo, ec.estado, ec.total_preguntas, ec.respuestas_correctas,
+                ec.puntos_obtenidos, ec.puntos_totales, ec.porcentaje, ec.resultado,
+                ec.fecha_realizacion, p.nombre_puesto, p.departamento
+         FROM evaluaciones_conocimiento ec
+         INNER JOIN puestos p ON p.id = ec.puesto_id
+         WHERE ec.empleado_id = ?
+         ORDER BY ec.fecha_realizacion DESC, ec.creado_en DESC, ec.id DESC`,
+        [empleadoId]
+      ),
+      pool.execute(
+        `SELECT id, fecha_inicio, fecha_fin, tipo, motivo, registrado_por
+         FROM incidencias_permisos
+         WHERE empleado_id = ?
+         ORDER BY fecha_inicio DESC, id DESC`,
+        [empleadoId]
+      )
+    ]);
+
+    if (!empleados[0]) {
+      return res.status(404).json({ mensaje: 'Empleado no encontrado.' });
+    }
+
+    const resumen = indicadores[0] || {};
+    const dias = Number(resumen.dias_registrados) || 0;
+    const atrasos = Number(resumen.atrasos) || 0;
+    const puntuales = Number(resumen.entradas_puntuales) || 0;
+
+    return res.json({
+      empleado: empleados[0],
+      indicadores: {
+        dias_registrados_30d: dias,
+        atrasos_30d: atrasos,
+        puntualidad_30d: dias ? Math.round((puntuales / dias) * 1000) / 10 : 0,
+        horas_extras_30d: Number(resumen.horas_extras) || 0
+      },
+      asistencias,
+      evaluaciones,
+      conocimiento,
+      incidencias
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function obtenerIncidencias(req, res, next) {
+  try {
+    const condiciones = [];
+    const parametros = [];
+    if (req.query.empleado_id && /^\d+$/.test(String(req.query.empleado_id))) {
+      condiciones.push('i.empleado_id = ?');
+      parametros.push(Number(req.query.empleado_id));
+    }
+    const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
+
+    const [incidencias] = await pool.execute(
+      `SELECT i.id, i.empleado_id, e.codigo_empleado, e.nombre, i.fecha_inicio, i.fecha_fin,
+              i.tipo, i.motivo, i.registrado_por
+       FROM incidencias_permisos i
+       INNER JOIN empleados e ON e.id = i.empleado_id
+       ${where}
+       ORDER BY i.fecha_inicio DESC, i.id DESC`,
+      parametros
+    );
+
+    return res.json({ incidencias });
+  } catch (error) {
+    return next(error);
   }
 }
 
@@ -407,6 +583,10 @@ async function exportarReporteExcel(req, res, next) {
       condicionesIncidencias.push('(e.codigo_empleado LIKE ? OR e.nombre LIKE ?)');
       parametrosIncidencias.push(`%${req.query.codigo_empleado}%`, `%${req.query.codigo_empleado}%`);
     }
+    if (req.query.empleado_id && /^\d+$/.test(String(req.query.empleado_id))) {
+      condicionesIncidencias.push('i.empleado_id = ?');
+      parametrosIncidencias.push(Number(req.query.empleado_id));
+    }
     const whereIncidencias = condicionesIncidencias.length
       ? `WHERE ${condicionesIncidencias.join(' AND ')}`
       : '';
@@ -433,12 +613,14 @@ async function exportarReporteExcel(req, res, next) {
       { header: 'Entrada', key: 'hora_entrada', width: 22 },
       { header: 'Salida', key: 'hora_salida', width: 22 },
       { header: 'Estado entrada', key: 'estado_entrada', width: 18 },
-      { header: 'Estado salida', key: 'estado_salida', width: 18 }
+      { header: 'Estado salida', key: 'estado_salida', width: 18 },
+      { header: 'Horas extras', key: 'horas_extras', width: 14 },
+      { header: 'Justificación', key: 'justificacion_horas_extras', width: 50 }
     ];
     hojaAsistencias.addRows(asistencias);
     hojaAsistencias.getRow(1).font = { bold: true };
     hojaAsistencias.views = [{ state: 'frozen', ySplit: 1 }];
-    hojaAsistencias.autoFilter = { from: 'A1', to: 'I1' };
+    hojaAsistencias.autoFilter = { from: 'A1', to: 'K1' };
 
     const hojaIncidencias = libro.addWorksheet('Incidencias');
     hojaIncidencias.columns = [
@@ -467,11 +649,14 @@ module.exports = {
   obtenerTodasAsistencias,
   obtenerEmpleadosActivos,
   obtenerEmpleadosAdministracion,
+  obtenerEmpleadoAdministracion,
+  obtenerDetalleEmpleado,
   obtenerPuestos,
   registrarEmpleado,
   actualizarEmpleado,
   eliminarEmpleado,
   corregirMarcacion,
+  obtenerIncidencias,
   registrarIncidencia,
   exportarReporteExcel
 };

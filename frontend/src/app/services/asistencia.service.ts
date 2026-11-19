@@ -8,8 +8,10 @@ export interface Marcacion {
   fecha: string;
   hora_entrada: string | null;
   hora_salida: string | null;
-  estado_entrada: 'puntual' | 'atraso' | null;
+  estado_entrada: 'puntual' | 'tolerancia' | 'atraso' | null;
   estado_salida: 'normal' | 'anticipada' | null;
+  horas_extras?: number;
+  justificacion_horas_extras?: string | null;
   codigo_empleado?: string;
   nombre?: string;
   nombre_puesto?: string;
@@ -20,14 +22,19 @@ export interface ResultadoMarcacion {
   tipo: 'entrada' | 'salida';
   hora: string;
   estado: string;
+  horas_extras?: number;
+  justificacion_horas_extras?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AsistenciaService {
   private readonly http = inject(HttpClient);
 
-  registrarMarcacion(): Observable<ResultadoMarcacion> {
-    return this.http.post<ResultadoMarcacion>(`${environment.apiUrl}/asistencia/marcar`, {});
+  registrarMarcacion(justificacion?: string): Observable<ResultadoMarcacion> {
+    return this.http.post<ResultadoMarcacion>(
+      `${environment.apiUrl}/asistencia/marcar`,
+      justificacion ? { justificacion } : {}
+    );
   }
 
   obtenerHistorial(): Observable<{ marcaciones: Marcacion[] }> {

@@ -7,6 +7,7 @@ import { employeeGuard } from './guards/employee.guard';
 import { candidateGuard } from './guards/candidate.guard';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
 import { EmpleadosComponent } from './pages/empleados/empleados.component';
+import { EmpleadoDetalleComponent } from './pages/empleado-detalle/empleado-detalle.component';
 import { EmpleadoDashboardComponent } from './pages/empleado-dashboard/empleado-dashboard.component';
 import { EvaluacionesComponent } from './pages/evaluaciones/evaluaciones.component';
 import { LoginComponent } from './pages/login/login.component';
@@ -25,6 +26,7 @@ export const routes: Routes = [
 	{ path: 'dashboard', component: EmpleadoDashboardComponent, canActivate: [authGuard] },
 	{ path: 'admin', component: AdminDashboardComponent, canActivate: [adminGuard] },
 	{ path: 'admin/empleados', component: EmpleadosComponent, canActivate: [adminGuard] },
+	{ path: 'admin/empleados/:id', component: EmpleadoDetalleComponent, canActivate: [adminGuard] },
 	{ path: 'rrhh', component: RrhhDashboardComponent, canActivate: [authGuard, roleGuard] },
 	{ path: 'evaluaciones', component: EvaluacionesComponent, canActivate: [authGuard, evaluationGuard] },
 	{

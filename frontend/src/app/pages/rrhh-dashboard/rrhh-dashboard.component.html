@@ -45,20 +45,22 @@
       <section class="table-frame rrhh-table-frame">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Empleado</th><th>Puesto</th><th>Fecha</th><th>Entrada</th><th>Estado</th><th>Salida</th><th>Estado</th><th aria-label="Acciones"></th></tr></thead>
+            <thead><tr><th>Empleado</th><th>Puesto</th><th>Fecha</th><th>Entrada</th><th>Estado</th><th>Salida</th><th>Estado</th><th>Extras</th><th>Justificación</th><th aria-label="Acciones"></th></tr></thead>
             <tbody>
               @if (cargando()) {
-                <tr><td colspan="8" class="table-empty">Cargando asistencias…</td></tr>
+                <tr><td colspan="10" class="table-empty">Cargando asistencias…</td></tr>
               } @else if (asistencias().length === 0) {
-                <tr><td colspan="8" class="table-empty">No hay marcaciones para los filtros seleccionados.</td></tr>
+                <tr><td colspan="10" class="table-empty">No hay marcaciones para los filtros seleccionados.</td></tr>
               } @else {
                 @for (item of asistencias(); track item.id) {
                   <tr>
                     <td><strong class="employee-name">{{ item.nombre }}</strong><small class="employee-code">{{ item.codigo_empleado }}</small></td>
                     <td>{{ item.nombre_puesto || '—' }}</td><td>{{ formatoFecha(item.fecha) }}</td><td>{{ hora(item.hora_entrada) }}</td>
-                    <td><span class="state-pill" [class.state-good]="item.estado_entrada === 'puntual'" [class.state-warn]="item.estado_entrada === 'atraso'">{{ etiquetaEstado(item.estado_entrada) }}</span></td>
+                    <td><span class="state-pill" [class.state-good]="item.estado_entrada === 'puntual' || item.estado_entrada === 'tolerancia'" [class.state-warn]="item.estado_entrada === 'atraso'">{{ etiquetaEstado(item.estado_entrada) }}</span></td>
                     <td>{{ hora(item.hora_salida) }}</td>
-                    <td><span class="state-pill" [class.state-good]="item.estado_salida === 'normal'" [class.state-warn]="item.estado_salida === 'anticipada'">{{ etiquetaEstado(item.estado_salida) }}</span></td>
+                    <td><span class="state-pill" [class.state-good]="item.estado_salida === 'normal' && !item.horas_extras" [class.state-warn]="item.estado_salida === 'anticipada' && !item.horas_extras" [class.state-new]="item.horas_extras">{{ etiquetaEstado(item.estado_salida, item.horas_extras) }}</span></td>
+                    <td class="extra-cell" [class.extra-active]="item.horas_extras">{{ formatoExtras(item.horas_extras) }}</td>
+                    <td class="extra-note">{{ item.justificacion_horas_extras || '—' }}</td>
                     <td><button class="small-action" type="button" title="Corregir marcación" aria-label="Corregir marcación" (click)="abrirCorreccion(item)"><ng-icon name="lucidePencil" size="16" /></button></td>
                   </tr>
                 }
@@ -77,8 +79,14 @@
       <div class="modal-header"><div><p class="eyebrow">AUDITORÍA DE ASISTENCIA</p><h2 id="correction-title">Corrección manual</h2></div><button class="icon-button" type="button" aria-label="Cerrar" (click)="cerrarModal()"><ng-icon name="lucideX" size="17" /></button></div>
       @if (seleccionada(); as item) { <p class="modal-context"><strong>{{ item.nombre }}</strong> · {{ formatoFecha(item.fecha) }} · {{ item.codigo_empleado }}</p> }
       <form [formGroup]="correccionForm" (ngSubmit)="guardarCorreccion()">
-        <label for="campo-correccion">Marcación a corregir</label><select id="campo-correccion" formControlName="campo"><option value="hora_entrada">Hora de entrada</option><option value="hora_salida">Hora de salida</option></select>
-        <label for="hora-correccion">Nueva fecha y hora</label><input id="hora-correccion" type="datetime-local" formControlName="hora" required>
+        <label for="campo-correccion">Campo a corregir</label><select id="campo-correccion" formControlName="campo"><option value="hora_entrada">Hora de entrada</option><option value="hora_salida">Hora de salida</option><option value="horas_extras">Horas extras</option><option value="justificacion_horas_extras">Justificación de horas extras</option></select>
+        @if (correccionForm.controls.campo.value === 'hora_entrada' || correccionForm.controls.campo.value === 'hora_salida') {
+          <label for="hora-correccion">Nueva fecha y hora</label><input id="hora-correccion" type="datetime-local" formControlName="hora" required>
+        } @else if (correccionForm.controls.campo.value === 'horas_extras') {
+          <label for="extras-correccion">Horas extras completas</label><input id="extras-correccion" type="number" min="0" step="1" formControlName="horas_extras" required>
+        } @else {
+          <label for="justificacion-correccion">Justificación de horas extras</label><textarea id="justificacion-correccion" formControlName="justificacion" rows="3" placeholder="Describe el motivo de las horas extras" maxlength="1000"></textarea>
+        }
         <label for="motivo-correccion">Motivo <span class="required-mark">OBLIGATORIO</span></label><textarea id="motivo-correccion" formControlName="motivo" rows="3" placeholder="Describe por qué se realiza el cambio" required></textarea>
         @if (correccionForm.controls.motivo.touched && correccionForm.controls.motivo.invalid) { <span class="field-error">El motivo es obligatorio y debe tener al menos 4 caracteres.</span> }
         <div class="modal-actions"><button class="button button-text" type="button" (click)="cerrarModal()">Cancelar</button><button class="button button-accent" type="submit" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar corrección' }}</button></div>

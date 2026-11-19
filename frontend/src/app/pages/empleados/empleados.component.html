@@ -51,6 +51,7 @@
                     <td>{{ empleado.rol }}</td>
                     <td><span class="state-pill" [class.state-good]="empleado.activo" [class.state-warn]="!empleado.activo">{{ empleado.activo ? 'Activo' : 'Inactivo' }}</span></td>
                     <td class="employee-actions">
+                      <a class="small-action" [routerLink]="['/admin/empleados', empleado.id]" title="Ver detalle" [attr.aria-label]="'Ver detalle de ' + empleado.nombre"><ng-icon name="lucideClipboardCheck" size="16" /></a>
                       @if (puedeEditar(empleado)) {
                         <button class="small-action" type="button" title="Editar empleado" [attr.aria-label]="'Editar ' + empleado.nombre" (click)="editarEmpleado(empleado)"><ng-icon name="lucidePencil" size="16" /></button>
                         @if (puedeDarBaja(empleado) && empleado.activo) {

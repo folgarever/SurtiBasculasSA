@@ -66,7 +66,7 @@ async function obtenerEmpleados(req, res, next) {
          SELECT empleado_id,
                 COUNT(*) AS dias_registrados,
                 SUM(estado_entrada = 'atraso') AS atrasos,
-                SUM(estado_entrada = 'puntual') AS entradas_puntuales
+                SUM(estado_entrada IN ('puntual', 'tolerancia')) AS entradas_puntuales
          FROM marcaciones
          WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
          GROUP BY empleado_id

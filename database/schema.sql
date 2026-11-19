@@ -78,8 +78,10 @@ CREATE TABLE marcaciones (
     fecha DATE NOT NULL,
     hora_entrada DATETIME NULL,
     hora_salida DATETIME NULL,
-    estado_entrada ENUM('puntual', 'atraso') DEFAULT 'puntual',
+    estado_entrada ENUM('puntual', 'tolerancia', 'atraso') DEFAULT 'puntual',
     estado_salida ENUM('normal', 'anticipada') DEFAULT 'normal',
+    horas_extras SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    justificacion_horas_extras TEXT NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (empleado_id) REFERENCES empleados(id),
     CONSTRAINT uq_empleado_fecha UNIQUE (empleado_id, fecha)

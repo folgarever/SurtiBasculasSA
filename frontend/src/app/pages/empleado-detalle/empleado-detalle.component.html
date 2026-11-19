@@ -1,0 +1,152 @@
+<app-shell
+  inicio="/admin"
+  caption="MÓDULOS"
+  topbarLabel="PERSONAL / DETALLE"
+  topbarTitle="Detalle del empleado"
+  workspaceClass="employee-workspace"
+  [admin]="true"
+  [nombre]="usuario?.nombre || ''"
+  [inicial]="usuario?.nombre?.slice(0, 1) || 'A'"
+  footerTitulo="Sistema activo"
+  footerDetalle="Historial integral del empleado"
+  [items]="navItems"
+  [bottomItems]="bottomItems"
+  bottomActive="/admin/sugerencias"
+>
+  <div class="page-heading employee-heading">
+    <div>
+      <p class="eyebrow">ADMINISTRACIÓN / PERSONAL</p>
+      <h1>Detalle del empleado</h1>
+      <p class="subheading">Asistencia, evaluaciones de personal, evaluaciones de conocimiento e incidencias en una sola vista.</p>
+    </div>
+    <a class="button button-text" routerLink="/admin/empleados"><ng-icon name="lucideArrowLeft" size="16" /> Volver al directorio</a>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-error" role="alert">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="detail-state">Cargando información del empleado…</div>
+  } @else if (detalle(); as datos) {
+    <section class="detail-hero">
+      <div class="detail-avatar">{{ datos.empleado.nombre.slice(0, 1) }}</div>
+      <div class="detail-identity">
+        <p class="eyebrow">FICHA DE PERSONAL</p>
+        <h2>{{ datos.empleado.nombre }}</h2>
+        <p>{{ datos.empleado.codigo_empleado }} · {{ datos.empleado.nombre_puesto }} · {{ datos.empleado.rol }}</p>
+      </div>
+      <span class="state-pill" [class.state-good]="datos.empleado.activo" [class.state-warn]="!datos.empleado.activo">{{ datos.empleado.activo ? 'Activo' : 'Inactivo' }}</span>
+    </section>
+
+    <section class="summary-strip">
+      <div class="summary-metric"><span class="summary-number">{{ datos.indicadores.puntualidad_30d }}%</span><span class="summary-label">PUNTUALIDAD 30 DÍAS</span></div>
+      <div class="summary-metric"><span class="summary-number">{{ datos.indicadores.dias_registrados_30d }}</span><span class="summary-label">DÍAS REGISTRADOS</span></div>
+      <div class="summary-metric"><span class="summary-number">{{ datos.indicadores.atrasos_30d }}</span><span class="summary-label">ATRASOS 30 DÍAS</span></div>
+      <div class="summary-metric"><span class="summary-number">{{ datos.indicadores.horas_extras_30d }}</span><span class="summary-label">HORAS EXTRAS 30 DÍAS</span></div>
+    </section>
+
+    <section class="section-heading"><div><p class="eyebrow">ASISTENCIA</p><h2>Marcaciones recientes</h2></div><span class="record-count">{{ datos.asistencias.length }} registros</span></section>
+    <section class="table-frame">
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Fecha</th><th>Entrada</th><th>Estado</th><th>Salida</th><th>Estado</th><th>Extras</th><th>Justificación</th></tr></thead>
+          <tbody>
+            @if (datos.asistencias.length === 0) {
+              <tr><td colspan="7" class="table-empty">Aún no hay marcaciones registradas.</td></tr>
+            } @else {
+              @for (item of datos.asistencias; track item.id) {
+                <tr>
+                  <td class="date-cell">{{ formatoFecha(item.fecha) }}</td>
+                  <td>{{ hora(item.hora_entrada) }}</td>
+                  <td><span class="state-pill" [class.state-good]="item.estado_entrada === 'puntual' || item.estado_entrada === 'tolerancia'" [class.state-warn]="item.estado_entrada === 'atraso'">{{ etiquetaEntrada(item.estado_entrada) }}</span></td>
+                  <td>{{ hora(item.hora_salida) }}</td>
+                  <td><span class="state-pill" [class.state-new]="item.horas_extras" [class.state-warn]="item.estado_salida === 'anticipada' && !item.horas_extras">{{ etiquetaSalida(item.estado_salida, item.horas_extras) }}</span></td>
+                  <td class="extra-cell" [class.extra-active]="item.horas_extras">{{ formatoExtras(item.horas_extras) }}</td>
+                  <td class="extra-note">{{ item.justificacion_horas_extras || '—' }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-footer">Se muestran las últimas 60 marcaciones.</footer>
+    </section>
+
+    <section class="section-heading"><div><p class="eyebrow">EVALUACIÓN DE PERSONAL</p><h2>Calificaciones registradas</h2></div><span class="record-count">{{ datos.evaluaciones.length }} evaluaciones</span></section>
+    <section class="table-frame">
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Periodo</th><th>Fecha</th><th>Promedio</th><th>Presentación</th><th>Desempeño</th><th>Puntualidad</th><th>Comentarios</th></tr></thead>
+          <tbody>
+            @if (datos.evaluaciones.length === 0) {
+              <tr><td colspan="7" class="table-empty">No hay evaluaciones de personal registradas.</td></tr>
+            } @else {
+              @for (item of datos.evaluaciones; track item.id) {
+                <tr>
+                  <td>{{ item.periodo }}</td>
+                  <td class="date-cell">{{ formatoFecha(item.fecha_evaluacion) }}</td>
+                  <td><strong>{{ item.promedio_general }}</strong></td>
+                  <td>{{ item.presentacion }}</td>
+                  <td>{{ item.desempeno }}</td>
+                  <td>{{ item.puntualidad }}</td>
+                  <td class="extra-note">{{ item.comentarios || '—' }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section-heading"><div><p class="eyebrow">EVALUACIÓN DE CONOCIMIENTO</p><h2>Pruebas por periodo</h2></div><span class="record-count">{{ datos.conocimiento.length }} registros</span></section>
+    <section class="table-frame">
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Periodo</th><th>Puesto</th><th>Estado</th><th>Resultado</th><th>Porcentaje</th><th>Fecha</th></tr></thead>
+          <tbody>
+            @if (datos.conocimiento.length === 0) {
+              <tr><td colspan="6" class="table-empty">No hay evaluaciones de conocimiento registradas.</td></tr>
+            } @else {
+              @for (item of datos.conocimiento; track item.id) {
+                <tr>
+                  <td>{{ item.periodo }}</td>
+                  <td>{{ item.nombre_puesto }}</td>
+                  <td><span class="state-pill" [class.state-good]="item.estado === 'completada'" [class.state-warn]="item.estado === 'pendiente'">{{ item.estado === 'completada' ? 'Completada' : 'Pendiente' }}</span></td>
+                  <td>{{ item.resultado || '—' }}</td>
+                  <td>{{ item.porcentaje === null ? '—' : item.porcentaje + '%' }}</td>
+                  <td class="date-cell">{{ formatoFecha(item.fecha_realizacion) }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section-heading"><div><p class="eyebrow">INCIDENCIAS</p><h2>Permisos y ausencias</h2></div><span class="record-count">{{ datos.incidencias.length }} registros</span></section>
+    <section class="table-frame">
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Inicio</th><th>Fin</th><th>Tipo</th><th>Motivo</th></tr></thead>
+          <tbody>
+            @if (datos.incidencias.length === 0) {
+              <tr><td colspan="4" class="table-empty">No hay incidencias registradas.</td></tr>
+            } @else {
+              @for (item of datos.incidencias; track item.id) {
+                <tr>
+                  <td class="date-cell">{{ formatoFecha(item.fecha_inicio) }}</td>
+                  <td class="date-cell">{{ formatoFecha(item.fecha_fin) }}</td>
+                  <td>{{ item.tipo }}</td>
+                  <td class="extra-note">{{ item.motivo }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="workspace-footer"><span>SURTIBASCULAS S.A. · RECURSOS HUMANOS</span><a routerLink="/admin/empleados">Volver al directorio</a></footer>
+  }
+</app-shell>
