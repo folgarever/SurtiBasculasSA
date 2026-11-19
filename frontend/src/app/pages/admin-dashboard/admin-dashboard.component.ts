@@ -2,12 +2,17 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  lucideActivity,
   lucideAlertTriangle,
   lucideArrowRight,
+  lucideArrowUpRight,
+  lucideBuilding2,
+  lucideCalendarDays,
   lucideClipboardCheck,
   lucideLightbulb,
   lucideMessageSquare,
   lucideRefreshCw,
+  lucideSparkles,
   lucideTrendingUp,
   lucideUserRoundCog,
   lucideUsers,
@@ -32,12 +37,17 @@ const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
   standalone: true,
   imports: [AppShellComponent, RouterLink, NgIcon],
   providers: [provideIcons({
+    lucideActivity,
     lucideAlertTriangle,
     lucideArrowRight,
+    lucideArrowUpRight,
+    lucideBuilding2,
+    lucideCalendarDays,
     lucideClipboardCheck,
     lucideLightbulb,
     lucideMessageSquare,
     lucideRefreshCw,
+    lucideSparkles,
     lucideTrendingUp,
     lucideUserRoundCog,
     lucideUsers,
@@ -58,6 +68,7 @@ export class AdminDashboardComponent implements OnInit {
   protected readonly hoy = new Intl.DateTimeFormat('es-GT', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   }).format(new Date());
+  protected readonly saludo = this.obtenerSaludo();
 
   ngOnInit(): void {
     this.cargar();
@@ -102,6 +113,27 @@ export class AdminDashboardComponent implements OnInit {
     return Math.max(1, ...(this.datos()?.distribucion_puestos.map((puesto) => puesto.total) ?? []));
   }
 
+  protected get totalSemanal(): number {
+    return this.serieAsistencia.reduce((total, dia) => total + dia.total, 0);
+  }
+
+  protected get atrasosSemana(): number {
+    return this.serieAsistencia.reduce((total, dia) => total + dia.atrasos, 0);
+  }
+
+  protected get puntualidadSegura(): number {
+    const valor = Number(this.resumen()?.puntualidad_hoy ?? 0);
+    if (!Number.isFinite(valor)) return 0;
+    return Math.min(100, Math.max(0, valor));
+  }
+
+  protected get estadoPuntualidad(): string {
+    const valor = this.puntualidadSegura;
+    if (valor >= 90) return 'Óptima';
+    if (valor >= 75) return 'Aceptable';
+    return 'Requiere atención';
+  }
+
   protected get pendientes(): Pendiente[] {
     const resumen = this.resumen();
     if (!resumen) return [];
@@ -117,6 +149,10 @@ export class AdminDashboardComponent implements OnInit {
       );
     }
     return items;
+  }
+
+  protected get totalPendientes(): number {
+    return this.pendientes.reduce((total, item) => total + item.valor, 0);
   }
 
   protected etiquetaDia(fecha: string): string {
@@ -141,5 +177,12 @@ export class AdminDashboardComponent implements OnInit {
     return new Intl.DateTimeFormat('es-GT', {
       day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
     }).format(fecha);
+  }
+
+  private obtenerSaludo(): string {
+    const hora = new Date().getHours();
+    if (hora < 12) return 'Buenos días';
+    if (hora < 19) return 'Buenas tardes';
+    return 'Buenas noches';
   }
 }

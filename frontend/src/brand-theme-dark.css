@@ -124,4 +124,29 @@
   html[data-theme="dark"] .candidate-portal .candidate-option:has(input:checked) { background: #493039; border-color: #e27d7d; }
   html[data-theme="dark"] .candidate-portal :is(.candidate-section, .candidate-question),
   html[data-theme="dark"] .selection-workspace :is(.selection-section, .selection-item, .selection-table th, .selection-table td) { border-color: var(--color-hairline); }
+
+  html[data-theme="dark"] .dashboard-page .admin-welcome {
+    border-color: var(--color-hairline);
+    background:
+      radial-gradient(circle at 92% 12%, rgba(255, 170, 170, .09), transparent 36%),
+      linear-gradient(135deg, var(--color-surface-alt), var(--color-paper));
+  }
+  html[data-theme="dark"] .dashboard-page .admin-welcome::after {
+    border-color: rgba(255, 170, 170, .14);
+    box-shadow: 0 0 0 28px rgba(255, 170, 170, .03), 0 0 0 56px rgba(255, 170, 170, .02);
+  }
+  html[data-theme="dark"] .dashboard-page .summary-card,
+  html[data-theme="dark"] .dashboard-page .panel-card,
+  html[data-theme="dark"] .dashboard-page .module-card { background: var(--color-surface-alt); }
+  html[data-theme="dark"] .dashboard-page .summary-card::before,
+  html[data-theme="dark"] .dashboard-page .module-card::after { opacity: .14; }
+  html[data-theme="dark"] .tono-personal { --kpi-accent: #7aa5ff; --kpi-soft: #243a5e; }
+  html[data-theme="dark"] .tono-asistencia { --kpi-accent: #5fd1a5; --kpi-soft: #204239; }
+  html[data-theme="dark"] .tono-puntualidad { --kpi-accent: #ffc36b; --kpi-soft: #4a3723; }
+  html[data-theme="dark"] .tono-sugerencias { --kpi-accent: var(--color-ember); --kpi-soft: var(--color-primary-soft); }
+  html[data-theme="dark"] .dashboard-page .kpi-ring { --kpi-ring-bg: var(--color-surface-alt); }
+  html[data-theme="dark"] .dashboard-page .panel-icon-green { background: #204239; color: #5fd1a5; }
+  html[data-theme="dark"] .dashboard-page .module-card .module-icon { background: rgba(255, 255, 255, .08); }
+  html[data-theme="dark"] .dashboard-page .module-arrow { background: rgba(255, 255, 255, .08); }
+  html[data-theme="dark"] .dashboard-page .bar-chart { background-image: linear-gradient(to top, rgba(255, 255, 255, .06) 1px, transparent 1px); }
 }

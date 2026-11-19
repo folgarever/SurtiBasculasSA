@@ -82,6 +82,8 @@ describe('AdminDashboardComponent', () => {
     expect(texto).toContain('Panel de administración');
     expect(texto).toContain('10');
     expect(texto).toContain('Presentes hoy');
+    expect(texto).toContain('Foco del día');
+    expect((fixture.nativeElement.querySelector('.kpi-ring') as HTMLElement | null)?.getAttribute('aria-label')).toContain('80%');
     expect(fixture.componentInstance.resumen()?.puntualidad_hoy).toBe(80);
   });
 
