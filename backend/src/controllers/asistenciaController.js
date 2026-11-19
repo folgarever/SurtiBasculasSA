@@ -130,13 +130,15 @@ async function registrarMarcacion(req, res, next) {
 
     await connection.execute(
       `UPDATE marcaciones
-       SET hora_salida = ?, estado_salida = ?, horas_extras = ?, justificacion_horas_extras = ?
+       SET hora_salida = ?, estado_salida = ?, horas_extras = ?, justificacion_horas_extras = ?,
+           extras_estado = ?
        WHERE id = ?`,
       [
         ahora.fechaHora,
         salida.estado,
         salida.horasExtras,
         salida.requiereJustificacion ? justificacion : null,
+        salida.horasExtras > 0 ? 'pendiente' : 'sin_extras',
         marcaciones[0].id
       ]
     );
@@ -146,7 +148,8 @@ async function registrarMarcacion(req, res, next) {
       hora: ahora.fechaHora,
       estado: salida.estado,
       horas_extras: salida.horasExtras,
-      justificacion_horas_extras: salida.requiereJustificacion ? justificacion : null
+      justificacion_horas_extras: salida.requiereJustificacion ? justificacion : null,
+      extras_estado: salida.horasExtras > 0 ? 'pendiente' : 'sin_extras'
     });
   } catch (error) {
     if (connection) await connection.rollback();
@@ -160,7 +163,8 @@ async function obtenerHistorialEmpleado(req, res, next) {
   try {
     const [marcaciones] = await pool.execute(
       `SELECT id, fecha, hora_entrada, hora_salida, estado_entrada, estado_salida,
-              horas_extras, justificacion_horas_extras
+              horas_extras, justificacion_horas_extras, extras_estado,
+              extras_rechazo_motivo, extras_aprobado_en
        FROM marcaciones
        WHERE empleado_id = ?
        ORDER BY fecha DESC, id DESC

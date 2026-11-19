@@ -3,10 +3,14 @@ const {
   verificarToken,
   permitirRoles,
   verificarContrasenaAdmin,
-  permitirGerenteGeneral
+  permitirGerenteGeneral,
+  permitirRrhhOGerente
 } = require('../middlewares/authMiddleware');
 const {
   obtenerTodasAsistencias,
+  obtenerHorasExtras,
+  aprobarHorasExtras,
+  rechazarHorasExtras,
   obtenerEmpleadosActivos,
   obtenerEmpleadosAdministracion,
   obtenerEmpleadoAdministracion,
@@ -27,6 +31,9 @@ const router = express.Router();
 
 router.use(verificarToken, permitirRoles(2, 3, 'ADMIN'));
 router.get('/asistencias', obtenerTodasAsistencias);
+router.get('/horas-extras', obtenerHorasExtras);
+router.put('/horas-extras/:id/aprobar', permitirRrhhOGerente, aprobarHorasExtras);
+router.put('/horas-extras/:id/rechazar', permitirRrhhOGerente, rechazarHorasExtras);
 router.get('/empleados', obtenerEmpleadosActivos);
 router.get('/administracion/empleados', permitirRoles('ADMIN'), obtenerEmpleadosAdministracion);
 router.get('/administracion/empleados/:id/detalle', permitirRoles('ADMIN'), obtenerDetalleEmpleado);

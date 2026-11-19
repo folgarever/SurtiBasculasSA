@@ -33,10 +33,13 @@ function filtrosReporte(query) {
 const consultaAsistencias = `
   SELECT m.id, e.id AS empleado_id, e.codigo_empleado, e.nombre, p.nombre_puesto, m.fecha,
          m.hora_entrada, m.hora_salida, m.estado_entrada, m.estado_salida,
-         m.horas_extras, m.justificacion_horas_extras
+         m.horas_extras, m.justificacion_horas_extras, m.extras_estado,
+         m.extras_aprobado_en, m.extras_rechazo_motivo,
+         aprobador.nombre AS extras_aprobado_por
   FROM marcaciones m
   INNER JOIN empleados e ON e.id = m.empleado_id
   INNER JOIN puestos p ON p.id = e.puesto_id
+  LEFT JOIN empleados aprobador ON aprobador.id = m.extras_aprobado_por
 `;
 
 async function obtenerTodasAsistencias(req, res, next) {
@@ -50,6 +53,105 @@ async function obtenerTodasAsistencias(req, res, next) {
   } catch (error) {
     return next(error);
   }
+}
+
+async function obtenerHorasExtras(req, res, next) {
+  const estado = String(req.query.estado || 'pendiente');
+  if (!['pendiente', 'aprobada', 'rechazada', 'todas'].includes(estado)) {
+    return res.status(400).json({ mensaje: 'El estado indicado no es válido.' });
+  }
+
+  const condicion = estado === 'todas'
+    ? 'm.horas_extras > 0 AND m.extras_estado <> \'sin_extras\''
+    : 'm.horas_extras > 0 AND m.extras_estado = ?';
+  const parametros = estado === 'todas' ? [] : [estado];
+
+  try {
+    const [horasExtras] = await pool.execute(
+      `${consultaAsistencias} WHERE ${condicion}
+       ORDER BY FIELD(m.extras_estado, 'pendiente', 'aprobada', 'rechazada'), m.fecha DESC, e.nombre ASC`,
+      parametros
+    );
+    return res.json({ horas_extras: horasExtras });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function resolverHorasExtras(req, res, next, estadoFinal) {
+  const marcacionId = Number(req.params.id);
+  const motivo = typeof req.body?.motivo === 'string' ? req.body.motivo.trim() : '';
+
+  if (!Number.isInteger(marcacionId) || marcacionId < 1) {
+    return res.status(400).json({ mensaje: 'La marcación indicada no es válida.' });
+  }
+  if (estadoFinal === 'rechazada' && (motivo.length < 4 || motivo.length > 500)) {
+    return res.status(400).json({
+      mensaje: 'Indica el motivo del rechazo (de 4 a 500 caracteres).'
+    });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    const [filas] = await connection.execute(
+      `SELECT id, hora_entrada, hora_salida, horas_extras, extras_estado
+       FROM marcaciones WHERE id = ? FOR UPDATE`,
+      [marcacionId]
+    );
+    if (!filas[0]) {
+      await connection.rollback();
+      return res.status(404).json({ mensaje: 'Marcación no encontrada.' });
+    }
+    if (!Number(filas[0].horas_extras)) {
+      await connection.rollback();
+      return res.status(400).json({ mensaje: 'La marcación no tiene horas extras registradas.' });
+    }
+    if (filas[0].extras_estado !== 'pendiente') {
+      await connection.rollback();
+      return res.status(409).json({ mensaje: 'Esta solicitud ya fue resuelta.' });
+    }
+
+    await connection.execute(
+      `UPDATE marcaciones
+       SET extras_estado = ?, extras_aprobado_por = ?, extras_aprobado_en = NOW(),
+           extras_rechazo_motivo = ?
+       WHERE id = ?`,
+      [estadoFinal, req.usuario.id, estadoFinal === 'rechazada' ? motivo : null, marcacionId]
+    );
+    await connection.execute(
+      `INSERT INTO historial_correcciones
+       (marcacion_id, modificado_por, hora_entrada_anterior, hora_salida_anterior,
+        hora_entrada_nueva, hora_salida_nueva, motivo_modificacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [marcacionId, req.usuario.id, filas[0].hora_entrada, filas[0].hora_salida,
+        filas[0].hora_entrada, filas[0].hora_salida,
+        `Horas extras ${estadoFinal}${motivo ? ` · ${motivo}` : ''}`]
+    );
+
+    await connection.commit();
+    return res.json({
+      mensaje: estadoFinal === 'aprobada'
+        ? 'Horas extras aprobadas.'
+        : 'Horas extras rechazadas.',
+      extras_estado: estadoFinal
+    });
+  } catch (error) {
+    if (connection) await connection.rollback();
+    return next(error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+function aprobarHorasExtras(req, res, next) {
+  return resolverHorasExtras(req, res, next, 'aprobada');
+}
+
+function rechazarHorasExtras(req, res, next) {
+  return resolverHorasExtras(req, res, next, 'rechazada');
 }
 
 async function obtenerEmpleadosActivos(req, res, next) {
@@ -600,11 +702,23 @@ async function corregirMarcacion(req, res, next) {
         ? String(justificacionExtras || '').trim() || null
         : anterior.justificacion_horas_extras
     };
-    const asignaciones = camposRecibidos.map((campo) => `${campo} = ?`).join(', ');
+    const asignaciones = camposRecibidos.map((campo) => `${campo} = ?`);
     const valores = camposRecibidos.map((campo) => valoresPorCampo[campo]);
+    const cambiaExtras = camposRecibidos.includes('horas_extras')
+      || camposRecibidos.includes('justificacion_horas_extras');
+
+    if (cambiaExtras) {
+      asignaciones.push(
+        'extras_estado = ?',
+        'extras_aprobado_por = NULL',
+        'extras_aprobado_en = NULL',
+        'extras_rechazo_motivo = NULL'
+      );
+      valores.push(valoresPorCampo.horas_extras > 0 ? 'pendiente' : 'sin_extras');
+    }
 
     await connection.execute(
-      `UPDATE marcaciones SET ${asignaciones} WHERE id = ?`,
+      `UPDATE marcaciones SET ${asignaciones.join(', ')} WHERE id = ?`,
       [...valores, marcacionId]
     );
     await connection.execute(
@@ -842,12 +956,15 @@ async function exportarReporteExcel(req, res, next) {
       { header: 'Estado entrada', key: 'estado_entrada', width: 18 },
       { header: 'Estado salida', key: 'estado_salida', width: 18 },
       { header: 'Horas extras', key: 'horas_extras', width: 14 },
-      { header: 'Justificación', key: 'justificacion_horas_extras', width: 50 }
+      { header: 'Justificación', key: 'justificacion_horas_extras', width: 50 },
+      { header: 'Estado extras', key: 'extras_estado', width: 16 },
+      { header: 'Aprobado por', key: 'extras_aprobado_por', width: 24 },
+      { header: 'Motivo de rechazo', key: 'extras_rechazo_motivo', width: 45 }
     ];
     hojaAsistencias.addRows(asistencias);
     hojaAsistencias.getRow(1).font = { bold: true };
     hojaAsistencias.views = [{ state: 'frozen', ySplit: 1 }];
-    hojaAsistencias.autoFilter = { from: 'A1', to: 'K1' };
+    hojaAsistencias.autoFilter = { from: 'A1', to: 'N1' };
 
     const hojaIncidencias = libro.addWorksheet('Incidencias');
     hojaIncidencias.columns = [
@@ -874,6 +991,9 @@ async function exportarReporteExcel(req, res, next) {
 
 module.exports = {
   obtenerTodasAsistencias,
+  obtenerHorasExtras,
+  aprobarHorasExtras,
+  rechazarHorasExtras,
   obtenerEmpleadosActivos,
   obtenerEmpleadosAdministracion,
   obtenerEmpleadoAdministracion,

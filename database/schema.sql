@@ -83,8 +83,14 @@ CREATE TABLE marcaciones (
     estado_salida ENUM('normal', 'anticipada') DEFAULT 'normal',
     horas_extras SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     justificacion_horas_extras TEXT NULL,
+    extras_estado ENUM('sin_extras', 'pendiente', 'aprobada', 'rechazada') NOT NULL DEFAULT 'sin_extras',
+    extras_aprobado_por INT NULL,
+    extras_aprobado_en TIMESTAMP NULL,
+    extras_rechazo_motivo TEXT NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (empleado_id) REFERENCES empleados(id),
+    FOREIGN KEY (extras_aprobado_por) REFERENCES empleados(id),
+    INDEX idx_marcaciones_extras_estado (extras_estado, fecha),
     CONSTRAINT uq_empleado_fecha UNIQUE (empleado_id, fecha)
 ) ENGINE=InnoDB;
 

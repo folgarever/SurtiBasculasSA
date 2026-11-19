@@ -196,6 +196,18 @@ La tabla muestra empleado, puesto, fecha, entrada con estado (Puntual/Tolerancia
 - Desde las 18:00 la salida exige una justificación de 4 a 1000 caracteres; si el empleado no la escribe, el sistema rechaza la marcación antes de guardarla.
 - Las horas extras se contabilizan solo en horas completas: 18:45 = 0 horas, 19:30 = 1 hora, 20:59 = 2 horas.
 - RRHH puede corregir horas, horas extras y justificación. Cada cambio queda en auditoría con el motivo correspondiente.
+- Toda salida con horas extras nace como **Pendiente** y debe revisarse en la sección **Horas extras pendientes** de `/rrhh`.
+
+### Aprobar o rechazar horas extras
+
+La sección **Horas extras pendientes** aparece al abrir **Control de asistencia**. Muestra empleado, fecha, horas completas y la justificación escrita por el empleado.
+
+1. Revisa la justificación de cada solicitud.
+2. Pulsa **Aprobar** si corresponde a una jornada autorizada.
+3. Para rechazarla, pulsa **Rechazar** y escribe el motivo (de 4 a 500 caracteres). El campo es obligatorio.
+4. La solicitud desaparece de la lista y queda registrada con aprobador, fecha y motivo.
+
+Solo RRHH (`SUR-AC-002` o una cuenta con rol `RRHH`) y el Gerente General (`SUR-GG-001`) ven estos botones. Los demás ADMIN pueden consultar el listado, pero no resolverlo. Si se corrigen las horas o la justificación de una marcación ya resuelta, la solicitud vuelve a **Pendiente**.
 
 ### Corregir una marcación
 
@@ -218,7 +230,7 @@ La fecha inicial no puede ser posterior a la final. Los cambios se aplican de in
 
 ### Exportar a Excel
 
-Pulsa **Exportar Excel** para descargar `reporte-surtibasculas.xlsx`. Incluye las hojas **Asistencias** e **Incidencias** y respeta los filtros activos.
+Pulsa **Exportar Excel** para descargar `reporte-surtibasculas.xlsx`. Incluye las hojas **Asistencias** e **Incidencias** y respeta los filtros activos. La hoja de asistencias incorpora el estado de aprobación de horas extras, el aprobador y el motivo de rechazo.
 
 Toda corrección queda registrada en auditoría con valores anteriores y nuevos, usuario que modifica y motivo. Las horas se muestran en formato `HH:mm` y las fechas en español, zona `America/Guatemala`.
 

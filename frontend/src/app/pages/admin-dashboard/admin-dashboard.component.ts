@@ -20,7 +20,14 @@ import {
 import { AppShellComponent } from '../../components/app-shell/app-shell.component';
 import { NAV_ADMIN, SUGERENCIAS_ADMIN } from '../../components/app-shell/nav-items';
 import { AuthService } from '../../services/auth.service';
-import { ActividadDashboard, AsistenciaDia, DashboardAdmin, DashboardService } from '../../services/dashboard.service';
+import {
+  ActividadDashboard,
+  AsistenciaDia,
+  ComparativoDashboard,
+  DashboardAdmin,
+  DashboardService,
+  TendenciasDashboard,
+} from '../../services/dashboard.service';
 
 interface Pendiente {
   icono: string;
@@ -129,9 +136,44 @@ export class AdminDashboardComponent implements OnInit {
 
   protected get estadoPuntualidad(): string {
     const valor = this.puntualidadSegura;
-    if (valor >= 90) return 'Óptima';
+    if (valor >= this.metaPuntualidad) return 'Óptima';
     if (valor >= 75) return 'Aceptable';
     return 'Requiere atención';
+  }
+
+  protected readonly metaPuntualidad = 90;
+
+  protected get comparativo(): ComparativoDashboard | null {
+    return this.datos()?.comparativo ?? null;
+  }
+
+  protected get tendencias(): TendenciasDashboard {
+    const tendencias = this.datos()?.tendencias;
+    if (tendencias) return tendencias;
+
+    return {
+      asistencia: this.serieAsistencia.map((dia) => dia.total),
+      puntualidad: this.serieAsistencia.map((dia) => (
+        dia.total ? Math.round(((dia.total - dia.atrasos) / dia.total) * 100) : 0
+      )),
+      sugerencias: Array(7).fill(0),
+      evaluaciones: Array(7).fill(0),
+    };
+  }
+
+  protected variacion(actual: number | undefined, anterior: number | undefined): number | null {
+    if (actual === undefined || anterior === undefined || anterior === 0) return null;
+    return Math.round(((actual - anterior) / anterior) * 100);
+  }
+
+  protected puntosSparkline(valores: number[]): string {
+    const serie = valores.length ? valores : [0, 0];
+    const maximo = Math.max(1, ...serie);
+    return serie.map((valor, indice) => {
+      const x = serie.length === 1 ? 50 : (indice / (serie.length - 1)) * 100;
+      const y = 28 - (valor / maximo) * 24;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
   }
 
   protected get pendientes(): Pendiente[] {

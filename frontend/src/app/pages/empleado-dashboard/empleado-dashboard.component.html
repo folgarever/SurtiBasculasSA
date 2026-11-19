@@ -43,6 +43,33 @@
       <ng-icon name="lucideArrowRight" size="17" />
     </a>
 
+    <div class="portal-cards">
+      <a class="portal-card portal-card-evaluacion" routerLink="/evaluaciones-conocimiento">
+        <span class="tracker-icon"><ng-icon name="lucideClipboardCheck" size="22" /></span>
+        <span class="tracker-copy">
+          <span class="eyebrow">EVALUACIÓN DE CONOCIMIENTO</span>
+          @if (miEvaluacion(); as evaluacion) {
+            <strong>{{ evaluacion.estado === 'pendiente' ? 'Tienes una evaluación pendiente' : 'Tu evaluación está completada' }}</strong>
+            <small>Periodo: {{ formatoPeriodo(evaluacion.periodo) }}{{ evaluacion.porcentaje !== null ? ' · ' + evaluacion.porcentaje + '%' : '' }}</small>
+          } @else {
+            <strong>Consulta tus evaluaciones</strong>
+            <small>{{ periodoEvaluacion() ? 'Periodo actual: ' + formatoPeriodo(periodoEvaluacion()) : 'Revisa tu estado y resultados.' }}</small>
+          }
+        </span>
+        <ng-icon name="lucideArrowRight" size="17" />
+      </a>
+
+      <section class="portal-card portal-card-extras">
+        <span class="tracker-icon"><ng-icon name="lucideTrendingUp" size="22" /></span>
+        <span class="tracker-copy">
+          <span class="eyebrow">MIS HORAS EXTRAS</span>
+          <strong>{{ extrasPendientes() > 0 ? extrasPendientes() + (extrasPendientes() === 1 ? ' solicitud pendiente' : ' solicitudes pendientes') : 'Sin solicitudes pendientes' }}</strong>
+          <small>{{ extrasResueltas() }} {{ extrasResueltas() === 1 ? 'registro resuelto' : 'registros resueltos' }} · Recursos Humanos revisa cada solicitud.</small>
+        </span>
+        @if (extrasPendientes() > 0) { <span class="state-pill state-warn">En revisión</span> }
+      </section>
+    </div>
+
     @if (aviso(); as mensaje) {
       <div class="alert" [class.alert-success]="mensaje.tipo === 'success'" [class.alert-error]="mensaje.tipo === 'error'" role="status">{{ mensaje.texto }} <button type="button" aria-label="Cerrar aviso" (click)="aviso.set(null)">×</button></div>
     }
@@ -65,8 +92,14 @@
                   <td><span class="state-pill" [class.state-good]="item.estado_entrada === 'puntual' || item.estado_entrada === 'tolerancia'" [class.state-warn]="item.estado_entrada === 'atraso'">{{ etiquetaEstado(item.estado_entrada) }}</span></td>
                   <td>{{ item.hora_salida?.slice(11, 16) || '—' }}</td>
                   <td><span class="state-pill" [class.state-good]="item.estado_salida === 'normal'" [class.state-warn]="item.estado_salida === 'anticipada' && !item.horas_extras" [class.state-new]="item.horas_extras">{{ etiquetaSalida(item) }}</span></td>
-                  <td class="extra-cell" [class.extra-active]="item.horas_extras">{{ formatoExtras(item.horas_extras) }}</td>
-                  <td class="extra-note">{{ item.justificacion_horas_extras || '—' }}</td>
+                  <td class="extra-cell" [class.extra-active]="item.horas_extras">
+                    {{ formatoExtras(item.horas_extras) }}
+                    @if (item.horas_extras) { <small class="extra-state" [class.extra-rechazada]="item.extras_estado === 'rechazada'">{{ etiquetaExtras(item.extras_estado) }}</small> }
+                  </td>
+                  <td class="extra-note">
+                    {{ item.justificacion_horas_extras || '—' }}
+                    @if (item.extras_rechazo_motivo) { <small class="extra-rejection-note">Motivo de rechazo: {{ item.extras_rechazo_motivo }}</small> }
+                  </td>
                 </tr>
               }
             }

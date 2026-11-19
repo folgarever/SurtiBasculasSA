@@ -12,6 +12,9 @@ export interface Marcacion {
   estado_salida: 'normal' | 'anticipada' | null;
   horas_extras?: number;
   justificacion_horas_extras?: string | null;
+  extras_estado?: 'sin_extras' | 'pendiente' | 'aprobada' | 'rechazada';
+  extras_aprobado_en?: string | null;
+  extras_rechazo_motivo?: string | null;
   codigo_empleado?: string;
   nombre?: string;
   nombre_puesto?: string;
@@ -24,6 +27,7 @@ export interface ResultadoMarcacion {
   estado: string;
   horas_extras?: number;
   justificacion_horas_extras?: string | null;
+  extras_estado?: 'sin_extras' | 'pendiente';
 }
 
 @Injectable({ providedIn: 'root' })

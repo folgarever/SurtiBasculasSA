@@ -10,6 +10,20 @@ function fechaTexto(valor) {
   return String(valor).slice(0, 19).replace('T', ' ');
 }
 
+function serie7Dias(filas, campo = 'total') {
+  const porFecha = new Map(
+    filas.map((fila) => [String(fila.fecha).slice(0, 10), numero(fila[campo])])
+  );
+
+  return Array.from({ length: 7 }, (_, indice) => {
+    const fecha = new Date();
+    fecha.setHours(0, 0, 0, 0);
+    fecha.setDate(fecha.getDate() - (6 - indice));
+    const clave = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
+    return porFecha.get(clave) ?? 0;
+  });
+}
+
 async function obtenerResumenAdmin(req, res, next) {
   try {
     const [indicadores] = await pool.execute(`
@@ -95,9 +109,46 @@ async function obtenerResumenAdmin(req, res, next) {
       LIMIT 6
     `);
 
+    const [comparativo] = await pool.execute(`
+      SELECT
+        (SELECT COUNT(*) FROM marcaciones WHERE fecha = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) AS marcaciones_ayer,
+        (SELECT COUNT(*) FROM marcaciones WHERE fecha = DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND estado_entrada = 'atraso') AS atrasos_ayer,
+        (SELECT COUNT(*) FROM sugerencias
+          WHERE creado_en >= DATE_SUB(CURDATE(), INTERVAL 13 DAY)
+            AND creado_en < DATE_SUB(CURDATE(), INTERVAL 6 DAY)) AS sugerencias_anterior,
+        (SELECT COUNT(*) FROM sugerencias
+          WHERE creado_en >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)) AS sugerencias_actual,
+        (SELECT COUNT(*) FROM evaluaciones_conocimiento
+          WHERE estado = 'completada'
+            AND fecha_realizacion >= DATE_SUB(CURDATE(), INTERVAL 13 DAY)
+            AND fecha_realizacion < DATE_SUB(CURDATE(), INTERVAL 6 DAY)) AS evaluaciones_anterior,
+        (SELECT COUNT(*) FROM evaluaciones_conocimiento
+          WHERE estado = 'completada'
+            AND fecha_realizacion >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)) AS evaluaciones_actual
+    `);
+
+    const [tendencias] = await pool.execute(`
+      SELECT 'sugerencias' AS clave, DATE_FORMAT(creado_en, '%Y-%m-%d') AS fecha, COUNT(*) AS total
+      FROM sugerencias
+      WHERE creado_en >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+      GROUP BY fecha
+      UNION ALL
+      SELECT 'evaluaciones' AS clave, DATE_FORMAT(fecha_realizacion, '%Y-%m-%d') AS fecha, COUNT(*) AS total
+      FROM evaluaciones_conocimiento
+      WHERE estado = 'completada' AND fecha_realizacion >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+      GROUP BY fecha
+      ORDER BY clave, fecha
+    `);
+
     const fila = indicadores[0] || {};
     const marcacionesHoy = numero(fila.marcaciones_hoy);
     const llegadasTarde = numero(fila.llegadas_tarde_hoy);
+    const comparativoFila = comparativo[0] || {};
+    const asistenciaSerie = serie7Dias(asistencia, 'total');
+    const atrasosSerie = serie7Dias(asistencia, 'atrasos');
+    const puntualidadSerie = asistenciaSerie.map((total, indice) => (
+      total ? Math.round(((total - atrasosSerie[indice]) / total) * 100) : 0
+    ));
 
     return res.json({
       actualizado_en: new Date().toISOString(),
@@ -138,6 +189,23 @@ async function obtenerResumenAdmin(req, res, next) {
         estado: item.estado,
         fecha: fechaTexto(item.fecha),
       })),
+      comparativo: {
+        marcaciones_ayer: numero(comparativoFila.marcaciones_ayer),
+        atrasos_ayer: numero(comparativoFila.atrasos_ayer),
+        puntualidad_ayer: numero(comparativoFila.marcaciones_ayer)
+          ? Math.round(((numero(comparativoFila.marcaciones_ayer) - numero(comparativoFila.atrasos_ayer)) / numero(comparativoFila.marcaciones_ayer)) * 100)
+          : 0,
+        sugerencias_actual: numero(comparativoFila.sugerencias_actual),
+        sugerencias_anterior: numero(comparativoFila.sugerencias_anterior),
+        evaluaciones_actual: numero(comparativoFila.evaluaciones_actual),
+        evaluaciones_anterior: numero(comparativoFila.evaluaciones_anterior),
+      },
+      tendencias: {
+        asistencia: asistenciaSerie,
+        puntualidad: puntualidadSerie,
+        sugerencias: serie7Dias(tendencias.filter((fila) => fila.clave === 'sugerencias')),
+        evaluaciones: serie7Dias(tendencias.filter((fila) => fila.clave === 'evaluaciones')),
+      },
     });
   } catch (error) {
     return next(error);

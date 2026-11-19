@@ -57,10 +57,16 @@
       <div class="summary-card tono-asistencia">
         <div class="kpi-top">
           <span class="indicador-icono"><ng-icon name="lucideClipboardCheck" size="19" /></span>
-          <span class="kpi-tag">Hoy</span>
+          <span class="kpi-group">
+            @if (variacion($r.marcaciones_hoy, comparativo?.marcaciones_ayer); as delta) {
+              <span class="kpi-delta" [class.es-negativa]="delta < 0">{{ delta > 0 ? '+' : '' }}{{ delta }}%</span>
+            }
+            <span class="kpi-tag">Hoy</span>
+          </span>
         </div>
         <div class="kpi-body"><span class="summary-number">{{ $r.empleados_presentes }}</span><span class="summary-label">Presentes hoy</span></div>
-        <span class="summary-note">{{ $r.marcaciones_hoy }} marcaciones</span>
+        <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline [attr.points]="puntosSparkline(tendencias.asistencia)" /></svg>
+        <span class="summary-note">{{ $r.marcaciones_hoy }} marcaciones vs. ayer</span>
       </div>
       <div class="summary-card tono-puntualidad">
         <div class="kpi-top">
@@ -70,19 +76,43 @@
             [attr.aria-label]="'Puntualidad ' + puntualidadSegura + '%'"
             [style.--progreso]="puntualidadSegura + '%'"
           ><ng-icon name="lucideTrendingUp" size="17" /></span>
-          <span class="kpi-tag">{{ estadoPuntualidad }}</span>
+          <span class="kpi-group">
+            @if (variacion($r.puntualidad_hoy, comparativo?.puntualidad_ayer); as delta) {
+              <span class="kpi-delta" [class.es-negativa]="delta < 0">{{ delta > 0 ? '+' : '' }}{{ delta }}%</span>
+            }
+            <span class="kpi-tag">{{ estadoPuntualidad }}</span>
+          </span>
         </div>
         <div class="kpi-body"><span class="summary-number">{{ $r.puntualidad_hoy }}%</span><span class="summary-label">Puntualidad</span></div>
+        <svg class="sparkline sparkline-puntualidad" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline [attr.points]="puntosSparkline(tendencias.puntualidad)" /></svg>
         <span class="summary-note">{{ $r.llegadas_tarde_hoy }} atrasos registrados</span>
       </div>
       <div class="summary-card tono-sugerencias">
         <div class="kpi-top">
           <span class="indicador-icono"><ng-icon name="lucideMessageSquare" size="19" /></span>
-          <span class="kpi-tag">Buzón</span>
+          <span class="kpi-group">
+            @if (variacion(comparativo?.sugerencias_actual, comparativo?.sugerencias_anterior); as delta) {
+              <span class="kpi-delta" [class.es-negativa]="delta < 0">{{ delta > 0 ? '+' : '' }}{{ delta }}%</span>
+            }
+            <span class="kpi-tag">Buzón</span>
+          </span>
         </div>
         <div class="kpi-body"><span class="summary-number">{{ $r.sugerencias_pendientes }}</span><span class="summary-label">Sugerencias nuevas</span></div>
+        <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline [attr.points]="puntosSparkline(tendencias.sugerencias)" /></svg>
         <span class="summary-note">de {{ $r.sugerencias_totales }} en total</span>
       </div>
+    </section>
+
+    <section class="goal-strip" aria-label="Meta de puntualidad">
+      <div class="goal-copy">
+        <span class="goal-icon"><ng-icon name="lucideTrendingUp" size="16" /></span>
+        <div><span class="eyebrow">META DEL DÍA</span><strong>Puntualidad ≥ {{ metaPuntualidad }}%</strong></div>
+      </div>
+      <div class="goal-track" role="img" [attr.aria-label]="'Puntualidad ' + puntualidadSegura + '% de ' + metaPuntualidad + '% meta'">
+        <i [style.width.%]="puntualidadSegura"></i>
+        <span class="goal-marker" [style.left.%]="metaPuntualidad"></span>
+      </div>
+      <strong class="goal-value">{{ puntualidadSegura }}%</strong>
     </section>
 
     <section class="panel-grid">

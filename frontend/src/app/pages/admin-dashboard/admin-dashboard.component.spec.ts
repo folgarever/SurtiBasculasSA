@@ -33,6 +33,21 @@ describe('AdminDashboardComponent', () => {
     asistencia_semanal: [],
     distribucion_puestos: [{ puesto: 'Técnico', total: 4 }],
     actividad_reciente: [],
+    comparativo: {
+      marcaciones_ayer: 8,
+      atrasos_ayer: 1,
+      puntualidad_ayer: 88,
+      sugerencias_actual: 2,
+      sugerencias_anterior: 4,
+      evaluaciones_actual: 3,
+      evaluaciones_anterior: 2,
+    },
+    tendencias: {
+      asistencia: [6, 7, 8, 9, 7, 8, 10],
+      puntualidad: [80, 85, 88, 90, 86, 88, 80],
+      sugerencias: [0, 1, 0, 2, 1, 0, 2],
+      evaluaciones: [1, 0, 1, 0, 2, 0, 1],
+    },
   };
 
   beforeEach(async () => {
@@ -84,6 +99,8 @@ describe('AdminDashboardComponent', () => {
     expect(texto).toContain('Presentes hoy');
     expect(texto).toContain('Foco del día');
     expect((fixture.nativeElement.querySelector('.kpi-ring') as HTMLElement | null)?.getAttribute('aria-label')).toContain('80%');
+    expect(fixture.nativeElement.querySelector('.goal-strip')?.textContent).toContain('META DEL DÍA');
+    expect(fixture.nativeElement.querySelector('.sparkline polyline')?.getAttribute('points')).toContain(',');
     expect(fixture.componentInstance.resumen()?.puntualidad_hoy).toBe(80);
   });
 

@@ -182,6 +182,16 @@ El personal con una cuenta no administradora puede enviar sugerencias o quejas c
 
 La marcación de entrada clasifica las llegadas de 08:00 a 08:15 como **Tolerancia de entrada**; antes de las 08:00 es puntual y después de las 08:15 es atraso. La salida no requiere justificación hasta las 18:00. Desde las 18:00 el empleado debe escribir el motivo al marcar; el sistema guarda ese texto y calcula las horas extras como **horas completas** (19:30 = 1 hora, 18:45 = 0 horas). RRHH ve ambos campos en el reporte y en el Excel, y puede corregirlos con auditoría.
 
+Cada salida con horas extras nace como **Pendiente** y debe ser revisada desde la sección **Horas extras pendientes** de `/rrhh`. Solo RRHH (`SUR-AC-002` o rol `RRHH`) y el Gerente General (`SUR-GG-001`) pueden aprobar o rechazar; el rechazo exige un motivo de 4 a 500 caracteres. La resolución guarda aprobador, fecha y motivo, y deja constancia en `historial_correcciones`. Corregir horas extras o su justificación devuelve la solicitud a `Pendiente`. El portal del empleado muestra el estado de cada solicitud, el motivo de rechazo y el resumen de evaluaciones del periodo.
+
+| Método | Endpoint | Acceso | Función |
+|---|---|---|---|
+| `GET` | `/api/rrhh/horas-extras?estado=pendiente` | `ADMIN` / `RRHH` | Listar solicitudes (`pendiente`, `aprobada`, `rechazada`, `todas`) |
+| `PUT` | `/api/rrhh/horas-extras/<id>/aprobar` | RRHH + `SUR-GG-001` | Aprobar una solicitud pendiente |
+| `PUT` | `/api/rrhh/horas-extras/<id>/rechazar` | RRHH + `SUR-GG-001` | Rechazar con `{ "motivo": "..." }` obligatorio |
+
+Estos endpoints requieren la migración `2026-11-22-horas-extras-aprobacion.sql`; consulta `docs/runbook-migraciones.md`.
+
 Los administradores pueden abrir `/admin/empleados/:id` desde el botón de detalle del directorio. La ficha reúne marcaciones recientes, indicadores de puntualidad de 30 días, evaluaciones de personal, evaluaciones de conocimiento e incidencias. La consulta (`GET /api/rrhh/administracion/empleados/:id/detalle`) está disponible para cualquier cuenta con rol ADMIN y no depende de los permisos reforzados del módulo de evaluaciones.
 
 ## Notificaciones in-app

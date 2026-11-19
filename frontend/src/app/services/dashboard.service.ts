@@ -40,6 +40,23 @@ export interface ActividadDashboard {
   fecha: string;
 }
 
+export interface ComparativoDashboard {
+  marcaciones_ayer: number;
+  atrasos_ayer: number;
+  puntualidad_ayer: number;
+  sugerencias_actual: number;
+  sugerencias_anterior: number;
+  evaluaciones_actual: number;
+  evaluaciones_anterior: number;
+}
+
+export interface TendenciasDashboard {
+  asistencia: number[];
+  puntualidad: number[];
+  sugerencias: number[];
+  evaluaciones: number[];
+}
+
 export interface DashboardAdmin {
   actualizado_en: string;
   periodo: string;
@@ -48,6 +65,8 @@ export interface DashboardAdmin {
   asistencia_semanal: AsistenciaDia[];
   distribucion_puestos: DistribucionPuesto[];
   actividad_reciente: ActividadDashboard[];
+  comparativo?: ComparativoDashboard;
+  tendencias?: TendenciasDashboard;
 }
 
 @Injectable({ providedIn: 'root' })

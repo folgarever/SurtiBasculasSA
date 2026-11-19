@@ -7,6 +7,7 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideArrowDownToLine,
   lucideArrowRight,
+  lucideCheck,
   lucideClipboardCheck,
   lucideLayoutDashboard,
   lucideLogOut,
@@ -34,6 +35,7 @@ interface EmpleadoOpcion {
   providers: [provideIcons({
     lucideArrowDownToLine,
     lucideArrowRight,
+    lucideCheck,
     lucideClipboardCheck,
     lucideLayoutDashboard,
     lucideLogOut,
@@ -57,8 +59,13 @@ export class RrhhDashboardComponent implements OnInit {
   protected readonly esAdmin = this.auth.hasAdminRole();
   protected readonly asistencias = signal<Marcacion[]>([]);
   protected readonly empleados = signal<EmpleadoRrhh[]>([]);
+  protected readonly horasExtras = signal<Marcacion[]>([]);
   protected readonly cargando = signal(false);
-  protected readonly modal = signal<'correccion' | 'incidencia' | null>(null);
+  protected readonly cargandoExtras = signal(false);
+  protected readonly puedeAprobarExtras = this.auth.esGerenteGeneral()
+    || this.usuario?.codigo_empleado === 'SUR-AC-002'
+    || this.usuario?.rol_id === 2;
+  protected readonly modal = signal<'correccion' | 'incidencia' | 'rechazo' | null>(null);
   protected readonly seleccionada = signal<Marcacion | null>(null);
   protected readonly guardando = signal(false);
   protected readonly exportando = signal(false);
@@ -76,6 +83,9 @@ export class RrhhDashboardComponent implements OnInit {
     justificacion: [''],
     motivo: ['', [Validators.required, Validators.minLength(4)]],
   });
+  protected readonly rechazoForm = this.formBuilder.nonNullable.group({
+    motivo: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(500)]],
+  });
   protected readonly incidenciaForm = this.formBuilder.nonNullable.group({
     empleado_id: ['', Validators.required],
     fecha_inicio: ['', Validators.required],
@@ -86,6 +96,7 @@ export class RrhhDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarAsistencias();
+    this.cargarHorasExtras();
     this.rrhh.obtenerEmpleados().subscribe({
       next: ({ empleados }) => this.empleados.set(empleados),
       error: () => this.empleados.set([]),
@@ -111,6 +122,43 @@ export class RrhhDashboardComponent implements OnInit {
       motivo: '',
     });
     this.modal.set('correccion');
+  }
+
+  protected aprobar(item: Marcacion): void {
+    if (!this.puedeAprobarExtras || this.guardando()) return;
+    this.guardando.set(true);
+    this.rrhh.aprobarHorasExtras(item.id).subscribe({
+      next: (response) => {
+        this.aviso.set({ tipo: 'success', texto: response.mensaje });
+        this.guardando.set(false);
+        this.cargarHorasExtras();
+        this.cargarAsistencias();
+      },
+      error: (error: HttpErrorResponse) => this.errorOperacion(error),
+    });
+  }
+
+  protected abrirRechazo(item: Marcacion): void {
+    this.seleccionada.set(item);
+    this.rechazoForm.reset({ motivo: '' });
+    this.modal.set('rechazo');
+  }
+
+  protected rechazar(): void {
+    this.rechazoForm.markAllAsTouched();
+    const item = this.seleccionada();
+    if (this.rechazoForm.invalid || !item || !this.puedeAprobarExtras || this.guardando()) return;
+    this.guardando.set(true);
+    this.rrhh.rechazarHorasExtras(item.id, this.rechazoForm.getRawValue().motivo.trim()).subscribe({
+      next: (response) => {
+        this.aviso.set({ tipo: 'success', texto: response.mensaje });
+        this.modal.set(null);
+        this.guardando.set(false);
+        this.cargarHorasExtras();
+        this.cargarAsistencias();
+      },
+      error: (error: HttpErrorResponse) => this.errorOperacion(error),
+    });
   }
 
   protected abrirIncidencia(): void {
@@ -216,6 +264,16 @@ export class RrhhDashboardComponent implements OnInit {
     return estado ? etiquetas[estado] || estado : 'Pendiente';
   }
 
+  protected etiquetaExtras(estado: string | undefined): string {
+    const etiquetas: Record<string, string> = {
+      sin_extras: 'Sin extras',
+      pendiente: 'Pendiente',
+      aprobada: 'Aprobada',
+      rechazada: 'Rechazada',
+    };
+    return estado ? etiquetas[estado] || estado : 'Pendiente';
+  }
+
   protected formatoExtras(horas: number | undefined): string {
     if (!horas) return '—';
     return `${horas} ${horas === 1 ? 'hora' : 'horas'}`;
@@ -224,6 +282,20 @@ export class RrhhDashboardComponent implements OnInit {
   private obtenerFiltros(): FiltrosAsistencia {
     const value = this.filtros.getRawValue();
     return { busqueda: value.busqueda.trim(), fecha_inicio: value.fecha_inicio, fecha_fin: value.fecha_fin };
+  }
+
+  private cargarHorasExtras(): void {
+    this.cargandoExtras.set(true);
+    this.rrhh.obtenerHorasExtras('pendiente').subscribe({
+      next: ({ horas_extras }) => {
+        this.horasExtras.set(horas_extras);
+        this.cargandoExtras.set(false);
+      },
+      error: () => {
+        this.horasExtras.set([]);
+        this.cargandoExtras.set(false);
+      },
+    });
   }
 
   private cargarAsistencias(): void {

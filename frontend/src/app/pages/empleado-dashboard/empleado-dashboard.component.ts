@@ -11,12 +11,18 @@ import {
   lucideLayoutDashboard,
   lucideLightbulb,
   lucideLogOut,
+  lucideTrendingUp,
   lucideUsers,
   lucideUserRoundCog,
 } from '@ng-icons/lucide';
 import { interval } from 'rxjs';
 import { AsistenciaService, Marcacion, ResultadoMarcacion } from '../../services/asistencia.service';
 import { AuthService } from '../../services/auth.service';
+import {
+  EvaluacionConocimiento,
+  EvaluacionesConocimientoService,
+  formatoPeriodoEvaluacion,
+} from '../../services/evaluaciones-conocimiento.service';
 import { contarRespuestasNuevas, leerRespuestasVistas, SugerenciasService } from '../../services/sugerencias.service';
 
 @Component({
@@ -29,6 +35,7 @@ import { contarRespuestasNuevas, leerRespuestasVistas, SugerenciasService } from
     lucideLayoutDashboard,
     lucideLightbulb,
     lucideLogOut,
+    lucideTrendingUp,
     lucideUsers,
     lucideUserRoundCog,
   })],
@@ -39,6 +46,7 @@ export class EmpleadoDashboardComponent implements OnInit {
   protected readonly bottomItems = [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO];
   private readonly asistencia = inject(AsistenciaService);
   private readonly sugerencias = inject(SugerenciasService);
+  private readonly evaluaciones = inject(EvaluacionesConocimientoService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -46,6 +54,8 @@ export class EmpleadoDashboardComponent implements OnInit {
   protected readonly horaActual = signal('');
   protected readonly fechaActual = signal('');
   protected readonly historial = signal<Marcacion[]>([]);
+  protected readonly miEvaluacion = signal<EvaluacionConocimiento | null>(null);
+  protected readonly periodoEvaluacion = signal('');
   protected readonly cargando = signal(true);
   protected readonly respuestasNuevas = signal(0);
   protected readonly marcando = signal(false);
@@ -53,12 +63,17 @@ export class EmpleadoDashboardComponent implements OnInit {
   protected readonly aviso = signal<{ tipo: 'success' | 'error'; texto: string } | null>(null);
   protected readonly requiereJustificacion = computed(() => this.horaActual().slice(0, 5) >= '18:00');
   protected readonly justificacionValida = computed(() => this.justificacion().trim().length >= 4);
+  protected readonly extrasPendientes = computed(() => this.historial().filter((item) => item.extras_estado === 'pendiente').length);
+  protected readonly extrasResueltas = computed(() => this.historial().filter((item) => (
+    item.extras_estado === 'aprobada' || item.extras_estado === 'rechazada'
+  )).length);
 
   ngOnInit(): void {
     this.actualizarReloj();
     interval(1000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.actualizarReloj());
     this.cargarHistorial();
     this.cargarRespuestasNuevas();
+    this.cargarMiEvaluacion();
   }
 
   protected registrar(): void {
@@ -120,6 +135,20 @@ export class EmpleadoDashboardComponent implements OnInit {
     return `${horas} ${horas === 1 ? 'hora' : 'horas'}`;
   }
 
+  protected formatoPeriodo(periodo: string): string {
+    return formatoPeriodoEvaluacion(periodo);
+  }
+
+  protected etiquetaExtras(estado: string | undefined): string {
+    const etiquetas: Record<string, string> = {
+      sin_extras: 'Sin extras',
+      pendiente: 'Pendiente de aprobación',
+      aprobada: 'Aprobada',
+      rechazada: 'Rechazada',
+    };
+    return estado ? etiquetas[estado] || estado : 'Pendiente de aprobación';
+  }
+
   protected formatoFecha(fecha: string): string {
     return new Date(`${fecha}T12:00:00`).toLocaleDateString('es-GT', {
       day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Guatemala',
@@ -134,6 +163,16 @@ export class EmpleadoDashboardComponent implements OnInit {
         this.cargando.set(false);
       },
       error: () => this.cargando.set(false),
+    });
+  }
+
+  private cargarMiEvaluacion(): void {
+    this.evaluaciones.obtenerMiEvaluacion().subscribe({
+      next: ({ evaluacion_actual, periodo_actual }) => {
+        this.miEvaluacion.set(evaluacion_actual || null);
+        this.periodoEvaluacion.set(periodo_actual || '');
+      },
+      error: () => this.miEvaluacion.set(null),
     });
   }
 

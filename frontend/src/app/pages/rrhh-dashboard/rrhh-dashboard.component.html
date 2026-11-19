@@ -28,6 +28,40 @@
       <div class="summary-note"><span class="status-dot"></span><span>Datos actualizados al consultar</span></div>
     </section>
 
+    <section class="extras-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">APROBACIÓN</p><h2>Horas extras pendientes</h2></div>
+        <span class="extras-count">{{ horasExtras().length }}</span>
+      </div>
+      @if (cargandoExtras()) {
+        <p class="table-empty">Cargando solicitudes…</p>
+      } @else if (horasExtras().length === 0) {
+        <p class="table-empty">No hay horas extras pendientes de revisión.</p>
+      } @else {
+        <div class="extras-grid">
+          @for (item of horasExtras(); track item.id) {
+            <article class="extra-card">
+              <div class="extra-card-head">
+                <div><strong>{{ item.nombre }}</strong><small>{{ item.codigo_empleado }} · {{ formatoFecha(item.fecha) }}</small></div>
+                <span class="state-pill state-new">{{ formatoExtras(item.horas_extras) }}</span>
+              </div>
+              <p class="extra-card-note"><span>Justificación:</span> {{ item.justificacion_horas_extras || 'Sin justificación registrada' }}</p>
+              @if (puedeAprobarExtras) {
+                <div class="extra-card-actions">
+                  @if (item.extras_estado === 'pendiente') {
+                    <button class="button button-accent" type="button" (click)="aprobar(item)" [disabled]="guardando()"><ng-icon name="lucideCheck" size="15" /> Aprobar</button>
+                    <button class="button button-outline" type="button" (click)="abrirRechazo(item)" [disabled]="guardando()"><ng-icon name="lucideX" size="15" /> Rechazar</button>
+                  } @else {
+                    <span class="state-pill">{{ etiquetaExtras(item.extras_estado) }}</span>
+                  }
+                </div>
+              }
+            </article>
+          }
+        </div>
+      }
+    </section>
+
     <section class="records-section">
       <div class="section-heading"><div><p class="eyebrow">REGISTRO DIARIO</p><h2>Asistencias</h2></div></div>
       <form class="filter-bar" [formGroup]="filtros" (ngSubmit)="buscar()">
@@ -111,6 +145,20 @@
         <label for="motivo-incidencia">Motivo</label><textarea id="motivo-incidencia" formControlName="motivo" rows="3" placeholder="Detalle de la incidencia" required></textarea>
         @if (incidenciaForm.controls.motivo.touched && incidenciaForm.controls.motivo.invalid) { <span class="field-error">El motivo es obligatorio.</span> }
         <div class="modal-actions"><button class="button button-text" type="button" (click)="cerrarModal()">Cancelar</button><button class="button button-accent" type="submit" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar incidencia' }}</button></div>
+      </form>
+    </section>
+  </div>
+}
+@if (modal() === 'rechazo') {
+  <div class="modal-backdrop" (click)="cerrarModal()" (keydown.escape)="cerrarModal()">
+    <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="rejection-title" (click)="$event.stopPropagation()">
+      <div class="modal-header"><div><p class="eyebrow">HORAS EXTRAS</p><h2 id="rejection-title">Rechazar solicitud</h2></div><button class="icon-button" type="button" aria-label="Cerrar" (click)="cerrarModal()"><ng-icon name="lucideX" size="17" /></button></div>
+      @if (seleccionada(); as item) { <p class="modal-context"><strong>{{ item.nombre }}</strong> · {{ formatoFecha(item.fecha) }} · {{ formatoExtras(item.horas_extras) }}</p> }
+      <form [formGroup]="rechazoForm" (ngSubmit)="rechazar()">
+        <label for="motivo-rechazo">Motivo del rechazo <span class="required-mark">OBLIGATORIO</span></label>
+        <textarea id="motivo-rechazo" formControlName="motivo" rows="3" placeholder="Explica por qué se rechazan las horas extras" required maxlength="500"></textarea>
+        @if (rechazoForm.controls.motivo.touched && rechazoForm.controls.motivo.invalid) { <span class="field-error">El motivo es obligatorio (de 4 a 500 caracteres).</span> }
+        <div class="modal-actions"><button class="button button-text" type="button" (click)="cerrarModal()">Cancelar</button><button class="button button-accent" type="submit" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Confirmar rechazo' }}</button></div>
       </form>
     </section>
   </div>

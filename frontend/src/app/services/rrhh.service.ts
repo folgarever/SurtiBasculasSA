@@ -152,6 +152,20 @@ export class RrhhService {
     return this.http.get<{ asistencias: Marcacion[] }>(`${this.baseUrl}/asistencias`, { params });
   }
 
+  obtenerHorasExtras(estado: 'pendiente' | 'aprobada' | 'rechazada' | 'todas' = 'pendiente'): Observable<{ horas_extras: Marcacion[] }> {
+    return this.http.get<{ horas_extras: Marcacion[] }>(`${this.baseUrl}/horas-extras`, {
+      params: new HttpParams().set('estado', estado),
+    });
+  }
+
+  aprobarHorasExtras(id: number): Observable<{ mensaje: string }> {
+    return this.http.put<{ mensaje: string }>(`${this.baseUrl}/horas-extras/${id}/aprobar`, {});
+  }
+
+  rechazarHorasExtras(id: number, motivo: string): Observable<{ mensaje: string }> {
+    return this.http.put<{ mensaje: string }>(`${this.baseUrl}/horas-extras/${id}/rechazar`, { motivo });
+  }
+
   obtenerEmpleados(): Observable<{ empleados: EmpleadoRrhh[] }> {
     return this.http.get<{ empleados: EmpleadoRrhh[] }>(`${this.baseUrl}/empleados`);
   }

@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const pool = require('../config/db');
 const {
   CODIGO_GERENTE_GENERAL,
+  CODIGO_ADMIN_RRHH,
   CODIGOS_ADMINISTRADORES
 } = require('../config/authorization');
 
@@ -93,6 +94,20 @@ function permitirRoles(...rolesPermitidos) {
   };
 }
 
+function permitirRrhhOGerente(req, res, next) {
+  const codigo = req.usuario?.codigo_empleado;
+  const esRrhh = Number(req.usuario?.rol_id) === 2 || codigo === CODIGO_ADMIN_RRHH;
+  const esGerente = codigo === CODIGO_GERENTE_GENERAL;
+
+  if (!esRrhh && !esGerente) {
+    return res.status(403).json({
+      mensaje: 'Solo Recursos Humanos y el Gerente General pueden aprobar horas extras.'
+    });
+  }
+
+  return next();
+}
+
 async function verificarContrasenaAdmin(req, res, next) {
   const contrasena = req.body?.contrasena_admin;
   if (
@@ -163,6 +178,7 @@ function permitirCandidato(req, res, next) {
 module.exports = {
   verificarToken,
   permitirRoles,
+  permitirRrhhOGerente,
   verificarContrasenaAdmin,
   permitirGerenteGeneral,
   permitirEvaluaciones,

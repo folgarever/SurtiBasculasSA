@@ -149,4 +149,10 @@
   html[data-theme="dark"] .dashboard-page .module-card .module-icon { background: rgba(255, 255, 255, .08); }
   html[data-theme="dark"] .dashboard-page .module-arrow { background: rgba(255, 255, 255, .08); }
   html[data-theme="dark"] .dashboard-page .bar-chart { background-image: linear-gradient(to top, rgba(255, 255, 255, .06) 1px, transparent 1px); }
+  html[data-theme="dark"] .kpi-delta { background: #204239; color: #5fd1a5; }
+  html[data-theme="dark"] .kpi-delta.es-negativa { background: var(--color-primary-soft); color: var(--color-ember); }
+  html[data-theme="dark"] .goal-strip { background: var(--color-surface-alt); }
+  html[data-theme="dark"] .goal-track i { background: linear-gradient(90deg, var(--color-ember), #ffc36b); }
+  html[data-theme="dark"] .extras-section,
+  html[data-theme="dark"] .extra-card { background: var(--color-surface-alt); }
 }

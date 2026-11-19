@@ -5,7 +5,8 @@ const pool = require('../src/config/db');
 const {
   verificarToken,
   permitirEvaluaciones,
-  permitirGerenteGeneral
+  permitirGerenteGeneral,
+  permitirRrhhOGerente
 } = require('../src/middlewares/authMiddleware');
 
 const verificarOriginal = jwt.verify;
@@ -102,6 +103,34 @@ test('permitirGerenteGeneral solo acepta al Gerente General', () => {
 
   assert.equal(paso, true);
   assert.equal(rechazado.codigo, 403);
+});
+
+test('permitirRrhhOGerente acepta a RRHH y al Gerente General', () => {
+  const casos = [
+    { role: 'ADMIN', rol_id: 4, codigo_empleado: 'SUR-AC-002' },
+    { role: 'ADMIN', rol_id: 4, codigo_empleado: 'SUR-GG-001' },
+    { role: 'EMPLOYEE', rol_id: 2, codigo_empleado: 'SUR-RRHH-020' },
+  ];
+
+  for (const usuario of casos) {
+    let paso = false;
+    permitirRrhhOGerente({ usuario }, crearRespuesta(), () => { paso = true; });
+    assert.equal(paso, true);
+  }
+});
+
+test('permitirRrhhOGerente rechaza a otros ADMIN', () => {
+  const res = crearRespuesta();
+  let paso = false;
+
+  permitirRrhhOGerente(
+    { usuario: { role: 'ADMIN', rol_id: 4, codigo_empleado: 'SUR-COOR-004' } },
+    res,
+    () => { paso = true; }
+  );
+
+  assert.equal(paso, false);
+  assert.equal(res.codigo, 403);
 });
 
 test('verificarToken rechaza empleados dados de baja', async () => {
