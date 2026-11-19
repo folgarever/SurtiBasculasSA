@@ -91,6 +91,8 @@
   html[data-theme="dark"] :is(.alert-success, .state-good, .knowledge-result, .knowledge-options .option-correct, .candidate-notice) { background: #193b30; border-color: #397c60; color: #b7ebca; }
   html[data-theme="dark"] :is(.state-warn, .knowledge-options .option-partial, .selection-internal-note) { background: #47391f; border-color: #947333; color: #ffe2a3; }
   html[data-theme="dark"] :is(.state-new, .alert-info) { background: #24384d; border-color: #517392; color: #cfe4fa; }
+  html[data-theme="dark"] :is(.notificaciones-item:hover, .notificaciones-item-nueva) { background: #24384d; }
+  html[data-theme="dark"] .notificaciones-leidas { color: #cfe4fa; }
   html[data-theme="dark"] :is(.alert-error, .knowledge-result.result-needs-work, .knowledge-options .option-incorrect, .candidate-error) { background: #482a30; border-color: #a95860; color: #ffd2d2; }
   html[data-theme="dark"] :is(.field-error, .required-mark, .question-delete-button) { color: #ffb4b4; }
 

@@ -1,0 +1,40 @@
+<div class="notificaciones-control" (keydown.escape)="cerrar(true)">
+  <button #activador type="button" class="notificaciones-trigger icon-button"
+    [attr.aria-label]="servicio.noLeidos() ? 'Notificaciones, ' + servicio.noLeidos() + ' sin leer' : 'Notificaciones'"
+    [attr.aria-expanded]="abierto()"
+    aria-haspopup="true"
+    title="Notificaciones"
+    (click)="alternar()">
+    <ng-icon [name]="servicio.noLeidos() ? 'lucideBellDot' : 'lucideBell'" size="18" />
+    @if (servicio.noLeidos()) {
+      <span class="notificaciones-badge">{{ servicio.noLeidos() }}</span>
+    }
+  </button>
+  @if (abierto()) {
+    <div class="notificaciones-panel" role="group" aria-label="Notificaciones">
+      <div class="notificaciones-head">
+        <strong>Notificaciones</strong>
+        @if (servicio.total()) {
+          <button type="button" class="notificaciones-leidas" (click)="marcarTodas()">Marcar todas como leídas</button>
+        }
+      </div>
+      @if (servicio.cargando()) {
+        <p class="notificaciones-vacio">Cargando notificaciones…</p>
+      } @else if (!servicio.total()) {
+        <p class="notificaciones-vacio">No tienes notificaciones por ahora.</p>
+      } @else {
+        <ul class="notificaciones-lista">
+          @for (item of servicio.items(); track item.id) {
+            <li>
+              <button type="button" class="notificaciones-item" [class.notificaciones-item-nueva]="!servicio.estaLeido(item)"
+                (click)="abrir(item)">
+                <span class="notificaciones-item-titulo">{{ item.titulo }}</span>
+                <span class="notificaciones-item-detalle">{{ item.detalle }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+</div>

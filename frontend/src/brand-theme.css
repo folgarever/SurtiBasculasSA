@@ -1622,6 +1622,77 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .theme-selector button[aria-pressed="true"] { background: var(--color-ink); color: #fff; }
 .candidate-actions { position: relative; display: flex; align-items: center; gap: 12px; }
 .candidate-actions .theme-control { position: static; }
+
+.notificaciones-control { position: relative; }
+.notificaciones-control:has(.notificaciones-panel) { z-index: 3; }
+.notificaciones-trigger { position: relative; border-radius: var(--radius-2xl); }
+.notificaciones-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  padding: 0 4px;
+  border-radius: var(--radius-2xl);
+  background: #a71f28;
+  color: #fff;
+  font-size: .63rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.notificaciones-panel {
+  position: absolute;
+  z-index: 21;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(340px, calc(100vw - 32px));
+  padding: 6px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 16px;
+  background: var(--color-paper);
+  box-shadow: 0 12px 30px rgba(0,0,0,.18);
+}
+.notificaciones-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid var(--color-hairline);
+}
+.notificaciones-head strong { font-size: .82rem; }
+.notificaciones-leidas {
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: .7rem;
+  cursor: pointer;
+}
+.notificaciones-leidas:hover { text-decoration: underline; }
+.notificaciones-lista { max-height: 320px; margin: 0; overflow-y: auto; padding: 0; list-style: none; }
+.notificaciones-item {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.notificaciones-item:hover, .notificaciones-item-nueva { background: var(--color-surface-alt); }
+.notificaciones-item-titulo { font-size: .78rem; font-weight: 700; }
+.notificaciones-item-detalle { color: var(--color-mid-gray); font-size: .72rem; }
+.notificaciones-vacio { margin: 0; padding: 16px 12px; color: var(--color-mid-gray); font-size: .75rem; }
+@media print {
+  .notificaciones-control { display: none; }
+}
 @media (max-width: 560px) {
   .theme-trigger-name { display: none; }
 }

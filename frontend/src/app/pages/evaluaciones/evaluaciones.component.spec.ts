@@ -1,7 +1,9 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { NotificacionesService } from '../../services/notificaciones.service';
 import { DatosEvaluacion, EvaluacionesService } from '../../services/evaluaciones.service';
 import { EvaluacionesComponent } from './evaluaciones.component';
 
@@ -23,6 +25,19 @@ describe('EvaluacionesComponent', () => {
             hasEvaluationRole: () => true,
             isCandidate: () => false,
             logout: vi.fn(),
+          },
+        },
+        {
+          provide: NotificacionesService,
+          useValue: {
+            cargar: vi.fn(),
+            items: signal([]),
+            noLeidos: signal(0),
+            total: signal(0),
+            cargando: signal(false),
+            estaLeido: () => false,
+            marcarLeido: vi.fn(),
+            marcarTodos: vi.fn(),
           },
         },
         {

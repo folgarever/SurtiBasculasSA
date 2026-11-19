@@ -1,9 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { AdminDashboardComponent } from './admin-dashboard.component';
 import { AuthService } from '../../services/auth.service';
+import { NotificacionesService } from '../../services/notificaciones.service';
 
 describe('AdminDashboardComponent', () => {
   let httpMock: HttpTestingController;
@@ -46,6 +48,19 @@ describe('AdminDashboardComponent', () => {
           hasEvaluationRole: () => true,
           hasAdminRole: () => true,
         } },
+        {
+          provide: NotificacionesService,
+          useValue: {
+            cargar: vi.fn(),
+            items: signal([]),
+            noLeidos: signal(0),
+            total: signal(0),
+            cargando: signal(false),
+            estaLeido: () => false,
+            marcarLeido: vi.fn(),
+            marcarTodos: vi.fn(),
+          },
+        },
       ],
     }).compileComponents();
 

@@ -78,6 +78,7 @@ Además incluye:
 - Panel **Pendientes** con accesos a sugerencias sin responder, incidencias vigentes y, si tu cuenta tiene permiso de evaluaciones, evaluaciones por periodo y candidatos en registro.
 - Actividad reciente de los últimos seis eventos, con fecha y hora de actualización.
 - Accesos rápidos a los módulos principales.
+- Campana **Notificaciones** en la barra superior: muestra un contador de avisos sin leer para sugerencias sin responder, evaluaciones pendientes, candidatos en registro y resultados de selección. Cada aviso abre directamente el módulo correspondiente y puedes usar **Marcar todas como leídas**.
 
 **Acciones disponibles:**
 
@@ -446,7 +447,7 @@ Cuando el empleado elige **Enviar de forma anónima**, el sistema conserva el v�
 2. Lee la sugerencia y escribe o actualiza la respuesta, de 1 a 5000 caracteres.
 3. Pulsa **Enviar respuesta** o **Actualizar respuesta**.
 
-La respuesta queda visible de inmediato para el empleado y se registra con tu usuario y fecha. En `/sugerencias`, el empleado ve el folio, la misma línea de estado, un botón **Actualizar** y un aviso cuando hay respuestas nuevas. Solo se puede responder o actualizar: no hay borrado ni cambio manual de estado. Responde con información concreta y evita incluir datos de otros empleados.
+La respuesta queda visible de inmediato para el empleado y se registra con tu usuario y fecha. En `/sugerencias`, el empleado ve el folio, la misma línea de estado, un botón **Actualizar** y un aviso cuando hay respuestas nuevas; la campana de notificaciones también muestra el aviso y lo marca como leído al abrirlo. Solo se puede responder o actualizar: no hay borrado ni cambio manual de estado. Responde con información concreta y evita incluir datos de otros empleados.
 
 ---
 

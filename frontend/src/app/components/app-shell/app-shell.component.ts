@@ -12,13 +12,14 @@ import {
   lucideUsers,
 } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
+import { NotificacionesComponent } from '../notificaciones/notificaciones.component';
 import { SelectorTemaComponent } from '../selector-tema/selector-tema.component';
 import { NavItem } from './nav-items';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [NgClass, RouterLink, NgIcon, SelectorTemaComponent],
+  imports: [NgClass, RouterLink, NgIcon, SelectorTemaComponent, NotificacionesComponent],
   providers: [provideIcons({
     lucideClipboardCheck,
     lucideLayoutDashboard,

@@ -21,6 +21,7 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 - Evaluaciones de conocimiento con frecuencia configurable por puesto (mensual, quincenal o semanal), banco de preguntas por puesto y periodo con copia editable del periodo anterior, puntaje parcial configurable por opción, historial individual y panel administrativo con KPIs.
 - Pruebas de selección independientes de las evaluaciones de conocimiento, con cuadernillo por puesto, rúbrica, puntajes y resultados consultables.
 - Envío de sugerencias o quejas por parte del personal, opcionalmente anónimas, con folio de seguimiento, estado Enviada → En revisión → Respondida, aviso de respuestas nuevas y foro administrativo con respuestas visibles para el autor.
+- Campana de notificaciones in-app con contador de no leídos para respuestas de sugerencias, evaluaciones pendientes y resultados de selección.
 - Acceso a evaluaciones limitado a Héctor Ortiz (`SUR-GG-001`) y Mafer García (`SUR-AC-002`).
 
 ## Tecnologías
@@ -160,6 +161,16 @@ El personal con una cuenta no administradora puede enviar sugerencias o quejas c
 | `POST` | `/api/sugerencias/mis-sugerencias` | Empleado | Crear una sugerencia o queja (`titulo`, `descripcion`, `anonima`) |
 | `GET` | `/api/sugerencias/admin` | Administrador | Consultar todas las sugerencias |
 | `PUT` | `/api/sugerencias/admin/<id>/respuesta` | Administrador | Guardar o actualizar una respuesta |
+
+## Notificaciones in-app
+
+La campana de la barra superior (y del portal del candidato) muestra un contador de avisos sin leer y un panel con acceso directo a cada módulo. Según el rol:
+
+- **Empleado:** respuestas nuevas a sus sugerencias y evaluación de conocimiento pendiente del periodo vigente.
+- **Administrador:** sugerencias sin responder, evaluaciones pendientes, candidatos en registro y resultados de selección disponibles.
+- **Candidato:** resultado de su evaluación o aviso de prueba enviada.
+
+Las notificaciones se derivan de los endpoints existentes, así que no requieren migración ni cambios en la base de datos. El estado de “leído” se guarda en `localStorage` con una clave por usuario (`surtibasculas_notificaciones_vistas:<id>`); las respuestas de sugerencias comparten el marcador ya usado por `/sugerencias`, por lo que **Marcar como leídas** y la campana permanecen sincronizadas. Al abrir un aviso se marca como leído y se navega a la ruta correspondiente.
 
 ## Validación
 

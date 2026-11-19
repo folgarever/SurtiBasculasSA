@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { NotificacionesComponent } from '../../components/notificaciones/notificaciones.component';
 import { SelectorTemaComponent } from '../../components/selector-tema/selector-tema.component';
 import {
   EvaluacionesSeleccionService,
@@ -12,7 +13,7 @@ import {
 @Component({
   selector: 'app-seleccion-candidato',
   standalone: true,
-  imports: [SelectorTemaComponent],
+  imports: [SelectorTemaComponent, NotificacionesComponent],
   templateUrl: './seleccion-candidato.component.html',
   styleUrl: './seleccion-candidato.component.css',
 })

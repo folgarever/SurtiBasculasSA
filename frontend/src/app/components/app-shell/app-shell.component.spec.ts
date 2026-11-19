@@ -1,6 +1,8 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { NotificacionesService } from '../../services/notificaciones.service';
 import { AppShellComponent } from './app-shell.component';
 import { NAV_ADMIN, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from './nav-items';
 
@@ -21,7 +23,23 @@ describe('AppShellComponent', () => {
     auth.isCandidate.mockReturnValue(false);
     await TestBed.configureTestingModule({
       imports: [AppShellComponent],
-      providers: [provideRouter([]), { provide: AuthService, useValue: auth }],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: auth },
+        {
+          provide: NotificacionesService,
+          useValue: {
+            cargar: vi.fn(),
+            items: signal([]),
+            noLeidos: signal(0),
+            total: signal(0),
+            cargando: signal(false),
+            estaLeido: () => false,
+            marcarLeido: vi.fn(),
+            marcarTodos: vi.fn(),
+          },
+        },
+      ],
     }).compileComponents();
   });
 
