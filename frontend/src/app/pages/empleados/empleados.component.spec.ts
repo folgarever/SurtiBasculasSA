@@ -8,15 +8,16 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { NotificacionesService } from '../../services/notificaciones.service';
-import { PuestosComponent } from './puestos.component';
+import { EmpleadosComponent } from './empleados.component';
 
-describe('PuestosComponent', () => {
-  const baseUrl = '/api/rrhh/administracion/puestos';
+describe('EmpleadosComponent · puestos y permisos', () => {
+  const puestosUrl = '/api/rrhh/administracion/puestos';
+  const empleadosUrl = '/api/rrhh/administracion/empleados';
   let httpMock: HttpTestingController;
 
-  beforeEach(async () => {
+  async function crear(esGerente: boolean) {
     await TestBed.configureTestingModule({
-      imports: [PuestosComponent],
+      imports: [EmpleadosComponent],
       providers: [
         provideRouter([]),
         provideHttpClient(),
@@ -24,11 +25,16 @@ describe('PuestosComponent', () => {
         {
           provide: AuthService,
           useValue: {
-            getUsuario: () => ({ nombre: 'Héctor', rol: 'ADMIN', codigo_empleado: 'SUR-GG-001' }),
+            getUsuario: () => ({
+              id: 1,
+              nombre: esGerente ? 'Héctor' : 'Mafer',
+              rol: 'ADMIN',
+              codigo_empleado: esGerente ? 'SUR-GG-001' : 'SUR-AC-002',
+            }),
             hasAdminRole: () => true,
             hasRrhhRole: () => true,
             hasEvaluationRole: () => true,
-            esGerenteGeneral: () => true,
+            esGerenteGeneral: () => esGerente,
             isCandidate: () => false,
             logout: vi.fn(),
           },
@@ -50,29 +56,27 @@ describe('PuestosComponent', () => {
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
-  });
-
-  afterEach(() => {
-    httpMock.verify();
-    TestBed.resetTestingModule();
-  });
-
-  function crear() {
-    const fixture = TestBed.createComponent(PuestosComponent);
+    const fixture = TestBed.createComponent(EmpleadosComponent);
     fixture.detectChanges();
-    httpMock.expectOne(baseUrl).flush({
+    httpMock.expectOne(empleadosUrl).flush({ empleados: [] });
+    httpMock.expectOne(puestosUrl).flush({
       puestos: [{
-        id: 3,
-        codigo_abreviatura: 'COOR',
-        nombre_puesto: 'Coordinador de Operaciones',
-        departamento: 'Operaciones',
+        id: 1,
+        codigo_abreviatura: 'GG',
+        nombre_puesto: 'Gerente General',
+        departamento: 'Gerencia',
         frecuencia_evaluacion: 'mensual',
-        es_admin: 0,
+        es_admin: 1,
       }],
     });
     fixture.detectChanges();
     return fixture;
   }
+
+  afterEach(() => {
+    httpMock?.verify();
+    TestBed.resetTestingModule();
+  });
 
   function escribir(root: HTMLElement, id: string, valor: string): void {
     const input = root.querySelector<HTMLInputElement>(`#${id}`)!;
@@ -80,47 +84,49 @@ describe('PuestosComponent', () => {
     input.dispatchEvent(new Event('input'));
   }
 
-  it('muestra el catálogo de puestos y su indicador ADMIN', () => {
-    const fixture = crear();
-    const texto = (fixture.nativeElement as HTMLElement).textContent || '';
-    expect(texto).toContain('Coordinador de Operaciones');
-    expect(texto).toContain('Empleado');
+  it('muestra el botón solo al Gerente General', async () => {
+    const gerente = await crear(true);
+    expect((gerente.nativeElement as HTMLElement).textContent).toContain('Puestos y permisos');
+
+    TestBed.resetTestingModule();
+    const otro = await crear(false);
+    const botones = Array.from((otro.nativeElement as HTMLElement).querySelectorAll('button'));
+    expect(botones.some((boton) => boton.textContent?.includes('Puestos y permisos'))).toBe(false);
   });
 
-  it('exige contraseña y envía el indicador ADMIN al registrar un puesto', () => {
-    const fixture = crear();
+  it('pide contraseña y crea el puesto desde el modal', async () => {
+    const fixture = await crear(true);
     const root = fixture.nativeElement as HTMLElement;
-    const agregar = Array.from(root.querySelectorAll('button'))
-      .find((boton) => boton.textContent?.includes('Agregar puesto'))!;
-    agregar.click();
+    const boton = Array.from(root.querySelectorAll('button'))
+      .find((item) => item.textContent?.includes('Puestos y permisos'))!;
+    boton.click();
     fixture.detectChanges();
 
+    expect(root.textContent).toContain('Puestos registrados');
     escribir(root, 'puesto-codigo', 'AUXADM');
     escribir(root, 'puesto-nombre', 'Auxiliar Administrativo');
     escribir(root, 'puesto-departamento', 'Administración');
-    const admin = root.querySelector<HTMLInputElement>('#puesto-admin')!;
-    admin.click();
+    root.querySelector<HTMLInputElement>('#puesto-admin')!.click();
     fixture.detectChanges();
 
-    const formulario = root.querySelector('form')!;
+    const formulario = root.querySelector('.puesto-formulario form')!;
     formulario.dispatchEvent(new Event('submit'));
     fixture.detectChanges();
-    httpMock.expectNone(baseUrl);
+    httpMock.expectNone(puestosUrl);
     expect(root.textContent).toContain('La contraseña del Gerente General es obligatoria.');
 
     escribir(root, 'contrasena-admin-puesto', 'secreta');
     formulario.dispatchEvent(new Event('submit'));
     fixture.detectChanges();
 
-    const alta = httpMock.expectOne(baseUrl);
+    const alta = httpMock.expectOne(puestosUrl);
     expect(alta.request.method).toBe('POST');
     expect(alta.request.body).toMatchObject({
       codigo_abreviatura: 'AUXADM',
-      nombre_puesto: 'Auxiliar Administrativo',
       es_admin: true,
       contrasena_admin: 'secreta',
     });
-    alta.flush({ mensaje: 'Puesto registrado correctamente.', puesto: { id: 4 } });
-    httpMock.expectOne(baseUrl).flush({ puestos: [] });
+    alta.flush({ mensaje: 'Puesto registrado correctamente.', puesto: { id: 2 } });
+    httpMock.expectOne(puestosUrl).flush({ puestos: [] });
   });
 });

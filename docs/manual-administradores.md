@@ -49,7 +49,6 @@ La barra lateral izquierda reúne los módulos disponibles para tu cuenta:
 |---|---|---|
 | Dashboard | `/admin` | Indicadores del día y actividad reciente |
 | Empleados | `/admin/empleados` | Directorio de personal, altas, ediciones, bajas y ficha integral |
-| Puestos y permisos | `/admin/puestos` | Solo Gerente General: catálogo e indicador `ADMIN` por puesto |
 | Control de asistencia | `/rrhh` | Marcaciones, incidencias y reportes |
 | Evaluación de personal | `/evaluaciones` | Evaluaciones generales del personal |
 | Evaluaciones de conocimiento | `/admin/evaluaciones-conocimiento` | Frecuencia por puesto, banco por periodo y resultados |
@@ -148,29 +147,25 @@ Tu contraseña se verifica en cada alta, edición o baja. Si es incorrecta verá
 
 La ficha es de solo lectura: no modifica la información. Está disponible para cualquier ADMIN y no requiere los permisos reforzados del módulo de evaluaciones.
 
----
+### Puestos y permisos (solo Gerente General)
 
-## 5. Puestos y permisos
+En `/admin/empleados`, pulsa el botón **Puestos y permisos** que aparece junto a **Agregar empleado**. Se abre un modal; no hay una ruta ni un menú independientes. Cada puesto define la abreviatura usada en el código de acceso, el nombre, el departamento, la frecuencia de evaluaciones de conocimiento y si otorga permiso `ADMIN`.
 
-Ruta: `/admin/puestos`. Disponible solo para `SUR-GG-001`.
+#### Crear un puesto
 
-Cada puesto define la abreviatura usada en el código de acceso, el nombre, el departamento, la frecuencia de evaluaciones de conocimiento y si otorga permiso `ADMIN`. La tabla muestra todos los puestos y cuántos tienen ese indicador.
-
-### Crear un puesto
-
-1. Pulsa **Agregar puesto**.
+1. En el modal, deja el formulario en **Nuevo puesto** (al abrirlo siempre está listo para alta).
 2. Escribe la abreviatura (1 a 10 letras o números, sin espacios). Se usa en `SUR-<abreviatura>-###`, así que no debe repetirse.
 3. Completa nombre, departamento y frecuencia de evaluación (mensual, quincenal o semanal).
 4. Marca **Puesto con permisos de ADMIN** solo si las personas de ese puesto deben administrar el sistema.
 5. Escribe tu **contraseña de Gerente General** y pulsa **Registrar puesto**.
 
-### Editar un puesto
+#### Editar un puesto
 
 1. Pulsa el lápiz en la fila del puesto.
 2. Ajusta los datos. Si el puesto pertenece a `SUR-GG-001` o `SUR-AC-002`, la abreviatura y el indicador `ADMIN` aparecen bloqueados para no romper sus códigos de acceso. En los demás puestos, cambiar la abreviatura afecta a las altas nuevas; no reescribe el código de quienes ya están registrados.
 3. Confirma con tu contraseña y pulsa **Guardar cambios**.
 
-### Qué ocurre al cambiar el indicador `ADMIN`
+#### Qué ocurre al cambiar el indicador `ADMIN`
 
 - Si lo activas, los empleados **activos** del puesto pasan a rol `ADMIN` y pueden usar administración general, directorio, asistencia, sugerencias y ficha integral.
 - Si lo desactivas, esos empleados vuelven a rol **Empleado**.
@@ -179,9 +174,7 @@ Cada puesto define la abreviatura usada en el código de acceso, el nombre, el d
 
 **Importante:** un puesto nuevo con indicador `ADMIN` **no** habilita evaluaciones de personal, conocimiento ni selección. Esos módulos siguen limitados a `SUR-GG-001` y `SUR-AC-002`. La contraseña se pide en cada alta o edición; si es incorrecta, la operación se rechaza.
 
----
-
-## 6. Control de asistencia
+## 5. Control de asistencia
 
 Ruta: `/rrhh`.
 
@@ -231,7 +224,7 @@ Toda corrección queda registrada en auditoría con valores anteriores y nuevos,
 
 ---
 
-## 7. Evaluación de personal
+## 6. Evaluación de personal
 
 Ruta: `/evaluaciones`.
 
@@ -266,7 +259,7 @@ Al seleccionar un empleado se filtra el historial. Al dejarlo vacío se muestran
 
 ---
 
-## 8. Evaluaciones de conocimiento
+## 7. Evaluaciones de conocimiento
 
 Ruta: `/admin/evaluaciones-conocimiento`.
 
@@ -331,7 +324,7 @@ El máximo es 255 preguntas por puesto y periodo, contando las existentes más l
 
 ---
 
-## 9. Pruebas de selección
+## 8. Pruebas de selección
 
 Ruta: `/admin/evaluaciones-seleccion`.
 
@@ -483,7 +476,7 @@ El editor de plantillas vigentes, la baja lógica de cuentas y la auditoría de 
 
 ---
 
-## 10. Sugerencias del personal
+## 9. Sugerencias del personal
 
 Ruta: `/admin/sugerencias`.
 
@@ -501,7 +494,7 @@ La respuesta queda visible de inmediato para el empleado y se registra con tu us
 
 ---
 
-## 11. Buenas prácticas y resolución de problemas
+## 10. Buenas prácticas y resolución de problemas
 
 ### Seguridad
 
@@ -532,13 +525,12 @@ La respuesta queda visible de inmediato para el empleado y se registra con tu us
 
 ---
 
-## 12. Referencia rápida de rutas
+## 11. Referencia rápida de rutas
 
 | Ruta | Módulo | Permiso |
 |---|---|---|
 | `/admin` | Dashboard | ADMIN |
 | `/admin/empleados` | Empleados | ADMIN |
-| `/admin/puestos` | Puestos y permisos | Solo `SUR-GG-001` |
 | `/rrhh` | Control de asistencia | ADMIN o RRHH |
 | `/evaluaciones` | Evaluación de personal | Cuentas autorizadas |
 | `/admin/evaluaciones-conocimiento` | Evaluaciones de conocimiento | Cuentas autorizadas |

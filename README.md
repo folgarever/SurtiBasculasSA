@@ -16,7 +16,7 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 - Panel de Recursos Humanos para consultar asistencias, corregir marcaciones y registrar incidencias.
 - Exportación de reportes de asistencia e incidencias a Excel.
 - Administración del directorio de empleados, incluidas altas, ediciones, bajas y una ficha integral por empleado con asistencia, evaluaciones de personal, evaluaciones de conocimiento e incidencias.
-- Gestión de puestos y permisos: solo `SUR-GG-001` puede crear o editar puestos y decidir cuáles otorgan acceso `ADMIN`, siempre con confirmación de contraseña. El cambio se propaga a los empleados activos del puesto sin afectar las cuentas protegidas `SUR-GG-001` ni `SUR-AC-002`.
+- Gestión de puestos y permisos desde el directorio de empleados: solo `SUR-GG-001` ve el botón **Puestos y permisos**, puede crear o editar puestos y decidir cuáles otorgan acceso `ADMIN`, siempre con confirmación de contraseña. El cambio se propaga a los empleados activos del puesto sin afectar las cuentas protegidas `SUR-GG-001` ni `SUR-AC-002`.
 - Evaluación periódica del personal, con cinco competencias generales y escala de 1 a 5.
 - Evaluación técnica y psicométrica adicional para el Jefe de Mantenimiento.
 - Evaluaciones de conocimiento con frecuencia configurable por puesto (mensual, quincenal o semanal), banco de preguntas por puesto y periodo con copia editable del periodo anterior, puntaje parcial configurable por opción, historial individual y panel administrativo con KPIs.
@@ -95,7 +95,7 @@ El esquema de ejemplo asigna la contraseña inicial `123456` a estas cuentas. Es
 
 ## Puestos y permisos
 
-La ruta `/admin/puestos` y el menú **Puestos y permisos** solo están disponibles para `SUR-GG-001`. Cada puesto tiene una abreviatura (que forma parte del código `SUR-<abreviatura>-###`), nombre, departamento, frecuencia de evaluación de conocimiento y el indicador `ADMIN`.
+En `/admin/empleados`, el botón **Puestos y permisos** aparece solo para `SUR-GG-001` y abre un modal administrativo; no hay una ruta ni un menú independientes. Cada puesto tiene una abreviatura (que forma parte del código `SUR-<abreviatura>-###`), nombre, departamento, frecuencia de evaluación de conocimiento y el indicador `ADMIN`.
 
 | Método | Endpoint | Acceso | Función |
 |---|---|---|---|

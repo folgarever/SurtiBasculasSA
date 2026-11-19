@@ -22,7 +22,7 @@ import {
   lucideX,
 } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
-import { EmpleadoAdministracion, RrhhService, Puesto } from '../../services/rrhh.service';
+import { DatosPuesto, EmpleadoAdministracion, RrhhService, Puesto } from '../../services/rrhh.service';
 
 @Component({
   selector: 'app-empleados',
@@ -66,6 +66,11 @@ export class EmpleadosComponent implements OnInit {
   protected readonly modal = signal<'crear' | 'editar' | 'eliminar' | null>(null);
   protected readonly empleadoSeleccionado = signal<EmpleadoAdministracion | null>(null);
   protected readonly errorModal = signal('');
+  protected readonly modalPuesto = signal(false);
+  protected readonly puestoEditando = signal<Puesto | null>(null);
+  protected readonly errorModalPuesto = signal('');
+  protected readonly guardandoPuesto = signal(false);
+  protected readonly mostrarContrasenaAdminPuesto = signal(false);
   protected readonly aviso = signal<{ tipo: 'success' | 'error'; texto: string } | null>(null);
   protected readonly empleadosFiltrados = computed(() => {
     const termino = this.busqueda().trim().toLocaleLowerCase();
@@ -87,13 +92,25 @@ export class EmpleadosComponent implements OnInit {
   protected readonly confirmacionForm = this.formBuilder.nonNullable.group({
     contrasena_admin: ['', Validators.required],
   });
+  protected readonly formularioPuesto = this.formBuilder.nonNullable.group({
+    codigo_abreviatura: ['', [
+      Validators.required,
+      Validators.pattern(/^[A-Za-z0-9]{1,10}$/),
+    ]],
+    nombre_puesto: ['', [
+      Validators.required,
+      Validators.minLength(2),
+      Validators.maxLength(100),
+    ]],
+    departamento: ['General', [Validators.required, Validators.maxLength(100)]],
+    frecuencia_evaluacion: ['mensual' as DatosPuesto['frecuencia_evaluacion'], Validators.required],
+    es_admin: [false],
+    contrasena_admin: ['', Validators.required],
+  });
 
   ngOnInit(): void {
     this.cargarEmpleados();
-    this.rrhh.obtenerPuestos().subscribe({
-      next: ({ puestos }) => this.puestos.set(puestos),
-      error: (error: HttpErrorResponse) => this.mostrarError(error, 'No se pudieron cargar los puestos.'),
-    });
+    this.cargarPuestos();
   }
 
   protected actualizarBusqueda(event: Event): void {
@@ -101,6 +118,7 @@ export class EmpleadosComponent implements OnInit {
   }
 
   protected abrirFormulario(): void {
+    this.modalPuesto.set(false);
     this.ocultarContrasenas();
     this.empleadoSeleccionado.set(null);
     this.errorModal.set('');
@@ -123,6 +141,7 @@ export class EmpleadosComponent implements OnInit {
 
   protected editarEmpleado(empleado: EmpleadoAdministracion): void {
     if (!this.puedeEditar(empleado)) return;
+    this.modalPuesto.set(false);
     this.ocultarContrasenas();
     this.empleadoSeleccionado.set(empleado);
     this.errorModal.set('');
@@ -145,6 +164,7 @@ export class EmpleadosComponent implements OnInit {
 
   protected confirmarBaja(empleado: EmpleadoAdministracion): void {
     if (!this.puedeEditar(empleado)) return;
+    this.modalPuesto.set(false);
     this.ocultarContrasenas();
     this.empleadoSeleccionado.set(empleado);
     this.errorModal.set('');
@@ -191,6 +211,113 @@ export class EmpleadosComponent implements OnInit {
 
   protected esPuestoAdmin(puesto: Puesto): boolean {
     return Number(puesto.es_admin) === 1 || puesto.es_admin === true;
+  }
+
+  protected abrirPuestos(): void {
+    if (!this.esGerenteGeneral) return;
+    this.modal.set(null);
+    this.puestoEditando.set(null);
+    this.errorModalPuesto.set('');
+    this.mostrarContrasenaAdminPuesto.set(false);
+    this.formularioPuesto.controls.codigo_abreviatura.enable();
+    this.formularioPuesto.controls.es_admin.enable();
+    this.formularioPuesto.reset({
+      codigo_abreviatura: '',
+      nombre_puesto: '',
+      departamento: 'General',
+      frecuencia_evaluacion: 'mensual',
+      es_admin: false,
+      contrasena_admin: '',
+    });
+    this.modalPuesto.set(true);
+  }
+
+  protected editarPuesto(puesto: Puesto): void {
+    if (!this.esGerenteGeneral) return;
+    this.errorModalPuesto.set('');
+    this.mostrarContrasenaAdminPuesto.set(false);
+    this.puestoEditando.set(puesto);
+    if (this.esPuestoProtegido(puesto)) {
+      this.formularioPuesto.controls.codigo_abreviatura.disable();
+      this.formularioPuesto.controls.es_admin.disable();
+    } else {
+      this.formularioPuesto.controls.codigo_abreviatura.enable();
+      this.formularioPuesto.controls.es_admin.enable();
+    }
+    this.formularioPuesto.reset({
+      codigo_abreviatura: puesto.codigo_abreviatura,
+      nombre_puesto: puesto.nombre_puesto,
+      departamento: puesto.departamento || 'General',
+      frecuencia_evaluacion: puesto.frecuencia_evaluacion || 'mensual',
+      es_admin: this.esPuestoAdmin(puesto),
+      contrasena_admin: '',
+    });
+  }
+
+  protected esPuestoProtegido(puesto: Puesto): boolean {
+    return puesto.codigo_abreviatura === 'GG' || puesto.codigo_abreviatura === 'AC';
+  }
+
+  protected alternarVisibilidadContrasenaAdminPuesto(): void {
+    this.mostrarContrasenaAdminPuesto.update((visible) => !visible);
+  }
+
+  protected cancelarEdicionPuesto(): void {
+    this.puestoEditando.set(null);
+    this.errorModalPuesto.set('');
+    this.formularioPuesto.controls.codigo_abreviatura.enable();
+    this.formularioPuesto.controls.es_admin.enable();
+    this.formularioPuesto.reset({
+      codigo_abreviatura: '',
+      nombre_puesto: '',
+      departamento: 'General',
+      frecuencia_evaluacion: 'mensual',
+      es_admin: false,
+      contrasena_admin: '',
+    });
+  }
+
+  protected cerrarFormularioPuesto(): void {
+    if (!this.guardandoPuesto()) {
+      this.modalPuesto.set(false);
+      this.mostrarContrasenaAdminPuesto.set(false);
+    }
+  }
+
+  protected guardarPuesto(): void {
+    if (!this.esGerenteGeneral) return;
+    this.formularioPuesto.markAllAsTouched();
+    if (this.formularioPuesto.invalid || this.guardandoPuesto()) return;
+
+    const value = this.formularioPuesto.getRawValue();
+    const datos: DatosPuesto = {
+      codigo_abreviatura: value.codigo_abreviatura.trim().toUpperCase(),
+      nombre_puesto: value.nombre_puesto.trim(),
+      departamento: value.departamento.trim(),
+      frecuencia_evaluacion: value.frecuencia_evaluacion,
+      es_admin: value.es_admin,
+      contrasena_admin: value.contrasena_admin,
+    };
+    const puesto = this.puestoEditando();
+
+    this.errorModalPuesto.set('');
+    this.guardandoPuesto.set(true);
+    const operacion = puesto
+      ? this.rrhh.actualizarPuesto(puesto.id, datos)
+      : this.rrhh.registrarPuesto(datos);
+
+    operacion.subscribe({
+      next: ({ mensaje }) => {
+        this.aviso.set({ tipo: 'success', texto: mensaje });
+        this.guardandoPuesto.set(false);
+        this.cancelarEdicionPuesto();
+        this.cargarPuestos();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorModalPuesto.set(error.error?.mensaje || 'No fue posible guardar el puesto.');
+        this.guardandoPuesto.set(false);
+      },
+    });
   }
 
   protected alternarVisibilidadContrasenaEmpleado(): void {
@@ -266,6 +393,13 @@ export class EmpleadosComponent implements OnInit {
         this.errorModal.set(error.error?.mensaje || 'No fue posible dar de baja al empleado.');
         this.guardando.set(false);
       },
+    });
+  }
+
+  private cargarPuestos(): void {
+    this.rrhh.obtenerPuestos().subscribe({
+      next: ({ puestos }) => this.puestos.set(puestos),
+      error: (error: HttpErrorResponse) => this.mostrarError(error, 'No se pudieron cargar los puestos.'),
     });
   }
 

@@ -8,7 +8,6 @@ import {
   lucideLightbulb,
   lucideLogOut,
   lucideMessageSquare,
-  lucideShieldCheck,
   lucideUserRoundCog,
   lucideUsers,
 } from '@ng-icons/lucide';
@@ -27,7 +26,6 @@ import { NavItem } from './nav-items';
     lucideLightbulb,
     lucideLogOut,
     lucideMessageSquare,
-    lucideShieldCheck,
     lucideUserRoundCog,
     lucideUsers,
   })],
@@ -60,7 +58,6 @@ export class AppShellComponent {
       case 'admin': return this.auth.hasAdminRole();
       case 'rrhh': return this.auth.hasRrhhRole();
       case 'evaluation': return this.auth.hasEvaluationRole();
-      case 'gerente': return this.auth.esGerenteGeneral();
       case 'employee': return !this.auth.hasAdminRole() && !this.auth.isCandidate();
       default: return true;
     }

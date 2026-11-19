@@ -468,6 +468,13 @@ td { height: 62px; padding-right: 16px; padding-left: 16px; }
 .employee-modal .modal-header { margin-bottom: 15px; }
 .employee-modal .modal-actions { align-items: center; }
 .employee-modal .modal-actions .button-accent { min-width: 175px; }
+.puesto-modal { width: min(760px, 100%); }
+.puesto-catalogo { margin: 6px 0 18px; border: 1px solid #e6e9ed; border-radius: 4px; }
+.puesto-catalogo .table-scroll { max-height: 190px; overflow-y: auto; }
+.puesto-catalogo table { margin: 0; }
+.puesto-formulario { border-top: 1px solid #e6e9ed; padding-top: 2px; }
+.puesto-formulario .section-heading { margin-bottom: 2px; }
+.puesto-formulario h3 { margin: 0; }
 
 @media (max-width: 800px) {
   .topbar { padding-right: 24px; padding-left: 24px; }
