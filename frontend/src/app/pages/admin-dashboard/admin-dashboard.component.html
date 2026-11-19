@@ -16,13 +16,12 @@
   <div class="dashboard-page">
   <section class="admin-welcome dashboard-hero">
     <div class="hero-copy">
-      <span class="hero-badge"><ng-icon name="lucideSparkles" size="13" /> SURTIBASCULAS S.A. / ADMINISTRACIÓN</span>
+      <span class="hero-badge">SURTIBÁSCULAS S.A. / ADMINISTRACIÓN</span>
       <h1>Panel de administración</h1>
-      <p>{{ saludo }}, {{ usuario?.nombre }}. Aquí tienes el pulso de la operación en tiempo real.</p>
+      <p>{{ saludo }}, {{ usuario?.nombre }}. Consulta los indicadores y pendientes de la operación.</p>
     </div>
     <div class="admin-welcome-actions">
       <span class="date-chip"><ng-icon name="lucideCalendarDays" size="14" /> {{ hoy }}</span>
-      <span class="live-chip"><i></i> En vivo</span>
       <button class="button button-ghost" type="button" (click)="cargar()" [disabled]="cargando()">
         <ng-icon name="lucideRefreshCw" size="15" [class.girando]="cargando()" />
         {{ cargando() ? 'Actualizando...' : 'Actualizar' }}
@@ -59,14 +58,14 @@
           <span class="indicador-icono"><ng-icon name="lucideClipboardCheck" size="19" /></span>
           <span class="kpi-group">
             @if (variacion($r.marcaciones_hoy, comparativo?.marcaciones_ayer); as delta) {
-              <span class="kpi-delta" [class.es-negativa]="delta < 0">{{ delta > 0 ? '+' : '' }}{{ delta }}%</span>
+              <span class="kpi-delta" [class.es-negativa]="delta < 0">{{ delta > 0 ? '+' : '' }}{{ delta }}% vs. ayer</span>
             }
             <span class="kpi-tag">Hoy</span>
           </span>
         </div>
         <div class="kpi-body"><span class="summary-number">{{ $r.empleados_presentes }}</span><span class="summary-label">Presentes hoy</span></div>
         <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline [attr.points]="puntosSparkline(tendencias.asistencia)" /></svg>
-        <span class="summary-note">{{ $r.marcaciones_hoy }} marcaciones vs. ayer</span>
+        <span class="summary-note">{{ $r.marcaciones_hoy }} marcaciones hoy · tendencia de 7 días</span>
       </div>
       <div class="summary-card tono-puntualidad">
         <div class="kpi-top">
@@ -78,28 +77,28 @@
           ><ng-icon name="lucideTrendingUp" size="17" /></span>
           <span class="kpi-group">
             @if (variacion($r.puntualidad_hoy, comparativo?.puntualidad_ayer); as delta) {
-              <span class="kpi-delta" [class.es-negativa]="delta < 0">{{ delta > 0 ? '+' : '' }}{{ delta }}%</span>
+              <span class="kpi-delta" [class.es-negativa]="delta < 0">{{ delta > 0 ? '+' : '' }}{{ delta }}% vs. ayer</span>
             }
             <span class="kpi-tag">{{ estadoPuntualidad }}</span>
           </span>
         </div>
         <div class="kpi-body"><span class="summary-number">{{ $r.puntualidad_hoy }}%</span><span class="summary-label">Puntualidad</span></div>
         <svg class="sparkline sparkline-puntualidad" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline [attr.points]="puntosSparkline(tendencias.puntualidad)" /></svg>
-        <span class="summary-note">{{ $r.llegadas_tarde_hoy }} atrasos registrados</span>
+        <span class="summary-note">{{ $r.llegadas_tarde_hoy }} atrasos hoy · tendencia de 7 días</span>
       </div>
       <div class="summary-card tono-sugerencias">
         <div class="kpi-top">
           <span class="indicador-icono"><ng-icon name="lucideMessageSquare" size="19" /></span>
           <span class="kpi-group">
             @if (variacion(comparativo?.sugerencias_actual, comparativo?.sugerencias_anterior); as delta) {
-              <span class="kpi-delta" [class.es-negativa]="delta < 0">{{ delta > 0 ? '+' : '' }}{{ delta }}%</span>
+              <span class="kpi-delta" [class.es-negativa]="delta < 0">{{ delta > 0 ? '+' : '' }}{{ delta }}% recibidas vs. 7 días anteriores</span>
             }
             <span class="kpi-tag">Buzón</span>
           </span>
         </div>
         <div class="kpi-body"><span class="summary-number">{{ $r.sugerencias_pendientes }}</span><span class="summary-label">Sugerencias nuevas</span></div>
         <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline [attr.points]="puntosSparkline(tendencias.sugerencias)" /></svg>
-        <span class="summary-note">de {{ $r.sugerencias_totales }} en total</span>
+        <span class="summary-note">de {{ $r.sugerencias_totales }} en total · tendencia de 7 días</span>
       </div>
     </section>
 
@@ -127,19 +126,47 @@
             <span class="leyenda"><i class="dot primary"></i> Marcaciones <i class="dot alert"></i> Atrasos</span>
           </div>
         </header>
-        <div class="bar-chart" role="img" aria-label="Marcaciones de los últimos siete días">
+        <div class="bar-chart" aria-hidden="true">
           @for (dia of serieAsistencia; track dia.fecha) {
             <div class="bar-column" [attr.title]="dia.fecha + ': ' + dia.total + ' marcaciones, ' + dia.atrasos + ' atrasos'">
               <div class="bars">
-                <span class="bar bar-primary" [style.height.%]="alturaBarra(dia.total)"><b>{{ dia.total || '' }}</b></span>
+                <span class="bar bar-primary" [style.height.%]="dia.total ? alturaBarra(dia.total) : 0"><b>{{ dia.total || '' }}</b></span>
                 <span class="bar bar-alert" [style.height.%]="dia.atrasos ? alturaBarra(dia.atrasos) : 0"></span>
               </div>
               <span class="bar-label">{{ etiquetaDia(dia.fecha) }}</span>
             </div>
           }
         </div>
+        <ul class="sr-only" aria-label="Detalle de asistencia de los últimos siete días">
+          @for (dia of serieAsistencia; track dia.fecha) {
+            <li>{{ dia.fecha }}: {{ dia.total }} marcaciones, {{ dia.atrasos }} atrasos</li>
+          }
+        </ul>
       </article>
 
+      <article class="panel-card panel-pendientes">
+        <header class="panel-header">
+          <div class="panel-title-group">
+            <span class="panel-icon"><ng-icon name="lucideAlertTriangle" size="17" /></span>
+            <div><p class="eyebrow">ATENCIÓN</p><h2>Foco del día</h2></div>
+          </div>
+          <span class="count-chip">{{ totalPendientes }} por atender</span>
+        </header>
+        <p class="pending-intro">Prioriza lo que requiere tu atención hoy.</p>
+        <div class="pending-list">
+          @for (item of pendientes; track item.ruta) {
+            <a class="pending-item" [class.tono-rojo]="item.tono === 'rojo'" [routerLink]="item.ruta">
+              <span class="pending-icon"><ng-icon [name]="item.icono" size="17" /></span>
+              <span class="pending-label">{{ item.etiqueta }}</span>
+              <strong>{{ item.valor }}</strong>
+              <ng-icon name="lucideArrowRight" size="15" />
+            </a>
+          }
+        </div>
+      </article>
+    </section>
+
+    <section class="panel-grid panel-grid-inferior">
       <article class="panel-card panel-puestos">
         <header class="panel-header">
           <div class="panel-title-group">
@@ -161,37 +188,14 @@
           <p class="panel-empty">No hay empleados activos registrados.</p>
         }
       </article>
-    </section>
-
-    <section class="panel-grid panel-grid-inferior">
-      <article class="panel-card panel-pendientes">
-        <header class="panel-header">
-          <div class="panel-title-group">
-            <span class="panel-icon"><ng-icon name="lucideAlertTriangle" size="17" /></span>
-            <div><p class="eyebrow">ATENCIÓN</p><h2>Foco del día</h2></div>
-          </div>
-          <span class="count-chip">{{ totalPendientes }} por atender</span>
-        </header>
-        <p class="pending-intro">Prioriza lo que requiere tu atención hoy.</p>
-        <div class="pending-list">
-          @for (item of pendientes; track item.ruta) {
-            <a class="pending-item" [class.tono-rojo]="item.tono === 'rojo'" [routerLink]="item.ruta">
-              <span class="pending-icon"><ng-icon [name]="item.icono" size="17" /></span>
-              <span class="pending-label">{{ item.etiqueta }}</span>
-              <strong>{{ item.valor }}</strong>
-              <ng-icon name="lucideArrowRight" size="15" />
-            </a>
-          }
-        </div>
-      </article>
 
       <article class="panel-card panel-actividad">
         <header class="panel-header">
           <div class="panel-title-group">
             <span class="panel-icon panel-icon-green"><ng-icon name="lucideActivity" size="17" /></span>
-            <div><p class="eyebrow">TIEMPO REAL</p><h2>Actividad reciente</h2></div>
+            <div><p class="eyebrow">SEGUIMIENTO</p><h2>Actividad reciente</h2></div>
           </div>
-          <span class="actualizado"><i class="punto-activo"></i> {{ fechaCorta(datos()?.actualizado_en || null) }}</span>
+          <span class="actualizado">Actualizado: {{ fechaCorta(datos()?.actualizado_en || null) }}</span>
         </header>
         @if (datos()?.actividad_reciente.length) {
           <ul class="activity-list">

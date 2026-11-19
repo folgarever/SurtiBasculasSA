@@ -73,6 +73,7 @@ El backend restringe CORS a `CORS_ORIGINS` (lista separada por comas). Si no se 
 Las peticiones autenticadas verifican el JWT y **refrescan el perfil desde la base de datos**: una cuenta dada de baja, un cambio de rol o una cuenta de candidato eliminada dejan de tener acceso de inmediato, aunque el token siga vigente.
 
 El panel de administración (`/admin`) consume `GET /api/dashboard/admin`, disponible solo para `ADMIN`. El endpoint devuelve en una sola respuesta los indicadores del día, la serie de asistencia de los últimos siete días, la distribución por puesto y la actividad reciente.
+El panel agrupa el resumen diario, los pendientes y el detalle de asistencia; el gráfico incluye un detalle textual accesible de cada día. Los accesos a evaluaciones siguen sujetos a los permisos existentes.
 
 `GET /api/health` verifica la conexión a MySQL y responde `{ "estado": "ok", "base_de_datos": "ok" }`. Si la base de datos falla, devuelve `500` con `estado: "error"`; es el primer endpoint a revisar cuando el login responde «Error interno del servidor».
 

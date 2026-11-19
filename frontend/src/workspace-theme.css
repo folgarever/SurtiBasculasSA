@@ -344,4 +344,230 @@
     .app-shell .module-card,
     .candidate-portal .candidate-option { transition: none; }
   }
+
+  /* Shared workspace surfaces */
+  .app-shell { background-image: none; }
+  .app-shell .app-sidebar { background: #1c304c; }
+  .app-shell .sidebar-link { border-radius: 6px; }
+  .app-shell .sidebar-link.is-active,
+  .app-shell .sidebar-link.is-active:hover { box-shadow: none; }
+  .app-shell .topbar { box-shadow: none; }
+  .app-shell :is(.panel-card, .records-section, .table-frame, .summary-strip,
+    .evaluation-panel, .evaluation-detail, .knowledge-panel, .knowledge-history,
+    .knowledge-kpi, .suggestion-form-card, .suggestion-card, .modal-panel) {
+    border-radius: 8px;
+    box-shadow: none;
+  }
+  .app-shell :is(.button, .details-button, .icon-button),
+  .app-shell :is(.search-field, .date-filter, .employee-search),
+  .app-shell :is(.modal-panel, .evaluation-field, .suggestion-form, .suggestion-reply,
+    .knowledge-filters, .question-editor, .selection-editor, .selection-inline-form)
+    :is(input:not([type="radio"]):not([type="checkbox"]), select, textarea) {
+    border-radius: 6px;
+  }
+  .app-shell .table-scroll { overscroll-behavior-x: contain; }
+  .app-shell .modal-panel { max-width: 100%; }
+
+  /* Dashboard: a compact overview followed by operational detail. */
+  .app-shell .dashboard-page { gap: 20px; }
+  .app-shell .dashboard-page .admin-welcome {
+    margin: 0;
+    padding: 25px 28px;
+    border-radius: 8px;
+    background: #1c304c;
+    box-shadow: none;
+  }
+  .app-shell .dashboard-page .admin-welcome::before,
+  .app-shell .dashboard-page .admin-welcome::after { display: none; }
+  .app-shell .dashboard-page .hero-copy { min-width: 0; }
+  .app-shell .dashboard-page .hero-badge {
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #dce5ef;
+    font-size: .65rem;
+  }
+  .app-shell .dashboard-page .admin-welcome h1 { margin: 8px 0 6px; }
+  .app-shell .dashboard-page .admin-welcome .hero-copy > p { margin: 0; }
+  .app-shell .dashboard-page .date-chip { border-radius: 6px; text-transform: none; }
+
+  .app-shell .dashboard-page .resumen-grid {
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid var(--workspace-border) !important;
+    border-radius: 8px;
+    background: var(--workspace-surface) !important;
+  }
+  .app-shell .dashboard-page .summary-card {
+    min-width: 0;
+    min-height: 165px;
+    padding: 18px 20px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .app-shell .dashboard-page .summary-card + .summary-card { border-left: 1px solid var(--workspace-border); }
+  .app-shell .dashboard-page .summary-card::before { display: none; }
+  .app-shell .dashboard-page .summary-card .kpi-top {
+    width: 100%;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .app-shell .dashboard-page .indicador-icono,
+  .app-shell .dashboard-page .kpi-ring {
+    flex: 0 0 34px;
+    --kpi-accent: var(--workspace-accent);
+    --kpi-soft: var(--color-primary-soft);
+  }
+  .app-shell .dashboard-page .kpi-group { justify-content: flex-end; flex-wrap: wrap; }
+  .app-shell .dashboard-page .kpi-delta {
+    padding: 0;
+    background: transparent;
+    color: var(--workspace-muted);
+    font-weight: 600;
+    white-space: normal;
+    text-align: right;
+  }
+  .app-shell .dashboard-page .kpi-tag { padding: 4px 6px; border-radius: 4px; }
+  .app-shell .dashboard-page .summary-card .summary-number { font-size: 1.8rem; font-variant-numeric: tabular-nums; }
+  .app-shell .dashboard-page .summary-card .summary-label { max-width: none; line-height: 1.35; }
+  .app-shell .dashboard-page .summary-card .summary-note {
+    margin-top: 6px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    font-size: .7rem;
+    font-weight: 400;
+    line-height: 1.45;
+  }
+  .app-shell .dashboard-page .sparkline { height: 22px; margin: 6px 0 0; }
+  .app-shell .dashboard-page .sparkline polyline { stroke: var(--workspace-accent); }
+  .app-shell .dashboard-page .goal-strip {
+    border-color: var(--workspace-border);
+    border-radius: 8px;
+    background: var(--workspace-surface);
+    box-shadow: none;
+  }
+  .app-shell .dashboard-page .goal-track { background: var(--workspace-soft); }
+  .app-shell .dashboard-page .goal-track i { background: var(--workspace-accent); }
+  .app-shell .dashboard-page .panel-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
+  .app-shell .dashboard-page .panel-grid-inferior { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
+  .app-shell .dashboard-page .panel-card { min-width: 0; padding: 22px; }
+  .app-shell .dashboard-page .panel-header { gap: 12px; }
+  .app-shell .dashboard-page .panel-title-group { min-width: 0; }
+  .app-shell .dashboard-page .panel-icon {
+    flex: 0 0 34px;
+    border-radius: 6px;
+    background: var(--color-primary-soft);
+    color: var(--workspace-accent);
+  }
+  .app-shell .dashboard-page .bar-chart { height: 210px; padding-top: 22px; background-size: 100% 42px; }
+  .app-shell .dashboard-page .bars { height: 160px; }
+  .app-shell .dashboard-page .bar { min-height: 0; border-radius: 3px 3px 0 0; box-shadow: none; }
+  .app-shell .dashboard-page .leyenda .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin: 0 4px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    vertical-align: middle;
+  }
+  .app-shell .dashboard-page .bar-primary,
+  .app-shell .dashboard-page .rank-track i { background: var(--workspace-text); }
+  .app-shell .dashboard-page .rank-track { background: var(--workspace-soft); }
+  .app-shell .dashboard-page .pending-list { gap: 0; }
+  .app-shell .dashboard-page .pending-item {
+    padding: 11px 4px;
+    border: 0;
+    border-top: 1px solid var(--workspace-border);
+    border-radius: 0;
+    background: transparent;
+  }
+  .app-shell .dashboard-page .pending-item:hover {
+    background: var(--workspace-soft);
+    transform: none;
+    box-shadow: none;
+  }
+  .app-shell .dashboard-page .pending-icon { flex: 0 0 30px; border-radius: 6px; }
+  .app-shell .dashboard-page .activity-list { gap: 0; }
+  .app-shell .dashboard-page .activity-body > div { flex-wrap: wrap; }
+  .app-shell .dashboard-page .activity-body p { white-space: normal; overflow-wrap: anywhere; }
+  .app-shell .dashboard-page .panel-modulos .module-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+  .app-shell .dashboard-page .module-card,
+  .app-shell .dashboard-page .module-card:last-child {
+    min-height: 120px;
+    padding: 16px 38px 16px 48px;
+    border: 0;
+    border-top: 1px solid var(--workspace-border);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .app-shell .dashboard-page .module-card::before,
+  .app-shell .dashboard-page .module-card::after { display: none; }
+  .app-shell .dashboard-page .module-card:hover {
+    background: var(--workspace-soft);
+    transform: none;
+    box-shadow: none;
+  }
+  .app-shell .dashboard-page .module-card .module-icon {
+    position: absolute;
+    top: 17px;
+    left: 0;
+    width: 34px;
+    height: 34px;
+    margin: 0;
+    border-radius: 6px;
+    background: var(--workspace-soft);
+    color: var(--workspace-text);
+  }
+  .app-shell .dashboard-page .module-card > strong { font-size: .88rem; }
+  .app-shell .dashboard-page .module-description { padding-right: 0; line-height: 1.5; }
+  .app-shell .dashboard-page .module-arrow {
+    top: 17px;
+    right: 8px;
+    bottom: auto;
+    background: transparent;
+    color: var(--workspace-muted);
+  }
+  html[data-theme="dark"] .app-shell .dashboard-page .admin-welcome { background: #1c304c; }
+  html[data-theme="dark"] .app-shell .dashboard-page :is(.bar-primary, .rank-track i) {
+    background: var(--workspace-text);
+  }
+
+  @media (max-width: 1100px) {
+    .app-shell .dashboard-page .resumen-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .app-shell .dashboard-page .summary-card:nth-child(3) { border-left: 0; }
+    .app-shell .dashboard-page .summary-card:nth-child(n+3) { border-top: 1px solid var(--workspace-border); }
+    .app-shell .dashboard-page .panel-grid,
+    .app-shell .dashboard-page .panel-grid-inferior { grid-template-columns: 1fr; }
+    .app-shell .dashboard-page .panel-modulos .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    .app-shell .dashboard-page { gap: 14px; }
+    .app-shell .dashboard-page .admin-welcome { padding: 20px; }
+    .app-shell .dashboard-page .admin-welcome-actions { gap: 8px; }
+    .app-shell .dashboard-page .admin-welcome-actions .button { flex: 0 0 auto; }
+    .app-shell .dashboard-page .summary-card { min-height: 155px; padding: 14px; }
+    .app-shell .dashboard-page .summary-card .summary-number { font-size: 1.55rem; }
+    .app-shell .dashboard-page .panel-card { padding: 18px; }
+    .app-shell .dashboard-page .panel-header { flex-wrap: wrap; }
+    .app-shell .dashboard-page .panel-header-side { align-items: flex-start; }
+    .app-shell .dashboard-page .goal-track { order: 3; }
+    .app-shell .dashboard-page .panel-modulos .module-grid { grid-template-columns: 1fr; }
+    .app-shell .dashboard-page .module-card,
+    .app-shell .dashboard-page .module-card:last-child { min-height: 100px; }
+    .app-shell .dashboard-page .activity-list li { align-items: flex-start; flex-wrap: wrap; }
+    .app-shell .dashboard-page .activity-list time { flex-basis: calc(100% - 44px); margin-left: 44px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .app-shell .dashboard-page :is(.girando, .skeleton-line, .panel-skeleton) { animation: none; }
+    .app-shell .dashboard-page :is(.bar, .goal-track i) { transition: none; }
+  }
 }

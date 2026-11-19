@@ -104,6 +104,20 @@ describe('AdminDashboardComponent', () => {
     expect(fixture.componentInstance.resumen()?.puntualidad_hoy).toBe(80);
   });
 
+  it('presenta los pendientes junto a la asistencia y describe los días sin marcaciones', () => {
+    const fixture = TestBed.createComponent(AdminDashboardComponent);
+    fixture.detectChanges();
+    httpMock.expectOne((req) => req.url.endsWith('/dashboard/admin')).flush(respuesta);
+    fixture.detectChanges();
+
+    const panel = fixture.nativeElement.querySelector('.panel-grid') as HTMLElement;
+    expect(panel.querySelector('.panel-asistencia')).not.toBeNull();
+    expect(panel.querySelector('.panel-pendientes')).not.toBeNull();
+    expect(panel.querySelector('[aria-label="Detalle de asistencia de los últimos siete días"]')?.textContent)
+      .toContain('0 marcaciones, 0 atrasos');
+    expect((panel.querySelector('.bar-primary') as HTMLElement).style.height).toBe('0%');
+  });
+
   it('muestra un error y permite reintentar si falla la carga', () => {
     const fixture = TestBed.createComponent(AdminDashboardComponent);
     fixture.detectChanges();
