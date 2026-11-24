@@ -11,6 +11,7 @@ export const NAV_ADMIN: NavItem[] = [
   { label: 'Dashboard', route: '/admin', icon: 'lucideLayoutDashboard' },
   { label: 'Empleados', route: '/admin/empleados', icon: 'lucideUsers' },
   { label: 'Control de asistencia', route: '/rrhh', icon: 'lucideClipboardCheck' },
+  { label: 'Solicitudes', route: '/solicitudes', icon: 'lucideCalendarDays' },
   { label: 'Evaluación de personal', route: '/evaluaciones', icon: 'lucideUserRoundCog', visible: 'evaluation' },
   { label: 'Evaluaciones de conocimiento', route: '/admin/evaluaciones-conocimiento', icon: 'lucideClipboardCheck', visible: 'evaluation' },
   { label: 'Pruebas de selección', route: '/admin/evaluaciones-seleccion', icon: 'lucideClipboardCheck', visible: 'evaluation' },
@@ -18,6 +19,7 @@ export const NAV_ADMIN: NavItem[] = [
 
 export const NAV_EMPLEADO: NavItem[] = [
   { label: 'Mi jornada', route: '/dashboard', icon: 'lucideClipboardCheck' },
+  { label: 'Mis solicitudes', route: '/solicitudes', icon: 'lucideCalendarDays' },
   { label: 'Gestión de personal', route: '/rrhh', icon: 'lucideUsers', visible: 'rrhh' },
   { label: 'Administración', route: '/admin', icon: 'lucideLayoutDashboard', visible: 'admin' },
   { label: 'Evaluación de conocimiento', route: '/evaluaciones-conocimiento', icon: 'lucideClipboardCheck' },

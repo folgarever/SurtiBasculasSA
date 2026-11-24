@@ -3,6 +3,7 @@ import { Component, Input, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  lucideCalendarDays,
   lucideClipboardCheck,
   lucideLayoutDashboard,
   lucideLightbulb,
@@ -21,6 +22,7 @@ import { NavItem } from './nav-items';
   standalone: true,
   imports: [NgClass, RouterLink, NgIcon, SelectorTemaComponent, NotificacionesComponent],
   providers: [provideIcons({
+    lucideCalendarDays,
     lucideClipboardCheck,
     lucideLayoutDashboard,
     lucideLightbulb,

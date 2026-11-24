@@ -50,6 +50,7 @@ La barra lateral izquierda reúne los módulos disponibles para tu cuenta:
 | Dashboard | `/admin` | Indicadores del día y actividad reciente |
 | Empleados | `/admin/empleados` | Directorio de personal, altas, ediciones, bajas y ficha integral |
 | Control de asistencia | `/rrhh` | Marcaciones, incidencias y reportes |
+| Solicitudes | `/solicitudes` | Bandeja compartida para aprobar o rechazar vacaciones y permisos |
 | Evaluación de personal | `/evaluaciones` | Evaluaciones generales del personal |
 | Evaluaciones de conocimiento | `/admin/evaluaciones-conocimiento` | Frecuencia por puesto, banco por periodo y resultados |
 | Pruebas de selección | `/admin/evaluaciones-seleccion` | Candidatos, plantillas editables y resultados |
@@ -262,6 +263,15 @@ Solo RRHH (`SUR-AC-002` o una cuenta con rol `RRHH`) y el Gerente General (`SUR-
 6. Guarda.
 
 La fecha inicial no puede ser posterior a la final. Los cambios se aplican de inmediato: no hay confirmación previa ni se pide contraseña de administrador. Por eso revisa dos veces empleado, fecha y motivo.
+
+### Revisar solicitudes de vacaciones y permisos
+
+En **Solicitudes**, revisa la bandeja compartida. Cada tarjeta muestra el empleado, las fechas y el motivo.
+
+1. Pulsa **Aprobar** para aceptar la solicitud y registrarla también como incidencia.
+2. Pulsa **Rechazar**, escribe un motivo de 4 a 500 caracteres y confirma.
+
+Cualquier cuenta con rol `ADMIN` puede resolver solicitudes; no se requiere ser RR. HH. ni Gerente General. Las solicitudes resueltas permanecen en la lista con el nombre de quien las atendió. El empleado consulta el estado y, si se rechaza, el motivo desde **Mis solicitudes**. La aprobación no calcula saldos de vacaciones ni aplica límites de días.
 
 ### Exportar a Excel
 

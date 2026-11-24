@@ -1,0 +1,150 @@
+.solicitudes-page {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.solicitud-panel,
+.solicitud-card,
+.solicitud-vacia {
+  border: 1px solid var(--workspace-border, #e1e6ed);
+  border-radius: 1rem;
+  background: var(--workspace-surface, #fff);
+  box-shadow: 0 8px 24px rgb(15 35 65 / 5%);
+}
+
+.solicitud-panel {
+  padding: clamp(1.1rem, 3vw, 1.7rem);
+}
+
+.solicitud-intro,
+.solicitud-motivo,
+.solicitud-revision {
+  color: var(--workspace-muted, #627087);
+  line-height: 1.55;
+}
+
+.solicitud-form {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.solicitud-campos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.solicitud-campo {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.solicitud-form label,
+.solicitud-rechazo-form label {
+  color: var(--color-ink, #172b4d);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.solicitud-form input,
+.solicitud-form select,
+.solicitud-form textarea,
+.solicitud-rechazo-form textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--workspace-border, #ccd4df);
+  border-radius: 0.65rem;
+  background: var(--workspace-surface, #fff);
+  color: var(--color-ink, #172b4d);
+  padding: 0.7rem 0.8rem;
+}
+
+.solicitud-form textarea,
+.solicitud-rechazo-form textarea {
+  resize: vertical;
+}
+
+.solicitud-form-footer,
+.solicitud-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.solicitud-form-footer {
+  justify-content: space-between;
+  margin-top: 0.3rem;
+}
+
+.solicitud-lista {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.solicitud-admin-lista {
+  padding-top: 0.5rem;
+}
+
+.solicitud-cards {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.solicitud-card {
+  padding: 1rem 1.2rem;
+}
+
+.solicitud-card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.solicitud-card-heading h3 {
+  margin: 0.25rem 0 0;
+  color: var(--color-ink, #172b4d);
+  font-size: 1rem;
+}
+
+.solicitud-card .eyebrow {
+  margin: 0;
+}
+
+.solicitud-motivo {
+  margin: 0.85rem 0 0;
+  white-space: pre-wrap;
+}
+
+.solicitud-revision {
+  margin: 0.7rem 0 0;
+}
+
+.solicitud-acciones {
+  margin-top: 1rem;
+}
+
+.solicitud-rechazo-form {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.solicitud-vacia {
+  padding: 1.4rem;
+  color: var(--workspace-muted, #627087);
+  text-align: center;
+}
+
+@media (max-width: 680px) {
+  .solicitud-campos {
+    grid-template-columns: 1fr;
+  }
+
+  .solicitud-card-heading {
+    flex-direction: column;
+  }
+}

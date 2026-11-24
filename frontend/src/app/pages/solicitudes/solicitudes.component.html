@@ -1,0 +1,174 @@
+<app-shell
+  [inicio]="esAdmin ? '/admin' : '/dashboard'"
+  caption="MÓDULOS"
+  topbarLabel="PERSONAL / AUSENCIAS"
+  topbarTitle="Solicitudes"
+  workspaceClass="solicitudes-workspace"
+  [admin]="esAdmin"
+  [nombre]="usuario?.nombre || ''"
+  [inicial]="usuario?.nombre?.slice(0, 1) || 'U'"
+  footerTitulo="Sistema activo"
+  footerDetalle="Vacaciones y permisos"
+  [items]="navItems"
+  [bottomItems]="bottomItems"
+  [bottomActive]="esAdmin ? '/admin/sugerencias' : '/sugerencias'"
+>
+  <div class="solicitudes-page">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">{{ esAdmin ? 'ADMINISTRACIÓN / PERSONAL' : 'PORTAL DEL EMPLEADO' }}</p>
+        <h1>{{ esAdmin ? 'Solicitudes del personal' : 'Mis solicitudes' }}</h1>
+        <p class="subheading">
+          {{ esAdmin
+            ? 'Revisa las solicitudes pendientes. Cualquier administrador puede aprobarlas o rechazarlas.'
+            : 'Solicita vacaciones o permisos y consulta aquí su estado.' }}
+        </p>
+      </div>
+    </div>
+
+    @if (aviso()) {
+      <div class="alert alert-success" role="status">{{ aviso() }}</div>
+    }
+    @if (error()) {
+      <div class="alert alert-error" role="alert">{{ error() }}</div>
+    }
+
+    <section class="solicitud-panel">
+      <div class="section-heading">
+        <div><p class="eyebrow">NUEVA SOLICITUD</p><h2>Vacaciones o permiso</h2></div>
+      </div>
+      <p class="solicitud-intro">La solicitud quedará pendiente hasta que un administrador la revise.</p>
+      <form class="solicitud-form" [formGroup]="formulario" (ngSubmit)="enviar()">
+        <div class="solicitud-campos">
+          <div class="solicitud-campo">
+            <label for="solicitud-tipo">Tipo</label>
+            <select id="solicitud-tipo" formControlName="tipo">
+              <option value="vacaciones">Vacaciones</option>
+              <option value="permiso">Permiso</option>
+            </select>
+          </div>
+          <div class="solicitud-campo">
+            <label for="solicitud-inicio">Desde</label>
+            <input id="solicitud-inicio" type="date" formControlName="fecha_inicio" required>
+          </div>
+          <div class="solicitud-campo">
+            <label for="solicitud-fin">Hasta</label>
+            <input id="solicitud-fin" type="date" formControlName="fecha_fin" required>
+          </div>
+        </div>
+        @if (formulario.touched && formulario.errors?.['rangoFechas']) {
+          <span class="field-error">La fecha inicial no puede ser posterior a la fecha final.</span>
+        }
+        <label for="solicitud-motivo">Motivo</label>
+        <textarea id="solicitud-motivo" formControlName="motivo" rows="4" maxlength="2000"
+          placeholder="Explica brevemente el motivo de tu solicitud" required></textarea>
+        @if (formulario.controls.motivo.touched && formulario.controls.motivo.invalid) {
+          <span class="field-error">El motivo debe tener entre 4 y 2,000 caracteres.</span>
+        }
+        <div class="solicitud-form-footer">
+          <span class="helper-text">Las fechas se consideran inclusivas.</span>
+          <button class="button button-accent" type="submit" [disabled]="enviando()">
+            {{ enviando() ? 'Enviando…' : 'Enviar solicitud' }}
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="solicitud-lista">
+      <div class="section-heading">
+        <div><p class="eyebrow">SEGUIMIENTO</p><h2>{{ esAdmin ? 'Mis solicitudes' : 'Historial de solicitudes' }}</h2></div>
+        @if (!cargando()) { <span class="record-count">{{ propias().length }} registros</span> }
+      </div>
+      @if (cargando()) {
+        <div class="solicitud-vacia">Cargando solicitudes…</div>
+      } @else if (propias().length === 0) {
+        <div class="solicitud-vacia">Aún no has enviado solicitudes.</div>
+      } @else {
+        <div class="solicitud-cards">
+          @for (solicitud of propias(); track solicitud.id) {
+            <article class="solicitud-card">
+              <div class="solicitud-card-heading">
+                <div>
+                  <p class="eyebrow">{{ tipoSolicitud(solicitud.tipo) }} · {{ formatoFecha(solicitud.fecha_inicio) }} – {{ formatoFecha(solicitud.fecha_fin) }}</p>
+                  <h3>{{ solicitud.motivo }}</h3>
+                </div>
+                <span class="state-pill"
+                  [class.state-warn]="solicitud.estado === 'pendiente'"
+                  [class.state-good]="solicitud.estado === 'aprobada'"
+                  [class.state-new]="solicitud.estado === 'rechazada'">{{ estadoSolicitud(solicitud.estado) }}</span>
+              </div>
+              @if (solicitud.motivo_revision) {
+                <p class="solicitud-revision"><strong>Motivo del rechazo:</strong> {{ solicitud.motivo_revision }}</p>
+              }
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    @if (esAdmin) {
+      <section class="solicitud-lista solicitud-admin-lista">
+        <div class="section-heading">
+          <div><p class="eyebrow">BANDEJA COMPARTIDA</p><h2>Solicitudes del personal</h2></div>
+          @if (!cargandoAdmin()) { <span class="record-count">{{ solicitudesAdmin().length }} registros</span> }
+        </div>
+        @if (errorAdmin()) {
+          <div class="alert alert-error" role="alert">{{ errorAdmin() }}</div>
+        }
+        @if (cargandoAdmin()) {
+          <div class="solicitud-vacia">Cargando solicitudes del personal…</div>
+        } @else if (solicitudesAdmin().length === 0) {
+          <div class="solicitud-vacia">No hay solicitudes registradas.</div>
+        } @else {
+          <div class="solicitud-cards">
+            @for (solicitud of solicitudesAdmin(); track solicitud.id) {
+              <article class="solicitud-card">
+                <div class="solicitud-card-heading">
+                  <div>
+                    <p class="eyebrow">{{ solicitud.codigo_empleado }} · {{ tipoSolicitud(solicitud.tipo) }} · {{ formatoFecha(solicitud.fecha_inicio) }} – {{ formatoFecha(solicitud.fecha_fin) }}</p>
+                    <h3>{{ solicitud.nombre }}</h3>
+                  </div>
+                  <span class="state-pill"
+                    [class.state-warn]="solicitud.estado === 'pendiente'"
+                    [class.state-good]="solicitud.estado === 'aprobada'"
+                    [class.state-new]="solicitud.estado === 'rechazada'">{{ estadoSolicitud(solicitud.estado) }}</span>
+                </div>
+                <p class="solicitud-motivo">{{ solicitud.motivo }}</p>
+                @if (solicitud.motivo_revision) {
+                  <p class="solicitud-revision"><strong>Motivo del rechazo:</strong> {{ solicitud.motivo_revision }}</p>
+                }
+                @if (solicitud.estado === 'pendiente') {
+                  <div class="solicitud-acciones">
+                    <button class="button button-accent" type="button" (click)="aprobar(solicitud)" [disabled]="resolviendoId() !== null">
+                      <ng-icon name="lucideCheck" size="16" /> {{ resolviendoId() === solicitud.id ? 'Guardando…' : 'Aprobar' }}
+                    </button>
+                    <button class="button button-outline" type="button" (click)="iniciarRechazo(solicitud)" [disabled]="resolviendoId() !== null">
+                      <ng-icon name="lucideX" size="16" /> Rechazar
+                    </button>
+                  </div>
+                  @if (solicitudRechazoId() === solicitud.id) {
+                    <form class="solicitud-rechazo-form" [formGroup]="rechazoForm" (ngSubmit)="rechazar(solicitud.id)">
+                      <label [for]="'rechazo-motivo-' + solicitud.id">Motivo del rechazo</label>
+                      <textarea [id]="'rechazo-motivo-' + solicitud.id" formControlName="motivo" rows="3" maxlength="500" required></textarea>
+                      @if (rechazoForm.controls.motivo.touched && rechazoForm.controls.motivo.invalid) {
+                        <span class="field-error">El motivo debe tener entre 4 y 500 caracteres.</span>
+                      }
+                      <div class="solicitud-acciones">
+                        <button class="button button-text" type="button" (click)="cancelarRechazo()">Cancelar</button>
+                        <button class="button button-outline" type="submit" [disabled]="resolviendoId() !== null">
+                          {{ resolviendoId() === solicitud.id ? 'Guardando…' : 'Confirmar rechazo' }}
+                        </button>
+                      </div>
+                    </form>
+                  }
+                } @else if (solicitud.revisor) {
+                  <p class="solicitud-revision">Resuelta por {{ solicitud.revisor }}{{ solicitud.revisado_en ? ' · ' + formatoFecha(solicitud.revisado_en) : '' }}</p>
+                }
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+  </div>
+</app-shell>

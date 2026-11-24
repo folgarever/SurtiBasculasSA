@@ -29,6 +29,12 @@ export const routes: Routes = [
 	{ path: 'admin/empleados', component: EmpleadosComponent, canActivate: [adminGuard] },
 	{ path: 'admin/empleados/:id', component: EmpleadoDetalleComponent, canActivate: [adminGuard], canDeactivate: [cambiosSinGuardarGuard] },
 	{ path: 'rrhh', component: RrhhDashboardComponent, canActivate: [authGuard, roleGuard] },
+	{
+		path: 'solicitudes',
+		loadComponent: () => import('./pages/solicitudes/solicitudes.component')
+			.then((module) => module.SolicitudesComponent),
+		canActivate: [authGuard],
+	},
 	{ path: 'evaluaciones', component: EvaluacionesComponent, canActivate: [authGuard, evaluationGuard] },
 	{
 		path: 'evaluaciones-conocimiento',
