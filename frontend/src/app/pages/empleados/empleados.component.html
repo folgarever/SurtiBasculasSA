@@ -36,42 +36,69 @@
     <section class="records-section">
       <div class="section-heading employee-list-heading">
         <div><p class="eyebrow">EQUIPO SURTIBASCULAS</p><h2>Directorio de empleados</h2></div>
+      </div>
+      <div class="employee-filters">
         <label class="employee-search"><ng-icon name="lucideSearch" size="17" /><input type="search" [value]="busqueda()" (input)="actualizarBusqueda($event)" placeholder="Buscar nombre, código o puesto" aria-label="Buscar empleados"></label>
+        <label class="employee-filter">
+          <span>Puesto</span>
+          <select [value]="filtroPuesto()" (change)="actualizarFiltroPuesto($event)">
+            <option value="">Todos los puestos</option>
+            @for (puesto of puestos(); track puesto.id) { <option [value]="puesto.id">{{ puesto.nombre_puesto }}</option> }
+          </select>
+        </label>
+        <label class="employee-filter">
+          <span>Estado</span>
+          <select [value]="filtroEstado()" (change)="actualizarFiltroEstado($event)">
+            <option value="todos">Todos los estados</option>
+            <option value="activos">Activos</option>
+            <option value="inactivos">Inactivos</option>
+          </select>
+        </label>
+        @if (busqueda() || filtroPuesto() || filtroEstado() !== 'todos') {
+          <button class="employee-clear-filters" type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
+        }
       </div>
 
       <section class="table-frame employee-table-frame">
         <div class="table-scroll">
           <table>
             <thead><tr><th>Empleado</th><th>Puesto</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody>
-              @if (cargando()) {
+            @if (cargando()) {
+              <tbody>
                 <tr><td colspan="5" class="table-empty">Cargando empleados…</td></tr>
-              } @else if (empleadosFiltrados().length === 0) {
-                <tr><td colspan="5" class="table-empty">{{ busqueda() ? 'No hay empleados que coincidan con la búsqueda.' : 'Aún no hay empleados registrados.' }}</td></tr>
-              } @else {
-                @for (empleado of empleadosFiltrados(); track empleado.id) {
-                  <tr>
-                    <td><strong class="employee-name">{{ empleado.nombre }}</strong><small class="employee-code">{{ empleado.codigo_empleado }}</small></td>
-                    <td>{{ empleado.nombre_puesto }}</td>
-                    <td>{{ empleado.rol }}</td>
-                    <td><span class="state-pill" [class.state-good]="empleado.activo" [class.state-warn]="!empleado.activo">{{ empleado.activo ? 'Activo' : 'Inactivo' }}</span></td>
-                    <td class="employee-actions">
-                      <a class="small-action" [routerLink]="['/admin/empleados', empleado.id]" title="Ver detalle" [attr.aria-label]="'Ver detalle de ' + empleado.nombre"><ng-icon name="lucideClipboardCheck" size="16" /></a>
-                      @if (puedeEditar(empleado)) {
-                        <button class="small-action" type="button" title="Editar empleado" [attr.aria-label]="'Editar ' + empleado.nombre" (click)="editarEmpleado(empleado)"><ng-icon name="lucidePencil" size="16" /></button>
-                        @if (puedeDarBaja(empleado) && empleado.activo) {
-                          <button class="small-action small-action-danger" type="button" title="Dar de baja" [attr.aria-label]="'Dar de baja a ' + empleado.nombre" (click)="confirmarBaja(empleado)"><ng-icon name="lucideTrash2" size="16" /></button>
-                        } @else if (empleado.rol === 'ADMIN') {
-                          <span class="protected-account">Solo edición de perfil</span>
+              </tbody>
+            } @else if (empleadosFiltrados().length === 0) {
+              <tbody>
+                <tr><td colspan="5" class="table-empty">{{ empleados().length ? 'No hay empleados que coincidan con los filtros.' : 'Aún no hay empleados registrados.' }}</td></tr>
+              </tbody>
+            } @else {
+              @for (grupo of gruposEmpleados(); track grupo.estado) {
+                <tbody>
+                  <tr class="employee-group-heading"><th scope="rowgroup" colspan="5">{{ grupo.titulo }} <span>{{ grupo.empleados.length }}</span></th></tr>
+                  @for (empleado of grupo.empleados; track empleado.id) {
+                    <tr>
+                      <td><strong class="employee-name">{{ empleado.nombre }}</strong><small class="employee-code">{{ empleado.codigo_empleado }}</small></td>
+                      <td>{{ empleado.nombre_puesto }}</td>
+                      <td>{{ empleado.rol }}</td>
+                      <td><span class="state-pill" [class.state-good]="empleado.activo" [class.state-warn]="!empleado.activo">{{ empleado.activo ? 'Activo' : 'Inactivo' }}</span></td>
+                      <td class="employee-actions">
+                        <a class="small-action" [routerLink]="['/admin/empleados', empleado.id]" title="Ver detalle" [attr.aria-label]="'Ver detalle de ' + empleado.nombre"><ng-icon name="lucideClipboardCheck" size="16" /></a>
+                        @if (puedeEditar(empleado)) {
+                          <button class="small-action" type="button" title="Editar empleado" [attr.aria-label]="'Editar ' + empleado.nombre" (click)="editarEmpleado(empleado)"><ng-icon name="lucidePencil" size="16" /></button>
+                          @if (puedeDarBaja(empleado) && empleado.activo) {
+                            <button class="small-action small-action-danger" type="button" title="Dar de baja" [attr.aria-label]="'Dar de baja a ' + empleado.nombre" (click)="confirmarBaja(empleado)"><ng-icon name="lucideTrash2" size="16" /></button>
+                          } @else if (empleado.rol === 'ADMIN' && !puedeDarBaja(empleado)) {
+                            <span class="protected-account">Solo edición de perfil</span>
+                          }
+                        } @else {
+                          <span class="protected-account">Cuenta protegida</span>
                         }
-                      } @else {
-                        <span class="protected-account">Cuenta protegida</span>
-                      }
-                    </td>
-                  </tr>
-                }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
               }
-            </tbody>
+            }
           </table>
         </div>
         <footer class="table-footer">{{ empleadosFiltrados().length }} de {{ empleados().length }} empleados</footer>

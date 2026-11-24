@@ -95,11 +95,11 @@ No hay formularios ni acciones destructivas en esta pantalla. «Incidencias vige
 
 Ruta: `/admin/empleados`.
 
-Muestra el total de empleados registrados y activos, un buscador y una tabla con empleado, puesto, rol, estado y acciones. El ícono de portapapeles abre la ficha integral del empleado; solo está disponible para cuentas ADMIN.
+Muestra el total de empleados registrados y activos, y una tabla con empleado, puesto, rol, estado y acciones. El directorio agrupa primero a los activos y después a los inactivos. El ícono de portapapeles abre la ficha integral del empleado; solo está disponible para cuentas ADMIN.
 
-### Buscar
+### Buscar y filtrar
 
-Escribe código, nombre, puesto o rol en el buscador. El filtro es instantáneo. Si no hay coincidencias verás: «No hay empleados que coincidan con la búsqueda.».
+Escribe código, nombre, puesto o rol en el buscador y, si lo necesitas, selecciona un puesto o estado. Los filtros se combinan y actualizan los grupos y el total mostrado. Usa **Limpiar filtros** para volver a ver el directorio completo. Si no hay coincidencias verás: «No hay empleados que coincidan con los filtros.».
 
 ### Dar de alta
 

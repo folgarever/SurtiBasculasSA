@@ -143,6 +143,77 @@ describe('EmpleadosComponent · puestos y permisos', () => {
     expect(rootOtroAdmin.querySelector('button[title="Dar de baja"]')).toBeNull();
   });
 
+  it('agrupa activos antes que inactivos y combina búsqueda, puesto y estado', async () => {
+    const empleados = [
+      { id: 2, codigo_empleado: 'SUR-TEC-001', nombre: 'Ana', nombre_puesto: 'Técnico', puesto_id: 3, rol: 'Empleado', activo: 0 },
+      { id: 3, codigo_empleado: 'SUR-TECINF-001', nombre: 'Bruno', nombre_puesto: 'Técnico Informático', puesto_id: 2, rol: 'ADMIN', activo: 1 },
+      { id: 4, codigo_empleado: 'SUR-TEC-002', nombre: 'Carla', nombre_puesto: 'Técnico', puesto_id: 3, rol: 'Empleado', activo: 1 },
+      { id: 5, codigo_empleado: 'SUR-TEC-003', nombre: 'Daniel', nombre_puesto: 'Técnico', puesto_id: 3, rol: 'Empleado', activo: 0 },
+    ];
+    const fixture = await crear(true, empleados);
+    const root = fixture.nativeElement as HTMLElement;
+    const grupos = () => Array.from(root.querySelectorAll('.employee-table-frame tbody'))
+      .map((grupo) => grupo.textContent?.replace(/\s+/g, ' ').trim());
+    expect(grupos()).toHaveLength(2);
+    expect(grupos()[0]).toContain('Empleados activos 2');
+    expect(grupos()[0]).toContain('Carla');
+    expect(grupos()[0]).not.toContain('Ana');
+    expect(grupos()[1]).toContain('Empleados inactivos 2');
+    expect(grupos()[1]).toContain('Ana');
+    expect(root.querySelector('.table-footer')?.textContent).toContain('4 de 4 empleados');
+
+    const [puesto, estado] = Array.from(root.querySelectorAll<HTMLSelectElement>('.employee-filter select'));
+    puesto.value = '3';
+    puesto.dispatchEvent(new Event('change'));
+    estado.value = 'inactivos';
+    estado.dispatchEvent(new Event('change'));
+    const busqueda = root.querySelector<HTMLInputElement>('input[aria-label="Buscar empleados"]')!;
+    busqueda.value = 'ana';
+    busqueda.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(grupos()).toHaveLength(1);
+    expect(grupos()[0]).toContain('Empleados inactivos 1');
+    expect(grupos()[0]).toContain('Ana');
+    expect(grupos()[0]).not.toContain('Daniel');
+    expect(root.querySelector('.table-footer')?.textContent).toContain('1 de 4 empleados');
+
+    busqueda.value = 'sin coincidencia';
+    busqueda.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(root.textContent).toContain('No hay empleados que coincidan con los filtros.');
+    expect(root.querySelector('.table-footer')?.textContent).toContain('0 de 4 empleados');
+
+    root.querySelector<HTMLButtonElement>('.employee-clear-filters')!.click();
+    fixture.detectChanges();
+    expect(busqueda.value).toBe('');
+    expect(puesto.value).toBe('');
+    expect(estado.value).toBe('todos');
+    expect(grupos()).toHaveLength(2);
+  });
+
+  it('mueve a la sección de inactivos al empleado dado de baja', async () => {
+    const empleado = {
+      id: 2, codigo_empleado: 'SUR-TEC-001', nombre: 'Ana',
+      nombre_puesto: 'Técnico', puesto_id: 3, rol: 'Empleado', activo: 1,
+    };
+    const fixture = await crear(true, [empleado]);
+    const root = fixture.nativeElement as HTMLElement;
+    root.querySelector<HTMLButtonElement>('button[title="Dar de baja"]')!.click();
+    fixture.detectChanges();
+    escribir(root, 'contrasena-admin-baja', 'secreta');
+    root.querySelector('#contrasena-admin-baja')!.closest('form')!.dispatchEvent(new Event('submit'));
+    const baja = httpMock.expectOne(`${empleadosUrl}/2`);
+    expect(baja.request.method).toBe('DELETE');
+    baja.flush({ mensaje: 'Empleado dado de baja.' });
+    httpMock.expectOne(empleadosUrl).flush({ empleados: [{ ...empleado, activo: 0 }] });
+    fixture.detectChanges();
+
+    expect(root.querySelector('.employee-group-heading')?.textContent).toContain('Empleados inactivos 1');
+    expect(root.querySelector('button[title="Dar de baja"]')).toBeNull();
+    expect(root.querySelector('button[title="Editar empleado"]')).not.toBeNull();
+  });
+
   it('pide contraseña y crea el puesto desde el modal', async () => {
     const fixture = await crear(true);
     const root = fixture.nativeElement as HTMLElement;

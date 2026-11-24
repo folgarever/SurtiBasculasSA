@@ -188,6 +188,64 @@
     border: 0;
     background: transparent;
   }
+  .app-shell .employee-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .app-shell .employee-filters .employee-search {
+    flex: 1 1 240px;
+    width: auto;
+  }
+  .app-shell .employee-filter {
+    display: grid;
+    flex: 1 1 160px;
+    gap: 5px;
+    color: var(--workspace-muted);
+    font-size: .68rem;
+    font-weight: 650;
+  }
+  .app-shell .employee-filter select {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 10px;
+    background: var(--workspace-soft);
+    color: var(--workspace-text);
+    font: inherit;
+    font-size: .76rem;
+  }
+  .app-shell .employee-clear-filters {
+    min-height: 42px;
+    padding: 0 8px;
+    border: 0;
+    background: transparent;
+    color: var(--workspace-accent);
+    font-size: .74rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .app-shell .employee-clear-filters:focus-visible {
+    outline: 3px solid #4d83bf;
+    outline-offset: 3px;
+  }
+  .app-shell .employee-table-frame .employee-group-heading th {
+    height: 38px;
+    border-top: 1px solid var(--workspace-border);
+    background: var(--workspace-soft);
+    color: var(--workspace-text);
+    font-size: .72rem;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .app-shell .employee-group-heading span {
+    margin-left: 6px;
+    color: var(--workspace-muted);
+    font-weight: 500;
+  }
   .app-shell :is(.knowledge-question, .question-editor, .criteria-section, .specialized-section,
     .knowledge-empty, .selection-editor-section, .selection-inline-form) {
     border-color: var(--workspace-border);

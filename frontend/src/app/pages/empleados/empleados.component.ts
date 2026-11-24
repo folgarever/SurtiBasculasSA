@@ -58,6 +58,8 @@ export class EmpleadosComponent implements OnInit {
   protected readonly empleados = signal<EmpleadoAdministracion[]>([]);
   protected readonly puestos = signal<Puesto[]>([]);
   protected readonly busqueda = signal('');
+  protected readonly filtroPuesto = signal('');
+  protected readonly filtroEstado = signal<'todos' | 'activos' | 'inactivos'>('todos');
   protected readonly cargando = signal(true);
   protected readonly guardando = signal(false);
   protected readonly mostrarContrasenaEmpleado = signal(false);
@@ -74,12 +76,23 @@ export class EmpleadosComponent implements OnInit {
   protected readonly aviso = signal<{ tipo: 'success' | 'error'; texto: string } | null>(null);
   protected readonly empleadosFiltrados = computed(() => {
     const termino = this.busqueda().trim().toLocaleLowerCase();
-    if (!termino) return this.empleados();
-    return this.empleados().filter((empleado) => (
-      `${empleado.codigo_empleado} ${empleado.nombre} ${empleado.nombre_puesto} ${empleado.rol}`
-        .toLocaleLowerCase()
-        .includes(termino)
-    ));
+    const puesto = this.filtroPuesto();
+    const estado = this.filtroEstado();
+    return this.empleados().filter((empleado) => {
+      const coincideBusqueda = `${empleado.codigo_empleado} ${empleado.nombre} ${empleado.nombre_puesto} ${empleado.rol}`
+        .toLocaleLowerCase().includes(termino);
+      const coincidePuesto = !puesto || String(empleado.puesto_id) === puesto;
+      const coincideEstado = estado === 'todos'
+        || (estado === 'activos' ? Boolean(empleado.activo) : !empleado.activo);
+      return coincideBusqueda && coincidePuesto && coincideEstado;
+    });
+  });
+  protected readonly gruposEmpleados = computed(() => {
+    const empleados = this.empleadosFiltrados();
+    return [
+      { estado: 'activos', titulo: 'Empleados activos', empleados: empleados.filter((empleado) => empleado.activo) },
+      { estado: 'inactivos', titulo: 'Empleados inactivos', empleados: empleados.filter((empleado) => !empleado.activo) },
+    ].filter((grupo) => grupo.empleados.length > 0);
   });
   protected readonly empleadosActivos = computed(() => this.empleados().filter((empleado) => empleado.activo).length);
   protected readonly formulario = this.formBuilder.nonNullable.group({
@@ -115,6 +128,23 @@ export class EmpleadosComponent implements OnInit {
 
   protected actualizarBusqueda(event: Event): void {
     this.busqueda.set((event.target as HTMLInputElement).value);
+  }
+
+  protected actualizarFiltroPuesto(event: Event): void {
+    this.filtroPuesto.set((event.target as HTMLSelectElement).value);
+  }
+
+  protected actualizarFiltroEstado(event: Event): void {
+    const estado = (event.target as HTMLSelectElement).value;
+    if (estado === 'todos' || estado === 'activos' || estado === 'inactivos') {
+      this.filtroEstado.set(estado);
+    }
+  }
+
+  protected limpiarFiltros(): void {
+    this.busqueda.set('');
+    this.filtroPuesto.set('');
+    this.filtroEstado.set('todos');
   }
 
   protected abrirFormulario(): void {
