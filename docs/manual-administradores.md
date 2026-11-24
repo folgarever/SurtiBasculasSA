@@ -155,13 +155,28 @@ En la parte superior del detalle hay una tarjeta con los datos personales del em
 - **Datos:** nombre completo, DPI (13 dígitos), fecha de nacimiento, correo, teléfono y fecha de ingreso. La edad se calcula sola a partir de la fecha de nacimiento.
 - **Avance:** una barra indica cuántos de los 7 datos están completos (los 6 anteriores más el currículum).
 - **Currículum:** sube un PDF de máximo 5 MB con **Subir CV**. Con **Ver** se abre una vista previa dentro de la app y con **Descargar** se guarda el archivo.
-- **Guardar:** pulsa **Guardar ficha**. Los errores aparecen junto a cada campo. Si sales con cambios sin guardar, el sistema te pedirá confirmación.
+- **Guardar:** pulsa **Guardar datos**. Los errores aparecen junto a cada campo. Si sales con cambios sin guardar, el sistema te pedirá confirmación.
 - **Historial:** el bloque desplegable muestra los últimos 30 movimientos: quién modificó la ficha, qué campos cambió y quién subió o descargó el currículum. Solo se registran los nombres de los campos, nunca sus valores.
+- **Exportar a Excel:** el botón **Exportar a Excel** descarga la ficha del empleado en un archivo `.xlsx`. La exportación queda registrada en el historial.
+
+#### Documentos del empleado
+
+Debajo del currículum está la sección **Documentos del empleado**, para guardar copia de DPI, contrato, antecedentes u otros.
+
+1. Elige el **tipo** de documento y, si aplica, su **fecha de vencimiento**.
+2. Pulsa **Subir documento** y selecciona un PDF de máximo 5 MB.
+3. Cada documento se puede descargar o eliminar (se pide confirmación al eliminar).
+4. Los documentos vencidos se marcan como **Vencido** y los que vencen en 30 días o menos como **Vence el…**.
+
+Subir, consultar y eliminar documentos queda en el historial de la ficha.
 
 #### Notificaciones de ficha y celebraciones
 
 - Si hay empleados activos con la ficha incompleta, la campana avisa cuántos faltan.
-- La campana también avisa los cumpleaños y aniversarios laborales de los próximos 7 días.
+- La campana avisa los cumpleaños y aniversarios laborales de los próximos 7 días.
+- La campana avisa cuando hay documentos vencidos o que vencen en los próximos 30 días.
+- El empleado, en su propia campana, recibe un aviso **Mis datos faltantes** con los datos de su ficha que aún no se han capturado (solo los nombres, nunca los valores).
+- En `/admin/empleados`, el panel desplegable **Celebraciones del mes** lista todos los cumpleaños y aniversarios del mes en curso.
 
 #### Exportar el directorio
 
