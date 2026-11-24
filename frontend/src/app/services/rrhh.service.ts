@@ -61,6 +61,26 @@ export type DatosFicha = Pick<
   'nombre_completo' | 'dpi' | 'fecha_nacimiento' | 'correo' | 'telefono' | 'fecha_ingreso'
 >;
 
+export type TipoDocumento = 'dpi' | 'contrato' | 'antecedentes' | 'otro';
+
+export interface DocumentoEmpleado {
+  id: number;
+  tipo: TipoDocumento;
+  nombre: string;
+  fecha_vencimiento: string | null;
+  creado_en: string;
+  subido_por: string | null;
+}
+
+export interface DocumentoPorVencer {
+  id: number;
+  empleado_id: number;
+  empleado: string;
+  tipo: TipoDocumento;
+  fecha_vencimiento: string;
+  dias: number;
+}
+
 export interface ResumenMiFicha {
   faltantes: string[];
   completos: number;
@@ -69,7 +89,7 @@ export interface ResumenMiFicha {
 
 export interface RegistroAuditoriaFicha {
   id: number;
-  accion: 'ficha' | 'cv_subida' | 'cv_descarga' | 'ficha_exportada';
+  accion: 'ficha' | 'cv_subida' | 'cv_descarga' | 'ficha_exportada' | 'documento_subido' | 'documento_descarga' | 'documento_eliminado';
   campos: string | null;
   creado_en: string;
   usuario: string | null;
@@ -237,6 +257,40 @@ export class RrhhService {
     return this.http.put<{ mensaje: string; cv_nombre: string }>(
       `${this.baseUrl}/administracion/empleados/${id}/curriculum`, datos
     );
+  }
+
+  subirDocumentoEmpleado(
+    id: number, archivo: File, tipo: TipoDocumento, fechaVencimiento: string,
+  ): Observable<{ mensaje: string; id: number }> {
+    const datos = new FormData();
+    datos.append('documento', archivo);
+    datos.append('tipo', tipo);
+    if (fechaVencimiento) datos.append('fecha_vencimiento', fechaVencimiento);
+    return this.http.post<{ mensaje: string; id: number }>(
+      `${this.baseUrl}/administracion/empleados/${id}/documentos`, datos
+    );
+  }
+
+  listarDocumentosEmpleado(id: number): Observable<{ documentos: DocumentoEmpleado[] }> {
+    return this.http.get<{ documentos: DocumentoEmpleado[] }>(
+      `${this.baseUrl}/administracion/empleados/${id}/documentos`
+    );
+  }
+
+  descargarDocumentoEmpleado(id: number, documentoId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/administracion/empleados/${id}/documentos/${documentoId}`, {
+      responseType: 'blob',
+    });
+  }
+
+  eliminarDocumentoEmpleado(id: number, documentoId: number): Observable<{ mensaje: string }> {
+    return this.http.delete<{ mensaje: string }>(
+      `${this.baseUrl}/administracion/empleados/${id}/documentos/${documentoId}`
+    );
+  }
+
+  obtenerDocumentosPorVencer(): Observable<{ documentos: DocumentoPorVencer[] }> {
+    return this.http.get<{ documentos: DocumentoPorVencer[] }>(`${this.baseUrl}/administracion/documentos/por-vencer`);
   }
 
   descargarCurriculumEmpleado(id: number): Observable<Blob> {

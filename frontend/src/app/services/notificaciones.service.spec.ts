@@ -172,15 +172,19 @@ describe('NotificacionesService', () => {
       });
     httpMock.expectOne((peticion) => peticion.url.endsWith('/rrhh/administracion/empleados'))
       .flush({ empleados: [] });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/documentos/por-vencer'))
+      .flush({ documentos: [{ id: 3, empleado_id: 4, empleado: 'Ana', tipo: 'dpi', fecha_vencimiento: '2026-12-01', dias: 5 }] });
 
     expect(servicio.items().map((item) => item.id)).toEqual([
+      'documentos-por-vencer',
       'sugerencias-pendientes',
       'evaluaciones-pendientes',
       'candidatos-registro',
       'seleccion-resultados',
     ]);
-    expect(servicio.items()[0].marcador).toBe('4');
-    expect(servicio.noLeidos()).toBe(4);
+    expect(servicio.items()[1].marcador).toBe('4');
+    expect(servicio.items()[0].ruta).toBe('/admin/empleados/4');
+    expect(servicio.noLeidos()).toBe(5);
 
     servicio.marcarTodos();
     expect(servicio.noLeidos()).toBe(0);
@@ -203,6 +207,7 @@ describe('NotificacionesService', () => {
         { id: 9, activo: 0, ficha_completa: false },
       ],
     });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/documentos/por-vencer')).flush({ documentos: [] });
 
     expect(servicio.items()).toHaveLength(1);
     expect(servicio.items()[0]).toMatchObject({
@@ -220,6 +225,7 @@ describe('NotificacionesService', () => {
     httpMock.expectOne((peticion) => peticion.url.endsWith('/sugerencias/admin')).flush({});
     httpMock.expectOne((peticion) => peticion.url.endsWith('/dashboard/admin')).flush(null);
     httpMock.expectOne((peticion) => peticion.url.endsWith('/rrhh/administracion/empleados')).flush({});
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/documentos/por-vencer')).flush({});
 
     expect(servicio.items()).toEqual([]);
     expect(servicio.cargando()).toBe(false);
@@ -270,6 +276,7 @@ describe('NotificacionesService', () => {
       } });
     httpMock.expectOne((peticion) => peticion.url.endsWith('/rrhh/administracion/empleados'))
       .flush({ empleados: [] });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/documentos/por-vencer')).flush({ documentos: [] });
 
     expect(servicio.noLeidos()).toBe(0);
   });

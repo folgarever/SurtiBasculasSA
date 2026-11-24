@@ -1677,6 +1677,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .profile-cv-info span, .profile-cv-info small { color: var(--color-ink-soft); }
 .profile-cv-info small { font-size: .72rem; }
 .profile-cv-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.profile-documents { display: grid; gap: 12px; margin-top: 18px; padding: 16px; border: 1px solid var(--color-border); border-radius: 12px; }
+.profile-documents-header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.profile-documents-header small { display: block; color: var(--color-ink-soft); }
+.profile-documents-upload { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.profile-documents ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.profile-documents li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 10px; }
+.profile-document-info { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; min-width: 0; overflow-wrap: anywhere; }
+.profile-document-actions { display: flex; gap: 6px; }
+.status-pill.status-danger { background: #fde8e8; color: #9b1c1c; }
+.status-pill.status-warning { background: #fff4d6; color: #7a5200; }
 .profile-upload { cursor: pointer; }
 .profile-preview { display: grid; gap: 8px; }
 .profile-preview-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: .85rem; }

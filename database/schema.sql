@@ -105,6 +105,22 @@ CREATE TABLE empleados_ficha_auditoria (
     FOREIGN KEY (usuario_id) REFERENCES empleados(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+-- Documentos adicionales por empleado con vencimiento opcional. Ver migración 2026-11-24-documentos-empleados.
+CREATE TABLE empleados_documentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    empleado_id INT NOT NULL,
+    tipo VARCHAR(20) NOT NULL,
+    nombre VARCHAR(150) NOT NULL,
+    contenido LONGBLOB NOT NULL,
+    fecha_vencimiento DATE NULL,
+    subido_por INT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_empleados_documentos_empleado (empleado_id),
+    KEY idx_empleados_documentos_vencimiento (fecha_vencimiento),
+    FOREIGN KEY (empleado_id) REFERENCES empleados(id) ON DELETE CASCADE,
+    FOREIGN KEY (subido_por) REFERENCES empleados(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
 CREATE TABLE marcaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     empleado_id INT NOT NULL,

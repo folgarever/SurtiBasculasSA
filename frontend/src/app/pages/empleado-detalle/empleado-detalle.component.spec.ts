@@ -66,6 +66,7 @@ describe('EmpleadoDetalleComponent · ficha', () => {
     fixture.detectChanges();
     httpMock.expectOne(`${base}/detalle`).flush(detalle(ficha));
     httpMock.expectOne(`${base}/ficha/auditoria`).flush({ registros });
+    httpMock.expectOne(`${base}/documentos`).flush({ documentos: [] });
     fixture.detectChanges();
     return fixture;
   }

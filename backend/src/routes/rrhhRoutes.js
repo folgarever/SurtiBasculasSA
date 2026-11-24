@@ -32,25 +32,38 @@ const {
   registrarIncidencia,
   exportarReporteExcel
 } = require('../controllers/rrhhController');
+const {
+  listarDocumentosEmpleado,
+  subirDocumentoEmpleado,
+  descargarDocumentoEmpleado,
+  eliminarDocumentoEmpleado,
+  obtenerDocumentosPorVencer
+} = require('../controllers/documentosEmpleadoController');
 
 const router = express.Router();
-const cargarCurriculum = multer({
+const cargarArchivo = (campo) => multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024, files: 1 },
-}).single('curriculum');
+}).single(campo);
 
-function validarCargaCurriculum(req, res, next) {
-  cargarCurriculum(req, res, (error) => {
-    if (error instanceof multer.MulterError) {
-      const mensaje = error.code === 'LIMIT_FILE_SIZE'
-        ? 'El currículum no puede superar 5 MB.'
-        : 'Adjunta un solo archivo PDF como currículum.';
-      return res.status(400).json({ mensaje });
-    }
-    if (error) return next(error);
-    return next();
-  });
+function validarCarga(campo, nombreArchivo) {
+  const cargar = cargarArchivo(campo);
+  return (req, res, next) => {
+    cargar(req, res, (error) => {
+      if (error instanceof multer.MulterError) {
+        const mensaje = error.code === 'LIMIT_FILE_SIZE'
+          ? `${nombreArchivo} no puede superar 5 MB.`
+          : 'Adjunta un solo archivo PDF.';
+        return res.status(400).json({ mensaje });
+      }
+      if (error) return next(error);
+      return next();
+    });
+  };
 }
+
+const validarCargaCurriculum = validarCarga('curriculum', 'El currículum');
+const validarCargaDocumento = validarCarga('documento', 'El documento');
 
 router.use(verificarToken, permitirRoles(2, 3, 'ADMIN'));
 router.get('/asistencias', obtenerTodasAsistencias);
@@ -64,6 +77,16 @@ router.put('/administracion/empleados/:id/ficha', permitirRoles('ADMIN'), actual
 router.get('/administracion/empleados/:id/curriculum', permitirRoles('ADMIN'), descargarCurriculumEmpleado);
 router.get('/administracion/empleados/:id/ficha/auditoria', permitirRoles('ADMIN'), obtenerAuditoriaFicha);
 router.get('/administracion/empleados/:id/ficha/exportar', permitirRoles('ADMIN'), exportarFichaEmpleado);
+router.get('/administracion/documentos/por-vencer', permitirRoles('ADMIN'), obtenerDocumentosPorVencer);
+router.get('/administracion/empleados/:id/documentos', permitirRoles('ADMIN'), listarDocumentosEmpleado);
+router.post(
+  '/administracion/empleados/:id/documentos',
+  permitirRoles('ADMIN'),
+  validarCargaDocumento,
+  subirDocumentoEmpleado
+);
+router.get('/administracion/empleados/:id/documentos/:documentoId', permitirRoles('ADMIN'), descargarDocumentoEmpleado);
+router.delete('/administracion/empleados/:id/documentos/:documentoId', permitirRoles('ADMIN'), eliminarDocumentoEmpleado);
 router.put(
   '/administracion/empleados/:id/curriculum',
   permitirRoles('ADMIN'),

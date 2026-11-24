@@ -1256,6 +1256,7 @@ module.exports = {
   obtenerAuditoriaFicha,
   obtenerMiFicha,
   exportarFichaEmpleado,
+  registrarAuditoriaFicha,
   obtenerPuestos,
   registrarPuesto,
   actualizarPuesto,

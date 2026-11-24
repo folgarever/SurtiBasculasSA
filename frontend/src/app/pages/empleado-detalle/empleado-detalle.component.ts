@@ -15,6 +15,7 @@ import {
   lucideLogOut,
   lucideMessageSquare,
   lucideSave,
+  lucideTrash2,
   lucideUpload,
   lucideUserRoundCog,
   lucideUsers,
@@ -27,9 +28,11 @@ import { AuthService } from '../../services/auth.service';
 import {
   DatosFicha,
   DetalleEmpleado,
+  DocumentoEmpleado,
   FichaEmpleado,
   RegistroAuditoriaFicha,
   RrhhService,
+  TipoDocumento,
 } from '../../services/rrhh.service';
 
 const TAMANO_MAXIMO_CV = 5 * 1024 * 1024;
@@ -56,6 +59,7 @@ const ETIQUETAS_CAMPOS: Record<string, string> = {
     lucideLogOut,
     lucideMessageSquare,
     lucideSave,
+    lucideTrash2,
     lucideUpload,
     lucideUserRoundCog,
     lucideUsers,
@@ -224,6 +228,9 @@ export class EmpleadoDetalleComponent implements OnInit {
     if (registro.accion === 'cv_subida') return 'Cargó el currículum';
     if (registro.accion === 'cv_descarga') return 'Consultó o descargó el currículum';
     if (registro.accion === 'ficha_exportada') return 'Exportó la ficha a Excel';
+    if (registro.accion === 'documento_subido') return `Subió un documento (${this.etiquetaTipo(registro.campos || '')})`;
+    if (registro.accion === 'documento_descarga') return `Consultó un documento (${this.etiquetaTipo(registro.campos || '')})`;
+    if (registro.accion === 'documento_eliminado') return `Eliminó un documento (${this.etiquetaTipo(registro.campos || '')})`;
     const campos = (registro.campos || '').split(',')
       .map((campo) => ETIQUETAS_CAMPOS[campo] || campo).filter(Boolean);
     return campos.length ? `Modificó: ${campos.join(', ')}` : 'Modificó la ficha';
@@ -234,6 +241,96 @@ export class EmpleadoDetalleComponent implements OnInit {
     return Number.isNaN(fecha.getTime()) ? valor : fecha.toLocaleString('es-GT', {
       day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
       timeZone: 'America/Guatemala',
+    });
+  }
+
+  protected readonly tiposDocumento: { valor: TipoDocumento; etiqueta: string }[] = [
+    { valor: 'dpi', etiqueta: 'Copia de DPI' },
+    { valor: 'contrato', etiqueta: 'Contrato' },
+    { valor: 'antecedentes', etiqueta: 'Antecedentes' },
+    { valor: 'otro', etiqueta: 'Otro' },
+  ];
+  protected readonly documentos = signal<DocumentoEmpleado[]>([]);
+  protected readonly tipoDocumento = signal<TipoDocumento>('contrato');
+  protected readonly vencimientoDocumento = signal('');
+  protected readonly subiendoDocumento = signal(false);
+
+  protected etiquetaTipo(tipo: string): string {
+    return this.tiposDocumento.find((item) => item.valor === tipo)?.etiqueta ?? tipo;
+  }
+
+  protected estadoVencimiento(documento: DocumentoEmpleado): 'vencido' | 'por-vencer' | 'vigente' | 'sin' {
+    const vencimiento = documento.fecha_vencimiento?.slice(0, 10);
+    if (!vencimiento) return 'sin';
+    const dias = (Date.parse(`${vencimiento}T00:00:00Z`) - Date.parse(`${this.hoy}T00:00:00Z`)) / 86_400_000;
+    if (dias < 0) return 'vencido';
+    return dias <= 30 ? 'por-vencer' : 'vigente';
+  }
+
+  protected seleccionarDocumento(event: Event): void {
+    const entrada = event.target as HTMLInputElement;
+    const archivo = entrada.files?.[0];
+    entrada.value = '';
+    const detalle = this.detalle();
+    if (!archivo || !detalle || this.subiendoDocumento()) return;
+
+    if (archivo.type !== 'application/pdf' && !archivo.name.toLowerCase().endsWith('.pdf')) {
+      this.avisoFicha.set({ tipo: 'error', texto: 'El documento debe estar en formato PDF.' });
+      return;
+    }
+    if (archivo.size > TAMANO_MAXIMO_CV) {
+      this.avisoFicha.set({ tipo: 'error', texto: 'El documento no puede superar 5 MB.' });
+      return;
+    }
+
+    this.avisoFicha.set(null);
+    this.subiendoDocumento.set(true);
+    this.rrhh.subirDocumentoEmpleado(detalle.empleado.id, archivo, this.tipoDocumento(), this.vencimientoDocumento())
+      .subscribe({
+        next: ({ mensaje }) => {
+          this.avisoFicha.set({ tipo: 'success', texto: mensaje });
+          this.subiendoDocumento.set(false);
+          this.vencimientoDocumento.set('');
+          this.cargarDocumentos(detalle.empleado.id);
+          this.cargarAuditoria(detalle.empleado.id);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.avisoFicha.set({ tipo: 'error', texto: error.error?.mensaje || 'No fue posible subir el documento.' });
+          this.subiendoDocumento.set(false);
+        },
+      });
+  }
+
+  protected descargarDocumento(documento: DocumentoEmpleado): void {
+    const detalle = this.detalle();
+    if (!detalle) return;
+    this.rrhh.descargarDocumentoEmpleado(detalle.empleado.id, documento.id).subscribe({
+      next: (archivo) => {
+        this.guardarArchivo(archivo, documento.nombre);
+        this.cargarAuditoria(detalle.empleado.id);
+      },
+      error: () => this.avisoFicha.set({ tipo: 'error', texto: 'No se pudo descargar el documento.' }),
+    });
+  }
+
+  protected eliminarDocumento(documento: DocumentoEmpleado): void {
+    const detalle = this.detalle();
+    if (!detalle) return;
+    if (!window.confirm(`¿Eliminar el documento «${documento.nombre}»? Esta acción no se puede deshacer.`)) return;
+    this.rrhh.eliminarDocumentoEmpleado(detalle.empleado.id, documento.id).subscribe({
+      next: ({ mensaje }) => {
+        this.avisoFicha.set({ tipo: 'success', texto: mensaje });
+        this.cargarDocumentos(detalle.empleado.id);
+        this.cargarAuditoria(detalle.empleado.id);
+      },
+      error: () => this.avisoFicha.set({ tipo: 'error', texto: 'No se pudo eliminar el documento.' }),
+    });
+  }
+
+  private cargarDocumentos(id: number): void {
+    this.rrhh.listarDocumentosEmpleado(id).subscribe({
+      next: ({ documentos }) => this.documentos.set(documentos),
+      error: () => this.documentos.set([]),
     });
   }
 
@@ -338,6 +435,7 @@ export class EmpleadoDetalleComponent implements OnInit {
         this.avisoFicha.set(null);
         this.cerrarVistaPrevia();
         this.cargarAuditoria(id);
+        this.cargarDocumentos(id);
         this.cargando.set(false);
       },
       error: (error: { error?: { mensaje?: string } }) => {

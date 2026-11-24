@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { catchError, forkJoin, of } from 'rxjs';
 import { AuthService } from './auth.service';
 import { DashboardAdmin, DashboardService } from './dashboard.service';
-import { EmpleadoAdministracion, ResumenMiFicha, RrhhService } from './rrhh.service';
+import { DocumentoPorVencer, EmpleadoAdministracion, ResumenMiFicha, RrhhService } from './rrhh.service';
 import {
   EvaluacionConocimiento,
   EvaluacionesConocimientoService,
@@ -177,8 +177,9 @@ export class NotificacionesService {
           .pipe(catchError(() => of({ sugerencias: [] as Sugerencia[] }))),
         resumen: this.dashboard.obtenerResumenAdmin().pipe(catchError(() => of(null))),
         empleados: this.rrhh.obtenerEmpleadosAdministracion().pipe(catchError(() => of(null))),
-      }).subscribe(({ sugerencias, resumen, empleados }) => {
-        this._items.set(this.itemsAdmin(sugerencias?.sugerencias ?? [], resumen, empleados?.empleados ?? []));
+        documentos: this.rrhh.obtenerDocumentosPorVencer().pipe(catchError(() => of(null))),
+      }).subscribe(({ sugerencias, resumen, empleados, documentos }) => {
+        this._items.set(this.itemsAdmin(sugerencias?.sugerencias ?? [], resumen, empleados?.empleados ?? [], documentos?.documentos ?? []));
         this._cargando.set(false);
       });
       return;
@@ -271,8 +272,22 @@ export class NotificacionesService {
     sugerencias: Sugerencia[],
     resumen: DashboardAdmin | null,
     empleados: EmpleadoAdministracion[] = [],
+    documentos: DocumentoPorVencer[] = [],
   ): NotificacionItem[] {
     const items: NotificacionItem[] = [];
+    const vencidos = documentos.filter((documento) => documento.dias < 0).length;
+    if (documentos.length) {
+      const cantidad = documentos.length;
+      items.push({
+        id: 'documentos-por-vencer',
+        titulo: 'Documentos de personal por vencer',
+        detalle: `${cantidad} ${cantidad === 1 ? 'documento vence' : 'documentos vencen'} en 30 días o ya ${cantidad === 1 ? 'venció' : 'vencieron'}${vencidos ? ` (${vencidos} vencidos)` : ''}`,
+        ruta: new Set(documentos.map((documento) => documento.empleado_id)).size === 1
+          ? `/admin/empleados/${documentos[0].empleado_id}` : '/admin/empleados',
+        marcador: documentos.map((documento) => documento.id).sort((a, b) => a - b).join(','),
+        tipo: 'empleado',
+      });
+    }
     const pendientes = sugerencias.filter((sugerencia) => !sugerenciaRespondida(sugerencia));
     const fichasIncompletas = empleados.filter((empleado) => empleado.activo && !empleado.ficha_completa);
 

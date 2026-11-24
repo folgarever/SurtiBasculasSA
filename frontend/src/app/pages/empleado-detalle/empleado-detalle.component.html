@@ -135,6 +135,45 @@
         </div>
       }
 
+      <section class="profile-documents" aria-labelledby="documentos-titulo">
+        <div class="profile-documents-header">
+          <div><strong id="documentos-titulo">Documentos del empleado</strong><small>Copia de DPI, contrato, antecedentes u otros. Solo PDF de hasta 5 MB.</small></div>
+          <div class="profile-documents-upload">
+            <select aria-label="Tipo de documento" [value]="tipoDocumento()" (change)="tipoDocumento.set($any($event.target).value)">
+              @for (tipo of tiposDocumento; track tipo.valor) { <option [value]="tipo.valor">{{ tipo.etiqueta }}</option> }
+            </select>
+            <input type="date" aria-label="Fecha de vencimiento (opcional)" [value]="vencimientoDocumento()" (input)="vencimientoDocumento.set($any($event.target).value)">
+            <label class="button button-outline profile-upload" [class.is-disabled]="subiendoDocumento()" for="documento-archivo">
+              <ng-icon name="lucideUpload" size="16" /> {{ subiendoDocumento() ? 'Subiendo…' : 'Subir documento' }}
+            </label>
+            <input id="documento-archivo" class="profile-file-input" type="file" accept="application/pdf,.pdf" [disabled]="subiendoDocumento()" (change)="seleccionarDocumento($event)">
+          </div>
+        </div>
+        @if (documentos().length === 0) {
+          <p class="helper-text">Aún no hay documentos cargados.</p>
+        } @else {
+          <ul>
+            @for (documento of documentos(); track documento.id) {
+              <li>
+                <div class="profile-document-info">
+                  <strong>{{ etiquetaTipo(documento.tipo) }}</strong>
+                  <span>{{ documento.nombre }}</span>
+                  @switch (estadoVencimiento(documento)) {
+                    @case ('vencido') { <span class="status-pill status-danger">Vencido el {{ formatoFecha(documento.fecha_vencimiento) }}</span> }
+                    @case ('por-vencer') { <span class="status-pill status-warning">Vence el {{ formatoFecha(documento.fecha_vencimiento) }}</span> }
+                    @case ('vigente') { <small>Vence el {{ formatoFecha(documento.fecha_vencimiento) }}</small> }
+                  }
+                </div>
+                <div class="profile-document-actions">
+                  <button class="icon-button" type="button" [attr.aria-label]="'Descargar ' + documento.nombre" (click)="descargarDocumento(documento)"><ng-icon name="lucideDownload" size="16" /></button>
+                  <button class="icon-button" type="button" [attr.aria-label]="'Eliminar ' + documento.nombre" (click)="eliminarDocumento(documento)"><ng-icon name="lucideTrash2" size="16" /></button>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
       <details class="profile-audit">
         <summary>Historial de cambios <span class="record-count">{{ auditoria().length }}</span></summary>
         @if (auditoria().length === 0) {
