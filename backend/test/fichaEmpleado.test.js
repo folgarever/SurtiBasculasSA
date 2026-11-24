@@ -98,6 +98,40 @@ test('actualizarFichaEmpleado responde 404 si el empleado no existe y 400 si los
   assert.equal(invalida.codigo, 400);
 });
 
+test('actualizarFichaEmpleado audita solo los campos modificados, sin guardar valores', async () => {
+  const auditorias = [];
+  pool.execute = async (sql, params) => {
+    if (sql.includes('SELECT id FROM empleados')) return [[{ id: 3 }]];
+    if (sql.includes('FROM empleados_ficha WHERE')) {
+      return [[{ nombre_completo: 'Ana', dpi: '2456123450101', fecha_nacimiento: null, correo: null, telefono: null, fecha_ingreso: null }]];
+    }
+    if (sql.includes('INTO empleados_ficha_auditoria')) auditorias.push(params);
+    return [[]];
+  };
+  const res = crearRespuesta();
+  await actualizarFichaEmpleado(
+    { params: { id: '3' }, body: { nombre_completo: 'Ana', dpi: '1111222233334', correo: 'a@b.co' }, usuario: { id: 1 } },
+    res,
+    (error) => { throw error; }
+  );
+  assert.equal(res.codigo, 200);
+  assert.deepEqual(auditorias, [[3, 1, 'ficha', 'dpi,correo']]);
+
+  const sinCambios = [];
+  pool.execute = async (sql, params) => {
+    if (sql.includes('SELECT id FROM empleados')) return [[{ id: 3 }]];
+    if (sql.includes('FROM empleados_ficha WHERE')) return [[{ nombre_completo: 'Ana' }]];
+    if (sql.includes('INTO empleados_ficha_auditoria')) sinCambios.push(params);
+    return [[]];
+  };
+  await actualizarFichaEmpleado(
+    { params: { id: '3' }, body: { nombre_completo: 'Ana' }, usuario: { id: 1 } },
+    crearRespuesta(),
+    (error) => { throw error; }
+  );
+  assert.equal(sinCambios.length, 0);
+});
+
 test('subirCurriculumEmpleado rechaza archivos que no son PDF y guarda los PDF válidos', async () => {
   const consultas = [];
   pool.execute = async (sql, params) => {

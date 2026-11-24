@@ -2,12 +2,14 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideArrowLeft,
   lucideClipboardCheck,
   lucideDownload,
+  lucideEye,
   lucideFileText,
   lucideLayoutDashboard,
   lucideLogOut,
@@ -16,14 +18,29 @@ import {
   lucideUpload,
   lucideUserRoundCog,
   lucideUsers,
+  lucideX,
 } from '@ng-icons/lucide';
 import { distinctUntilChanged, map } from 'rxjs';
 import { AppShellComponent } from '../../components/app-shell/app-shell.component';
 import { NAV_ADMIN, SUGERENCIAS_ADMIN } from '../../components/app-shell/nav-items';
 import { AuthService } from '../../services/auth.service';
-import { DatosFicha, DetalleEmpleado, FichaEmpleado, RrhhService } from '../../services/rrhh.service';
+import {
+  DatosFicha,
+  DetalleEmpleado,
+  FichaEmpleado,
+  RegistroAuditoriaFicha,
+  RrhhService,
+} from '../../services/rrhh.service';
 
 const TAMANO_MAXIMO_CV = 5 * 1024 * 1024;
+const ETIQUETAS_CAMPOS: Record<string, string> = {
+  nombre_completo: 'nombre completo',
+  dpi: 'DPI',
+  fecha_nacimiento: 'fecha de nacimiento',
+  correo: 'correo',
+  telefono: 'teléfono',
+  fecha_ingreso: 'fecha de ingreso',
+};
 
 @Component({
   selector: 'app-empleado-detalle',
@@ -33,6 +50,7 @@ const TAMANO_MAXIMO_CV = 5 * 1024 * 1024;
     lucideArrowLeft,
     lucideClipboardCheck,
     lucideDownload,
+    lucideEye,
     lucideFileText,
     lucideLayoutDashboard,
     lucideLogOut,
@@ -41,6 +59,7 @@ const TAMANO_MAXIMO_CV = 5 * 1024 * 1024;
     lucideUpload,
     lucideUserRoundCog,
     lucideUsers,
+    lucideX,
   })],
   templateUrl: './empleado-detalle.component.html',
 })
@@ -52,8 +71,13 @@ export class EmpleadoDetalleComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
+  private readonly sanitizer = inject(DomSanitizer);
+  private urlVistaPrevia: string | null = null;
 
   protected readonly usuario = this.auth.getUsuario();
+  protected readonly auditoria = signal<RegistroAuditoriaFicha[]>([]);
+  protected readonly vistaPreviaCv = signal<SafeResourceUrl | null>(null);
+  protected readonly cargandoVistaPrevia = signal(false);
   protected readonly detalle = signal<DetalleEmpleado | null>(null);
   protected readonly cargando = signal(true);
   protected readonly error = signal('');
@@ -79,6 +103,7 @@ export class EmpleadoDetalleComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.cerrarVistaPrevia());
     this.route.paramMap.pipe(
       map((params) => Number(params.get('id'))),
       distinctUntilChanged(),
@@ -119,6 +144,7 @@ export class EmpleadoDetalleComponent implements OnInit {
         this.formularioFicha.markAsPristine();
         this.avisoFicha.set({ tipo: 'success', texto: mensaje });
         this.guardandoFicha.set(false);
+        this.cargarAuditoria(detalle.empleado.id);
       },
       error: (error: HttpErrorResponse) => {
         this.avisoFicha.set({ tipo: 'error', texto: error.error?.mensaje || 'No fue posible guardar la ficha.' });
@@ -150,11 +176,61 @@ export class EmpleadoDetalleComponent implements OnInit {
         this.actualizarFicha({ cv_nombre, cv_actualizado_en: new Date().toISOString() });
         this.avisoFicha.set({ tipo: 'success', texto: mensaje });
         this.subiendoCv.set(false);
+        this.cerrarVistaPrevia();
+        this.cargarAuditoria(detalle.empleado.id);
       },
       error: (error: HttpErrorResponse) => {
         this.avisoFicha.set({ tipo: 'error', texto: error.error?.mensaje || 'No fue posible subir el currículum.' });
         this.subiendoCv.set(false);
       },
+    });
+  }
+
+  protected verCurriculum(): void {
+    const detalle = this.detalle();
+    if (!detalle || this.cargandoVistaPrevia()) return;
+    this.cargandoVistaPrevia.set(true);
+    this.rrhh.descargarCurriculumEmpleado(detalle.empleado.id).subscribe({
+      next: (archivo) => {
+        this.cerrarVistaPrevia();
+        this.urlVistaPrevia = URL.createObjectURL(archivo);
+        this.vistaPreviaCv.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.urlVistaPrevia));
+        this.cargandoVistaPrevia.set(false);
+        this.cargarAuditoria(detalle.empleado.id);
+      },
+      error: () => {
+        this.cargandoVistaPrevia.set(false);
+        this.avisoFicha.set({ tipo: 'error', texto: 'No se pudo abrir el currículum.' });
+      },
+    });
+  }
+
+  protected cerrarVistaPrevia(): void {
+    if (this.urlVistaPrevia) URL.revokeObjectURL(this.urlVistaPrevia);
+    this.urlVistaPrevia = null;
+    this.vistaPreviaCv.set(null);
+  }
+
+  protected descripcionAuditoria(registro: RegistroAuditoriaFicha): string {
+    if (registro.accion === 'cv_subida') return 'Cargó el currículum';
+    if (registro.accion === 'cv_descarga') return 'Consultó o descargó el currículum';
+    const campos = (registro.campos || '').split(',')
+      .map((campo) => ETIQUETAS_CAMPOS[campo] || campo).filter(Boolean);
+    return campos.length ? `Modificó: ${campos.join(', ')}` : 'Modificó la ficha';
+  }
+
+  protected fechaHora(valor: string): string {
+    const fecha = new Date(valor.includes('T') ? valor : valor.replace(' ', 'T') + 'Z');
+    return Number.isNaN(fecha.getTime()) ? valor : fecha.toLocaleString('es-GT', {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      timeZone: 'America/Guatemala',
+    });
+  }
+
+  private cargarAuditoria(id: number): void {
+    this.rrhh.obtenerAuditoriaFicha(id).subscribe({
+      next: ({ registros }) => this.auditoria.set(registros),
+      error: () => this.auditoria.set([]),
     });
   }
 
@@ -171,6 +247,7 @@ export class EmpleadoDetalleComponent implements OnInit {
         enlace.click();
         enlace.remove();
         window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        this.cargarAuditoria(detalle.empleado.id);
       },
       error: () => this.avisoFicha.set({ tipo: 'error', texto: 'No se pudo descargar el currículum.' }),
     });
@@ -233,6 +310,8 @@ export class EmpleadoDetalleComponent implements OnInit {
         this.detalle.set(detalle);
         this.rellenarFormulario(detalle.ficha);
         this.avisoFicha.set(null);
+        this.cerrarVistaPrevia();
+        this.cargarAuditoria(id);
         this.cargando.set(false);
       },
       error: (error: { error?: { mensaje?: string } }) => {

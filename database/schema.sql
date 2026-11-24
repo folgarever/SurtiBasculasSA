@@ -92,6 +92,19 @@ CREATE TABLE empleados_ficha (
     FOREIGN KEY (actualizado_por) REFERENCES empleados(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+-- Bitácora de la ficha: solo nombres de campos, nunca valores. Ver migración 2026-11-24-auditoria-ficha.
+CREATE TABLE empleados_ficha_auditoria (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    empleado_id INT NOT NULL,
+    usuario_id INT NULL,
+    accion VARCHAR(30) NOT NULL,
+    campos VARCHAR(255) NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_ficha_auditoria_empleado (empleado_id, creado_en),
+    FOREIGN KEY (empleado_id) REFERENCES empleados(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES empleados(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
 CREATE TABLE marcaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     empleado_id INT NOT NULL,

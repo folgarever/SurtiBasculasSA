@@ -19,6 +19,7 @@ const {
   actualizarFichaEmpleado,
   subirCurriculumEmpleado,
   descargarCurriculumEmpleado,
+  obtenerAuditoriaFicha,
   obtenerPuestos,
   registrarPuesto,
   actualizarPuesto,
@@ -60,6 +61,7 @@ router.get('/administracion/empleados', permitirRoles('ADMIN'), obtenerEmpleados
 router.get('/administracion/empleados/:id/detalle', permitirRoles('ADMIN'), obtenerDetalleEmpleado);
 router.put('/administracion/empleados/:id/ficha', permitirRoles('ADMIN'), actualizarFichaEmpleado);
 router.get('/administracion/empleados/:id/curriculum', permitirRoles('ADMIN'), descargarCurriculumEmpleado);
+router.get('/administracion/empleados/:id/ficha/auditoria', permitirRoles('ADMIN'), obtenerAuditoriaFicha);
 router.put(
   '/administracion/empleados/:id/curriculum',
   permitirRoles('ADMIN'),

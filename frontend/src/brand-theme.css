@@ -1678,6 +1678,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .profile-cv-info small { font-size: .72rem; }
 .profile-cv-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .profile-upload { cursor: pointer; }
+.profile-preview { display: grid; gap: 8px; }
+.profile-preview-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: .85rem; }
+.profile-preview-frame { width: 100%; height: min(70vh, 640px); border: 1px solid var(--color-border); border-radius: 12px; background: #fff; }
+.profile-audit summary { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: .85rem; }
+.profile-audit ul { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+.profile-audit li { display: grid; gap: 2px; padding: 8px 12px; border-left: 3px solid var(--color-primary-soft); font-size: .85rem; }
+.profile-audit li small { color: var(--color-ink-soft); }
 .profile-upload.is-disabled { opacity: .6; pointer-events: none; }
 .profile-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .profile-file-input:focus-visible + * , .profile-cv-actions:has(.profile-file-input:focus-visible) .profile-upload { outline: 2px solid var(--color-primary); outline-offset: 2px; }

@@ -25,7 +25,7 @@ describe('EmpleadoDetalleComponent · ficha', () => {
     asistencias: [], evaluaciones: [], conocimiento: [], incidencias: [],
   });
 
-  async function crear(ficha: Record<string, unknown> = {}) {
+  async function crear(ficha: Record<string, unknown> = {}, registros: unknown[] = []) {
     await TestBed.configureTestingModule({
       imports: [EmpleadoDetalleComponent],
       providers: [
@@ -65,6 +65,7 @@ describe('EmpleadoDetalleComponent · ficha', () => {
     const fixture = TestBed.createComponent(EmpleadoDetalleComponent);
     fixture.detectChanges();
     httpMock.expectOne(`${base}/detalle`).flush(detalle(ficha));
+    httpMock.expectOne(`${base}/ficha/auditoria`).flush({ registros });
     fixture.detectChanges();
     return fixture;
   }
@@ -114,6 +115,7 @@ describe('EmpleadoDetalleComponent · ficha', () => {
     expect(peticion.request.method).toBe('PUT');
     expect(peticion.request.body).toMatchObject({ dpi: '1234567890123', telefono: '55551234', correo: null });
     peticion.flush({ mensaje: 'Ficha actualizada.', ficha: { dpi: '1234567890123', telefono: '55551234' } });
+    httpMock.expectOne(`${base}/ficha/auditoria`).flush({ registros: [] });
     fixture.detectChanges();
     expect(root.textContent).toContain('Ficha actualizada.');
   });
@@ -142,7 +144,37 @@ describe('EmpleadoDetalleComponent · ficha', () => {
     expect(peticion.request.method).toBe('PUT');
     expect((peticion.request.body as FormData).get('curriculum')).toBeInstanceOf(File);
     peticion.flush({ mensaje: 'Currículum guardado.', cv_nombre: 'mi-cv.pdf' });
+    httpMock.expectOne(`${base}/ficha/auditoria`).flush({ registros: [] });
     fixture.detectChanges();
     expect(root.querySelector('.profile-cv')?.textContent).toContain('mi-cv.pdf');
+  });
+
+  it('muestra el historial de cambios sin exponer valores', async () => {
+    const fixture = await crear({}, [
+      { id: 2, accion: 'ficha', campos: 'dpi,correo', creado_en: '2026-11-24 21:00:00', usuario: 'Admin' },
+      { id: 1, accion: 'cv_descarga', campos: 'cv', creado_en: '2026-11-24 20:00:00', usuario: null },
+    ]);
+    const texto = (fixture.nativeElement as HTMLElement).querySelector('.profile-audit')!.textContent!;
+    expect(texto).toContain('Modificó: DPI, correo');
+    expect(texto).toContain('Consultó o descargó el currículum');
+    expect(texto).toContain('Usuario eliminado');
+  });
+
+  it('abre la vista previa del currículum y la cierra', async () => {
+    const fixture = await crear({ cv_nombre: 'cv.pdf' });
+    const root = fixture.nativeElement as HTMLElement;
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:cv');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    Array.from(root.querySelectorAll('.profile-cv-actions button'))
+      .find((boton) => boton.textContent?.includes('Ver'))!.dispatchEvent(new Event('click'));
+    httpMock.expectOne(`${base}/curriculum`).flush(new Blob(['%PDF-1.4'], { type: 'application/pdf' }));
+    httpMock.expectOne(`${base}/ficha/auditoria`).flush({ registros: [] });
+    fixture.detectChanges();
+    expect(root.querySelector('iframe.profile-preview-frame')).not.toBeNull();
+
+    root.querySelector<HTMLButtonElement>('button[aria-label="Cerrar vista previa"]')!.click();
+    fixture.detectChanges();
+    expect(root.querySelector('iframe.profile-preview-frame')).toBeNull();
+    vi.restoreAllMocks();
   });
 });

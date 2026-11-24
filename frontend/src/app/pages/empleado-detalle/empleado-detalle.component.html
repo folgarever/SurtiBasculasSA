@@ -114,6 +114,7 @@
         </div>
         <div class="profile-cv-actions">
           @if (datos.ficha.cv_nombre) {
+            <button class="button button-outline" type="button" [disabled]="cargandoVistaPrevia()" (click)="verCurriculum()"><ng-icon name="lucideEye" size="16" /> {{ cargandoVistaPrevia() ? 'Abriendo…' : 'Ver' }}</button>
             <button class="button button-outline" type="button" (click)="descargarCurriculum()"><ng-icon name="lucideDownload" size="16" /> Descargar</button>
           }
           <label class="button button-outline profile-upload" [class.is-disabled]="subiendoCv()" for="ficha-cv">
@@ -122,6 +123,29 @@
           <input id="ficha-cv" class="profile-file-input" type="file" accept="application/pdf,.pdf" [disabled]="subiendoCv()" (change)="seleccionarCurriculum($event)">
         </div>
       </div>
+
+      @if (vistaPreviaCv(); as vista) {
+        <div class="profile-preview">
+          <div class="profile-preview-header">
+            <strong>Vista previa · {{ datos.ficha.cv_nombre }}</strong>
+            <button class="icon-button" type="button" aria-label="Cerrar vista previa" (click)="cerrarVistaPrevia()"><ng-icon name="lucideX" size="17" /></button>
+          </div>
+          <iframe class="profile-preview-frame" [src]="vista" title="Vista previa del currículum"></iframe>
+        </div>
+      }
+
+      <details class="profile-audit">
+        <summary>Historial de cambios <span class="record-count">{{ auditoria().length }}</span></summary>
+        @if (auditoria().length === 0) {
+          <p class="helper-text">Aún no hay cambios registrados en esta ficha.</p>
+        } @else {
+          <ul>
+            @for (registro of auditoria(); track registro.id) {
+              <li><span>{{ descripcionAuditoria(registro) }}</span><small>{{ registro.usuario || 'Usuario eliminado' }} · {{ fechaHora(registro.creado_en) }}</small></li>
+            }
+          </ul>
+        }
+      </details>
     </section>
 
     <section class="summary-strip">
