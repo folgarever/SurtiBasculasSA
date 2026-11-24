@@ -240,6 +240,33 @@ describe('EmpleadosComponent · puestos y permisos', () => {
     vi.restoreAllMocks();
   });
 
+  it('pagina el directorio y ordena por columna manteniendo activos primero', async () => {
+    const empleados = Array.from({ length: 12 }, (_, i) => ({
+      id: i + 1, codigo_empleado: `SUR-${i + 1}`, nombre: `Persona ${String(i + 1).padStart(2, '0')}`,
+      nombre_puesto: i === 11 ? 'Zeta' : 'Técnico', puesto_id: 3, rol: 'Empleado', activo: i === 0 ? 0 : 1,
+    }));
+    const fixture = await crear(true, empleados);
+    const root = fixture.nativeElement as HTMLElement;
+    const nombres = () => Array.from(root.querySelectorAll<HTMLElement>('.employee-name')).map((n) => n.textContent);
+
+    expect(nombres()).toHaveLength(10);
+    expect(nombres()[0]).toBe('Persona 02');
+    expect(root.querySelector('.table-pagination')?.textContent).toContain('Página 1 de 2');
+
+    root.querySelector<HTMLButtonElement>('button[aria-label="Página siguiente"]')!.click();
+    fixture.detectChanges();
+    expect(nombres()).toEqual(['Persona 12', 'Persona 01']);
+
+    const ordenPuesto = Array.from(root.querySelectorAll<HTMLButtonElement>('.sort-button'))
+      .find((boton) => boton.textContent?.includes('Puesto'))!;
+    ordenPuesto.click();
+    ordenPuesto.click();
+    fixture.detectChanges();
+    expect(root.querySelector('th[aria-sort="descending"]')?.textContent).toContain('Puesto');
+    expect(root.querySelector('.table-pagination')?.textContent).toContain('Página 1 de 2');
+    expect(nombres()[0]).toBe('Persona 12');
+  });
+
   it('pide contraseña y crea el puesto desde el modal', async () => {
     const fixture = await crear(true);
     const root = fixture.nativeElement as HTMLElement;

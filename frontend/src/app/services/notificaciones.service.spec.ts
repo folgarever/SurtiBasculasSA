@@ -5,7 +5,39 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from './auth.service';
-import { NotificacionesService } from './notificaciones.service';
+import { NotificacionesService, proximasCelebraciones } from './notificaciones.service';
+
+describe('proximasCelebraciones', () => {
+  const empleado = (id: number, nombre: string, extra: Record<string, unknown> = {}) => ({
+    id, codigo_empleado: `SUR-${id}`, nombre, nombre_puesto: 'Técnico', puesto_id: 1, rol: 'Empleado', activo: 1, ...extra,
+  });
+  const hoy = new Date(2026, 10, 24);
+
+  it('detecta cumpleaños y aniversarios de la semana e ignora el resto', () => {
+    const resultado = proximasCelebraciones([
+      empleado(1, 'Ana', { fecha_nacimiento: '1990-11-24' }),
+      empleado(2, 'Luis', { fecha_ingreso: '2023-11-27' }),
+      empleado(3, 'Eva', { fecha_nacimiento: '1990-12-30' }),
+      empleado(4, 'Rey', { fecha_ingreso: '2026-11-25' }),
+      empleado(5, 'Baja', { activo: 0, fecha_nacimiento: '1990-11-24' }),
+    ] as never, hoy);
+    expect(resultado.map((c) => [c.empleado.nombre, c.tipo, c.dias, c.anios])).toEqual([
+      ['Ana', 'cumpleanos', 0, null],
+      ['Luis', 'aniversario', 3, 3],
+    ]);
+  });
+
+  it('cruza fin de año y celebra el 29 de febrero el 28 en años no bisiestos', () => {
+    const cruce = proximasCelebraciones(
+      [empleado(1, 'Ana', { fecha_nacimiento: '1990-01-02' })] as never, new Date(2026, 11, 30),
+    );
+    expect(cruce[0].dias).toBe(3);
+    const bisiesto = proximasCelebraciones(
+      [empleado(1, 'Ana', { fecha_nacimiento: '1992-02-29' })] as never, new Date(2027, 1, 27),
+    );
+    expect(bisiesto[0].dias).toBe(1);
+  });
+});
 
 describe('NotificacionesService', () => {
   let servicio: NotificacionesService;

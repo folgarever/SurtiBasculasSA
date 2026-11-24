@@ -2340,3 +2340,29 @@ a.portal-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(2
 .extra-state { display: block; margin-top: 2px; color: var(--color-ember); font-size: .62rem; font-weight: 600; }
 .extra-state.extra-rechazada { color: #a71f28; }
 .extra-rejection-note { display: block; margin-top: 4px; color: var(--color-ember); font-size: .65rem; line-height: 1.4; }
+
+/* Directorio: orden, paginación y tarjetas en móvil */
+.sort-button { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.sort-button span { opacity: .55; }
+th[aria-sort="ascending"] .sort-button span, th[aria-sort="descending"] .sort-button span { opacity: 1; color: var(--color-primary); }
+.table-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.table-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: .75rem; }
+.table-pagination label { display: inline-flex; align-items: center; gap: 6px; }
+.table-pagination select { min-height: 32px; padding: 0 8px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: inherit; font: inherit; }
+.table-pagination .small-action { display: inline-grid; width: 32px; height: 32px; place-items: center; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: inherit; cursor: pointer; }
+.table-pagination .small-action:disabled { opacity: .4; cursor: not-allowed; }
+
+@media (max-width: 760px) {
+  .employee-table-frame table { min-width: 0; }
+  .employee-table-frame thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .employee-table-frame tbody, .employee-table-frame tr, .employee-table-frame td, .employee-table-frame th[scope="rowgroup"] { display: block; }
+  .employee-table-frame tbody { padding: 0 12px 12px; }
+  .employee-table-frame tr:not(.employee-group-heading) { margin-bottom: 12px; padding: 4px 14px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
+  .employee-table-frame td { display: flex; height: auto; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border: 0; border-bottom: 1px solid var(--color-border); text-align: right; }
+  .employee-table-frame td:last-child { border-bottom: 0; }
+  .employee-table-frame td::before { content: attr(data-label); flex: 0 0 auto; color: var(--color-mid-gray); font-size: .65rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .employee-table-frame td[data-label="Empleado"] { text-align: right; }
+  .employee-table-frame .table-empty { display: block; text-align: center; }
+  .employee-table-frame .table-empty::before { content: none; }
+  .table-footer { flex-direction: column; align-items: flex-start; }
+}

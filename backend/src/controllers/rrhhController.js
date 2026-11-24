@@ -173,6 +173,7 @@ async function obtenerEmpleadosAdministracion(req, res, next) {
   try {
     const [empleados] = await pool.execute(
       `SELECT e.id, e.codigo_empleado, e.nombre, e.puesto_id, e.activo, p.nombre_puesto, r.nombre AS rol,
+              f.fecha_nacimiento, f.fecha_ingreso,
               (f.nombre_completo IS NOT NULL AND f.dpi IS NOT NULL AND f.fecha_nacimiento IS NOT NULL
                AND f.correo IS NOT NULL AND f.telefono IS NOT NULL AND f.fecha_ingreso IS NOT NULL
                AND f.cv_nombre IS NOT NULL) AS ficha_completa

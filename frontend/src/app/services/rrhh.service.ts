@@ -40,6 +40,8 @@ export interface EmpleadoAdministracion extends EmpleadoRrhh {
   puesto_id: number;
   rol: string;
   ficha_completa?: boolean;
+  fecha_nacimiento?: string | null;
+  fecha_ingreso?: string | null;
 }
 
 export interface FichaEmpleado {

@@ -38,6 +38,64 @@ interface MiEvaluacionResumen {
 }
 
 const PREFIJO_RESPUESTA = 'respuesta-';
+const DIAS_AVISO_CELEBRACIONES = 7;
+const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+export interface Celebracion {
+  empleado: EmpleadoAdministracion;
+  tipo: 'cumpleanos' | 'aniversario';
+  dias: number;
+  fecha: string;
+  anios: number | null;
+}
+
+// Devuelve cumpleaños y aniversarios (1 año o más) de empleados activos dentro de los próximos días.
+export function proximasCelebraciones(
+  empleados: EmpleadoAdministracion[],
+  hoy = new Date(),
+  ventana = DIAS_AVISO_CELEBRACIONES,
+): Celebracion[] {
+  const inicio = Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const resultado: Celebracion[] = [];
+
+  const evaluar = (empleado: EmpleadoAdministracion, tipo: Celebracion['tipo'], valor?: string | null) => {
+    const coincidencia = /^(\d{4})-(\d{2})-(\d{2})/.exec(valor ?? '');
+    if (!coincidencia) return;
+    const [anioOrigen, mes, dia] = coincidencia.slice(1).map(Number);
+    // Un 29 de febrero se celebra el 28 en los años no bisiestos.
+    const dentroDelMes = (anio: number) => Math.min(dia, new Date(anio, mes, 0).getDate());
+    let anio = hoy.getFullYear();
+    let proxima = Date.UTC(anio, mes - 1, dentroDelMes(anio));
+    if (proxima < inicio) {
+      anio += 1;
+      proxima = Date.UTC(anio, mes - 1, dentroDelMes(anio));
+    }
+    const dias = Math.round((proxima - inicio) / 86_400_000);
+    const anios = anio - anioOrigen;
+    if (dias > ventana || (tipo === 'aniversario' && anios < 1)) return;
+    resultado.push({
+      empleado,
+      tipo,
+      dias,
+      fecha: `${dentroDelMes(anio)} ${MESES_CORTOS[mes - 1]}`,
+      anios: tipo === 'aniversario' ? anios : null,
+    });
+  };
+
+  for (const empleado of empleados.filter((item) => item.activo)) {
+    evaluar(empleado, 'cumpleanos', empleado.fecha_nacimiento);
+    evaluar(empleado, 'aniversario', empleado.fecha_ingreso);
+  }
+  return resultado.sort((a, b) => a.dias - b.dias || a.empleado.nombre.localeCompare(b.empleado.nombre));
+}
+
+function describirCelebracion(celebracion: Celebracion): string {
+  const cuando = celebracion.dias === 0 ? 'hoy' : celebracion.dias === 1 ? 'mañana' : `el ${celebracion.fecha}`;
+  const nombre = celebracion.empleado.nombre;
+  if (celebracion.tipo === 'cumpleanos') return `${nombre} cumple años ${cuando}`;
+  const anios = celebracion.anios ?? 0;
+  return `${nombre} cumple ${anios} ${anios === 1 ? 'año' : 'años'} en la empresa ${cuando}`;
+}
 
 const ETIQUETAS_DECISION: Record<NonNullable<RegistroCandidatoSeleccion['decision']>, string> = {
   recomendable: 'Recomendable para el puesto',
@@ -184,6 +242,20 @@ export class NotificacionesService {
         detalle: `${cantidad} ${cantidad === 1 ? 'empleado activo necesita' : 'empleados activos necesitan'} DPI, contacto, fecha de ingreso o currículum`,
         ruta: cantidad === 1 ? `/admin/empleados/${fichasIncompletas[0].id}` : '/admin/empleados',
         marcador: fichasIncompletas.map((empleado) => empleado.id).sort((a, b) => a - b).join(','),
+        tipo: 'empleado',
+      });
+    }
+
+    const celebraciones = proximasCelebraciones(empleados);
+    if (celebraciones.length) {
+      const resto = celebraciones.length - 2;
+      const unico = new Set(celebraciones.map((celebracion) => celebracion.empleado.id));
+      items.push({
+        id: 'celebraciones',
+        titulo: 'Cumpleaños y aniversarios',
+        detalle: celebraciones.slice(0, 2).map(describirCelebracion).join(' · ') + (resto > 0 ? ` · y ${resto} más` : ''),
+        ruta: unico.size === 1 ? `/admin/empleados/${celebraciones[0].empleado.id}` : '/admin/empleados',
+        marcador: celebraciones.map((celebracion) => `${celebracion.empleado.id}:${celebracion.tipo}:${celebracion.fecha}`).join(','),
         tipo: 'empleado',
       });
     }

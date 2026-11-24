@@ -71,7 +71,14 @@
       <section class="table-frame employee-table-frame">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Empleado</th><th>Puesto</th><th>Rol</th>            <th>Estado</th><th>Ficha</th><th>Acciones</th></tr></thead>
+            <thead><tr>
+              <th scope="col" [attr.aria-sort]="ariaOrden('nombre')"><button class="sort-button" type="button" (click)="ordenarPor('nombre')">Empleado <span aria-hidden="true">{{ ariaOrden('nombre') === 'ascending' ? '↑' : ariaOrden('nombre') === 'descending' ? '↓' : '↕' }}</span></button></th>
+              <th scope="col" [attr.aria-sort]="ariaOrden('puesto')"><button class="sort-button" type="button" (click)="ordenarPor('puesto')">Puesto <span aria-hidden="true">{{ ariaOrden('puesto') === 'ascending' ? '↑' : ariaOrden('puesto') === 'descending' ? '↓' : '↕' }}</span></button></th>
+              <th scope="col" [attr.aria-sort]="ariaOrden('rol')"><button class="sort-button" type="button" (click)="ordenarPor('rol')">Rol <span aria-hidden="true">{{ ariaOrden('rol') === 'ascending' ? '↑' : ariaOrden('rol') === 'descending' ? '↓' : '↕' }}</span></button></th>
+              <th scope="col">Estado</th>
+              <th scope="col" [attr.aria-sort]="ariaOrden('ficha')"><button class="sort-button" type="button" (click)="ordenarPor('ficha')">Ficha <span aria-hidden="true">{{ ariaOrden('ficha') === 'ascending' ? '↑' : ariaOrden('ficha') === 'descending' ? '↓' : '↕' }}</span></button></th>
+              <th scope="col">Acciones</th>
+            </tr></thead>
             @if (cargando()) {
               <tbody>
                             <tr><td colspan="6" class="table-empty">Cargando empleados…</td></tr>
@@ -86,12 +93,12 @@
                   <tr class="employee-group-heading"><th scope="rowgroup" colspan="6">{{ grupo.titulo }} <span>{{ grupo.empleados.length }}</span></th></tr>
                   @for (empleado of grupo.empleados; track empleado.id) {
                     <tr>
-                      <td><strong class="employee-name">{{ empleado.nombre }}</strong><small class="employee-code">{{ empleado.codigo_empleado }}</small></td>
-                      <td>{{ empleado.nombre_puesto }}</td>
-                      <td>{{ empleado.rol }}</td>
-                      <td><span class="state-pill" [class.state-good]="empleado.activo" [class.state-warn]="!empleado.activo">{{ empleado.activo ? 'Activo' : 'Inactivo' }}</span></td>
-                      <td><span class="state-pill" [class.state-good]="empleado.ficha_completa" [class.state-warn]="!empleado.ficha_completa">{{ empleado.ficha_completa ? 'Completa' : 'Incompleta' }}</span></td>
-                      <td class="employee-actions">
+                      <td data-label="Empleado"><strong class="employee-name">{{ empleado.nombre }}</strong><small class="employee-code">{{ empleado.codigo_empleado }}</small></td>
+                      <td data-label="Puesto">{{ empleado.nombre_puesto }}</td>
+                      <td data-label="Rol">{{ empleado.rol }}</td>
+                      <td data-label="Estado"><span class="state-pill" [class.state-good]="empleado.activo" [class.state-warn]="!empleado.activo">{{ empleado.activo ? 'Activo' : 'Inactivo' }}</span></td>
+                      <td data-label="Ficha"><span class="state-pill" [class.state-good]="empleado.ficha_completa" [class.state-warn]="!empleado.ficha_completa">{{ empleado.ficha_completa ? 'Completa' : 'Incompleta' }}</span></td>
+                      <td class="employee-actions" data-label="Acciones">
                         <a class="small-action" [routerLink]="['/admin/empleados', empleado.id]" title="Ver detalle" [attr.aria-label]="'Ver detalle de ' + empleado.nombre"><ng-icon name="lucideClipboardCheck" size="16" /></a>
                         @if (puedeEditar(empleado)) {
                           <button class="small-action" type="button" title="Editar empleado" [attr.aria-label]="'Editar ' + empleado.nombre" (click)="editarEmpleado(empleado)"><ng-icon name="lucidePencil" size="16" /></button>
@@ -111,7 +118,19 @@
             }
           </table>
         </div>
-        <footer class="table-footer">{{ empleadosFiltrados().length }} de {{ empleados().length }} empleados</footer>
+        <footer class="table-footer">
+          <span>{{ empleadosFiltrados().length }} de {{ empleados().length }} empleados</span>
+          <nav class="table-pagination" aria-label="Paginación del directorio">
+            <label>Por página
+              <select [value]="tamanoPagina()" (change)="cambiarTamanoPagina($event)">
+                @for (tamano of opcionesPagina; track tamano) { <option [value]="tamano">{{ tamano }}</option> }
+              </select>
+            </label>
+            <button type="button" class="small-action" aria-label="Página anterior" [disabled]="paginaActual() <= 1" (click)="cambiarPagina(paginaActual() - 1)">‹</button>
+            <span aria-live="polite">Página {{ paginaActual() }} de {{ totalPaginas() }}</span>
+            <button type="button" class="small-action" aria-label="Página siguiente" [disabled]="paginaActual() >= totalPaginas()" (click)="cambiarPagina(paginaActual() + 1)">›</button>
+          </nav>
+        </footer>
       </section>
     </section>
     <footer class="workspace-footer"><span>SURTIBASCULAS S.A. · RECURSOS HUMANOS</span><a routerLink="/admin">Volver al panel de administración</a></footer>

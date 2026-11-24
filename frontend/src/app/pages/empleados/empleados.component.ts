@@ -25,6 +25,8 @@ import {
 import { AuthService } from '../../services/auth.service';
 import { DatosPuesto, EmpleadoAdministracion, RrhhService, Puesto } from '../../services/rrhh.service';
 
+type ColumnaOrden = 'nombre' | 'puesto' | 'rol' | 'ficha';
+
 @Component({
   selector: 'app-empleados',
   standalone: true,
@@ -63,6 +65,13 @@ export class EmpleadosComponent implements OnInit {
   protected readonly filtroPuesto = signal('');
   protected readonly filtroEstado = signal<'todos' | 'activos' | 'inactivos'>('todos');
   protected readonly filtroFicha = signal<'todas' | 'incompletas' | 'completas'>('todas');
+  protected readonly orden = signal<{ columna: ColumnaOrden; direccion: 'asc' | 'desc' }>({
+    columna: 'nombre',
+    direccion: 'asc',
+  });
+  protected readonly tamanoPagina = signal(10);
+  protected readonly pagina = signal(1);
+  protected readonly opcionesPagina = [10, 25, 50];
   protected readonly cargando = signal(true);
   protected readonly guardando = signal(false);
   protected readonly mostrarContrasenaEmpleado = signal(false);
@@ -93,8 +102,35 @@ export class EmpleadosComponent implements OnInit {
       return coincideBusqueda && coincidePuesto && coincideEstado && coincideFicha;
     });
   });
+  protected readonly empleadosOrdenados = computed(() => {
+    const { columna, direccion } = this.orden();
+    const factor = direccion === 'asc' ? 1 : -1;
+    const valor = (empleado: EmpleadoAdministracion): string | number => {
+      if (columna === 'puesto') return empleado.nombre_puesto;
+      if (columna === 'rol') return empleado.rol;
+      if (columna === 'ficha') return empleado.ficha_completa ? 1 : 0;
+      return empleado.nombre;
+    };
+    return [...this.empleadosFiltrados()].sort((a, b) => {
+      // Los activos siempre se muestran antes que los inactivos.
+      if (Boolean(a.activo) !== Boolean(b.activo)) return a.activo ? -1 : 1;
+      const x = valor(a);
+      const y = valor(b);
+      const comparacion = typeof x === 'number' && typeof y === 'number'
+        ? x - y
+        : String(x).localeCompare(String(y), 'es', { sensitivity: 'base' });
+      return (comparacion || a.nombre.localeCompare(b.nombre, 'es')) * factor;
+    });
+  });
+  protected readonly totalPaginas = computed(() =>
+    Math.max(1, Math.ceil(this.empleadosOrdenados().length / this.tamanoPagina())));
+  protected readonly paginaActual = computed(() => Math.min(this.pagina(), this.totalPaginas()));
+  protected readonly empleadosPagina = computed(() => {
+    const inicio = (this.paginaActual() - 1) * this.tamanoPagina();
+    return this.empleadosOrdenados().slice(inicio, inicio + this.tamanoPagina());
+  });
   protected readonly gruposEmpleados = computed(() => {
-    const empleados = this.empleadosFiltrados();
+    const empleados = this.empleadosPagina();
     return [
       { estado: 'activos', titulo: 'Empleados activos', empleados: empleados.filter((empleado) => empleado.activo) },
       { estado: 'inactivos', titulo: 'Empleados inactivos', empleados: empleados.filter((empleado) => !empleado.activo) },
@@ -134,16 +170,19 @@ export class EmpleadosComponent implements OnInit {
 
   protected actualizarBusqueda(event: Event): void {
     this.busqueda.set((event.target as HTMLInputElement).value);
+    this.pagina.set(1);
   }
 
   protected actualizarFiltroPuesto(event: Event): void {
     this.filtroPuesto.set((event.target as HTMLSelectElement).value);
+    this.pagina.set(1);
   }
 
   protected actualizarFiltroEstado(event: Event): void {
     const estado = (event.target as HTMLSelectElement).value;
     if (estado === 'todos' || estado === 'activos' || estado === 'inactivos') {
       this.filtroEstado.set(estado);
+      this.pagina.set(1);
     }
   }
 
@@ -151,6 +190,7 @@ export class EmpleadosComponent implements OnInit {
     const ficha = (event.target as HTMLSelectElement).value;
     if (ficha === 'todas' || ficha === 'incompletas' || ficha === 'completas') {
       this.filtroFicha.set(ficha);
+      this.pagina.set(1);
     }
   }
 
@@ -159,6 +199,33 @@ export class EmpleadosComponent implements OnInit {
     this.filtroPuesto.set('');
     this.filtroEstado.set('todos');
     this.filtroFicha.set('todas');
+    this.pagina.set(1);
+  }
+
+  protected ordenarPor(columna: ColumnaOrden): void {
+    this.orden.update((actual) => ({
+      columna,
+      direccion: actual.columna === columna && actual.direccion === 'asc' ? 'desc' : 'asc',
+    }));
+    this.pagina.set(1);
+  }
+
+  protected ariaOrden(columna: ColumnaOrden): 'ascending' | 'descending' | 'none' {
+    const { columna: actual, direccion } = this.orden();
+    if (actual !== columna) return 'none';
+    return direccion === 'asc' ? 'ascending' : 'descending';
+  }
+
+  protected cambiarPagina(pagina: number): void {
+    this.pagina.set(Math.min(Math.max(1, pagina), this.totalPaginas()));
+  }
+
+  protected cambiarTamanoPagina(event: Event): void {
+    const tamano = Number((event.target as HTMLSelectElement).value);
+    if (this.opcionesPagina.includes(tamano)) {
+      this.tamanoPagina.set(tamano);
+      this.pagina.set(1);
+    }
   }
 
   protected exportarCsv(): void {
@@ -169,7 +236,7 @@ export class EmpleadosComponent implements OnInit {
     };
     const filas = [
       ['Código', 'Nombre', 'Puesto', 'Rol', 'Estado', 'Ficha'],
-      ...this.empleadosFiltrados().map((empleado) => [
+      ...this.empleadosOrdenados().map((empleado) => [
         empleado.codigo_empleado,
         empleado.nombre,
         empleado.nombre_puesto,
