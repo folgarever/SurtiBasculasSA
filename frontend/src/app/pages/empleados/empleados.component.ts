@@ -145,7 +145,7 @@ export class EmpleadosComponent implements OnInit {
     this.ocultarContrasenas();
     this.empleadoSeleccionado.set(empleado);
     this.errorModal.set('');
-    if (empleado.rol === 'ADMIN') {
+    if (empleado.rol === 'ADMIN' && !this.esGerenteGeneral) {
       this.formulario.controls.puesto_id.disable();
     } else {
       this.formulario.controls.puesto_id.enable();
@@ -175,11 +175,12 @@ export class EmpleadosComponent implements OnInit {
   protected puedeEditar(empleado: EmpleadoAdministracion): boolean {
     if (empleado.id === this.usuario?.id) return false;
     if (empleado.rol !== 'ADMIN') return true;
-    return this.esGerenteGeneral && empleado.codigo_empleado === 'SUR-AC-002';
+    return this.esGerenteGeneral;
   }
 
   protected puedeDarBaja(empleado: EmpleadoAdministracion): boolean {
-    return empleado.rol !== 'ADMIN' && empleado.id !== this.usuario?.id;
+    return empleado.id !== this.usuario?.id
+      && (empleado.rol !== 'ADMIN' || this.esGerenteGeneral);
   }
 
   protected cerrarFormulario(): void {
@@ -206,7 +207,7 @@ export class EmpleadosComponent implements OnInit {
   }
 
   protected puestoProtegido(): boolean {
-    return this.empleadoSeleccionado()?.rol === 'ADMIN';
+    return this.empleadoSeleccionado()?.rol === 'ADMIN' && !this.esGerenteGeneral;
   }
 
   protected esPuestoAdmin(puesto: Puesto): boolean {

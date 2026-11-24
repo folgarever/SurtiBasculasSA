@@ -96,6 +96,7 @@
         </select>
         @if (!esGerenteGeneral) { <p class="helper-text">Solo el Gerente General puede asignar puestos con permisos de ADMIN.</p> }
         @if (puestoProtegido()) { <p class="helper-text">El puesto de una cuenta administradora se conserva para mantener su código y permisos.</p> }
+        @if (empleadoSeleccionado()?.rol === 'ADMIN' && esGerenteGeneral && cambioDePuesto()) { <p class="helper-text">Al asignar un puesto sin permisos ADMIN, se retirará su acceso de administrador y cambiará su código de acceso.</p> }
         @if (puestos().length === 0) { <p class="helper-text">No hay puestos disponibles para registrar.</p> }
 
         @if (modal() === 'crear' || cambioDePuesto()) {
@@ -155,6 +156,7 @@
       <div class="modal-header"><div><p class="eyebrow">BAJA DE PERSONAL</p><h2 id="employee-delete-title">Dar de baja al empleado</h2></div><button class="icon-button" type="button" aria-label="Cerrar" (click)="cerrarFormulario()"><ng-icon name="lucideX" size="17" /></button></div>
       @if (empleadoSeleccionado(); as empleado) {
         <p class="modal-context">Se desactivará el acceso de <strong>{{ empleado.nombre }}</strong> ({{ empleado.codigo_empleado }}). Su historial de asistencia y evaluaciones se conservará.</p>
+        @if (empleado.rol === 'ADMIN') { <p class="helper-text">También perderá el acceso a las funciones de administración.</p> }
       }
       <form [formGroup]="confirmacionForm" (ngSubmit)="darDeBaja()">
         <div class="admin-confirmation">

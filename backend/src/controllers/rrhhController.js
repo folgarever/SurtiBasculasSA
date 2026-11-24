@@ -544,12 +544,11 @@ async function actualizarEmpleado(req, res, next) {
       [empleadoId]
     );
     const empleado = empleados[0];
-    const puedeEditarAdminSubordinado = req.usuario?.codigo_empleado === CODIGO_GERENTE_GENERAL
-      && empleado?.codigo_empleado === CODIGO_ADMIN_RRHH;
+    const esGerenteGeneral = req.usuario?.codigo_empleado === CODIGO_GERENTE_GENERAL;
     if (
       !empleado
       || empleadoId === Number(req.usuario?.id)
-      || (empleado.rol === 'ADMIN' && !puedeEditarAdminSubordinado)
+      || (empleado.rol === 'ADMIN' && !esGerenteGeneral)
     ) {
       await connection.rollback();
       transaccionIniciada = false;
@@ -559,14 +558,6 @@ async function actualizarEmpleado(req, res, next) {
     let codigoEmpleado = empleado.codigo_empleado;
     let rolId = null;
     if (Number(empleado.puesto_id) !== idPuesto) {
-      if (empleado.rol === 'ADMIN') {
-        await connection.rollback();
-        transaccionIniciada = false;
-        return res.status(400).json({
-          mensaje: 'No se puede cambiar el puesto de una cuenta administradora porque modificaría su código y sus permisos.'
-        });
-      }
-
       const [puestos] = await connection.execute(
         'SELECT codigo_abreviatura, es_admin FROM puestos WHERE id = ? FOR UPDATE',
         [idPuesto]
@@ -642,12 +633,14 @@ async function eliminarEmpleado(req, res, next) {
     return res.status(400).json({ mensaje: 'El empleado indicado no es válido.' });
   }
 
+  const esGerenteGeneral = req.usuario?.codigo_empleado === CODIGO_GERENTE_GENERAL;
+  const restriccionRol = esGerenteGeneral ? '' : "AND r.nombre <> 'ADMIN'";
   try {
     const [resultado] = await pool.execute(
       `UPDATE empleados e
        INNER JOIN roles r ON r.id = e.rol_id
        SET e.activo = 0
-       WHERE e.id = ? AND r.nombre <> 'ADMIN' AND e.id <> ?`,
+       WHERE e.id = ? ${restriccionRol} AND e.id <> ?`,
       [empleadoId, req.usuario?.id]
     );
     if (resultado.affectedRows === 0) {

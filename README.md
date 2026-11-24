@@ -15,7 +15,7 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 - Registro de entrada y salida e historial personal de marcaciones, con tolerancia de entrada de 08:00 a 08:15, justificación obligatoria desde las 18:00 y registro de horas extras completas.
 - Panel de Recursos Humanos para consultar asistencias, corregir marcaciones y registrar incidencias.
 - Exportación de reportes de asistencia e incidencias a Excel.
-- Administración del directorio de empleados, incluidas altas, ediciones, bajas y una ficha integral por empleado con asistencia, evaluaciones de personal, evaluaciones de conocimiento e incidencias.
+- Administración del directorio de empleados, incluidas altas, ediciones, bajas lógicas y una ficha integral por empleado con asistencia, evaluaciones e incidencias. El Gerente General puede editar y dar de baja cualquier otra cuenta ADMIN; al cambiarla a un puesto sin permiso ADMIN, también retira ese rol.
 - Gestión de puestos y permisos desde el directorio de empleados: solo `SUR-GG-001` ve el botón **Puestos y permisos**, puede crear o editar puestos y decidir cuáles otorgan acceso `ADMIN`, siempre con confirmación de contraseña. El cambio se propaga a los empleados activos del puesto sin afectar las cuentas protegidas `SUR-GG-001` ni `SUR-AC-002`.
 - Evaluación periódica del personal, con cinco competencias generales y escala de 1 a 5.
 - Evaluación técnica y psicométrica adicional para el Jefe de Mantenimiento.
@@ -106,7 +106,7 @@ En `/admin/empleados`, el botón **Puestos y permisos** aparece solo para `SUR-G
 
 Al marcar un puesto como `ADMIN`, los empleados **activos** de ese puesto reciben el rol `ADMIN` y pueden usar la administración general (`/admin`, directorio de empleados, asistencia, sugerencias y ficha integral). No obtienen acceso a evaluaciones de personal, conocimiento ni selección: esos módulos siguen exigiendo `SUR-GG-001` o `SUR-AC-002`. Al desmarcarlo, esos empleados vuelven al rol `Empleado`.
 
-Las cuentas `SUR-GG-001` y `SUR-AC-002` están protegidas: no se puede cambiar la abreviatura ni quitar el permiso `ADMIN` a sus puestos. Otros ADMIN no pueden asignar puestos con indicador `ADMIN` al dar de alta empleados; esa opción solo aparece para el Gerente General.
+Los puestos `GG` y `AC` conservan protegidas su abreviatura y su indicador `ADMIN`. El Gerente General puede cambiar el puesto de otras cuentas ADMIN (el rol resultante depende del nuevo puesto) y darles de baja; no puede modificar su propia cuenta. Otros ADMIN no pueden editar ni dar de baja cuentas ADMIN, ni asignar puestos con indicador `ADMIN` al dar de alta empleados.
 
 ## Evaluaciones y acceso
 

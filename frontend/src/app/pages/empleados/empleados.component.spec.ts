@@ -15,7 +15,7 @@ describe('EmpleadosComponent · puestos y permisos', () => {
   const empleadosUrl = '/api/rrhh/administracion/empleados';
   let httpMock: HttpTestingController;
 
-  async function crear(esGerente: boolean) {
+  async function crear(esGerente: boolean, empleados: unknown[] = []) {
     await TestBed.configureTestingModule({
       imports: [EmpleadosComponent],
       providers: [
@@ -58,16 +58,34 @@ describe('EmpleadosComponent · puestos y permisos', () => {
     httpMock = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(EmpleadosComponent);
     fixture.detectChanges();
-    httpMock.expectOne(empleadosUrl).flush({ empleados: [] });
+    httpMock.expectOne(empleadosUrl).flush({ empleados });
     httpMock.expectOne(puestosUrl).flush({
-      puestos: [{
-        id: 1,
-        codigo_abreviatura: 'GG',
-        nombre_puesto: 'Gerente General',
-        departamento: 'Gerencia',
-        frecuencia_evaluacion: 'mensual',
-        es_admin: 1,
-      }],
+      puestos: [
+        {
+          id: 1,
+          codigo_abreviatura: 'GG',
+          nombre_puesto: 'Gerente General',
+          departamento: 'Gerencia',
+          frecuencia_evaluacion: 'mensual',
+          es_admin: 1,
+        },
+        {
+          id: 2,
+          codigo_abreviatura: 'TECINF',
+          nombre_puesto: 'Técnico Informático',
+          departamento: 'Sistemas',
+          frecuencia_evaluacion: 'mensual',
+          es_admin: 1,
+        },
+        {
+          id: 3,
+          codigo_abreviatura: 'TEC',
+          nombre_puesto: 'Técnico',
+          departamento: 'Técnica',
+          frecuencia_evaluacion: 'mensual',
+          es_admin: 0,
+        },
+      ],
     });
     fixture.detectChanges();
     return fixture;
@@ -92,6 +110,37 @@ describe('EmpleadosComponent · puestos y permisos', () => {
     const otro = await crear(false);
     const botones = Array.from((otro.nativeElement as HTMLElement).querySelectorAll('button'));
     expect(botones.some((boton) => boton.textContent?.includes('Puestos y permisos'))).toBe(false);
+  });
+
+  it('permite al Gerente General editar y dar de baja cualquier ADMIN', async () => {
+    const admin = {
+      id: 2,
+      codigo_empleado: 'SUR-TECINF-001',
+      nombre: 'Técnico Informático',
+      nombre_puesto: 'Técnico Informático',
+      puesto_id: 2,
+      rol: 'ADMIN',
+      activo: 1,
+    };
+    const gerente = await crear(true, [admin]);
+    const rootGerente = gerente.nativeElement as HTMLElement;
+
+    rootGerente.querySelector<HTMLButtonElement>('button[title="Editar empleado"]')!.click();
+    gerente.detectChanges();
+    const puesto = rootGerente.querySelector<HTMLSelectElement>('#empleado-puesto')!;
+    expect(puesto.disabled).toBe(false);
+    puesto.value = '3';
+    puesto.dispatchEvent(new Event('change'));
+    gerente.detectChanges();
+    expect(rootGerente.textContent).toContain('se retirará su acceso de administrador');
+    expect(rootGerente.querySelector('button[title="Dar de baja"]')).not.toBeNull();
+
+    TestBed.resetTestingModule();
+    const otroAdmin = await crear(false, [admin]);
+    const rootOtroAdmin = otroAdmin.nativeElement as HTMLElement;
+    expect(rootOtroAdmin.textContent).toContain('Cuenta protegida');
+    expect(rootOtroAdmin.querySelector('button[title="Editar empleado"]')).toBeNull();
+    expect(rootOtroAdmin.querySelector('button[title="Dar de baja"]')).toBeNull();
   });
 
   it('pide contraseña y crea el puesto desde el modal', async () => {

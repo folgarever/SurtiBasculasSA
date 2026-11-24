@@ -118,7 +118,7 @@ El código de acceso se genera automáticamente con el formato `SUR-<abreviatura
 4. Marca o desmarca **Acceso activo**.
 5. Confirma con tu contraseña de administrador y pulsa **Guardar cambios**.
 
-**Cuidado con el puesto:** al cambiarlo también cambia el código con el que el empleado inicia sesión. El sistema lo advierte en pantalla. En cuentas ADMIN el campo Puesto está deshabilitado para no alterar su código ni sus permisos.
+**Cuidado con el puesto:** al cambiarlo también cambia el código con el que el empleado inicia sesión. El sistema lo advierte en pantalla. Solo `SUR-GG-001` puede cambiar el puesto de otra cuenta ADMIN. Si la nueva plaza no tiene indicador `ADMIN`, también se retira ese rol.
 
 ### Dar de baja
 
@@ -129,12 +129,13 @@ El código de acceso se genera automáticamente con el formato `SUR-<abreviatura
 
 La baja es lógica: se conservan asistencia y evaluaciones.
 
-### Cuentas protegidas
+### Restricciones y cuentas ADMIN
 
 - No puedes editar ni dar de baja tu propia cuenta.
-- No puedes editar ni dar de baja otras cuentas ADMIN.
-- Excepción: `SUR-GG-001` puede editar solo el perfil de `SUR-AC-002` (nombre, contraseña y estado; nunca el puesto).
-- El backend impide dar de baja a cualquier ADMIN.
+- Las cuentas ADMIN de otras personas solo pueden ser editadas o dadas de baja por `SUR-GG-001`.
+- El Gerente General puede cambiar el puesto de otra cuenta ADMIN; el rol y el código de acceso se actualizan según el puesto nuevo.
+- La baja es lógica también para cuentas ADMIN y conserva su historial.
+- Los puestos `GG` y `AC` conservan protegidas su abreviatura y su indicador `ADMIN`; esto no impide que el Gerente General cambie a otra persona de puesto.
 
 Tu contraseña se verifica en cada alta, edición o baja. Si es incorrecta verás: «La contraseña del administrador es incorrecta.». Los modales se cierran con X, Escape o clic fuera solo cuando no se está guardando.
 

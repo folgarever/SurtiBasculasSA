@@ -4,7 +4,9 @@ const pool = require('../src/config/db');
 const {
   registrarPuesto,
   actualizarPuesto,
-  registrarEmpleado
+  registrarEmpleado,
+  actualizarEmpleado,
+  eliminarEmpleado
 } = require('../src/controllers/rrhhController');
 
 const ejecutarOriginal = pool.execute;
@@ -164,4 +166,90 @@ test('registrarEmpleado impide que otro ADMIN asigne un puesto con permisos de A
 
   assert.equal(res.codigo, 403);
   assert.equal(consultas.length, 1);
+});
+
+test('actualizarEmpleado permite al Gerente General retirar el rol ADMIN cambiando el puesto', async () => {
+  const consultas = mockConexion([
+    [[{ codigo_empleado: 'SUR-TECINF-001', puesto_id: 3, rol: 'ADMIN' }]],
+    [[{ codigo_abreviatura: 'AUXTEC', es_admin: 0 }]],
+    [[{ id: 2 }]],
+    [[{ ultimo: 0 }]],
+    [{ affectedRows: 1 }]
+  ]);
+  const res = crearRespuesta();
+
+  await actualizarEmpleado(
+    {
+      params: { id: '2' },
+      body: { nombre: 'Técnico Informático', puesto_id: 4, activo: true },
+      usuario: { id: 1, codigo_empleado: 'SUR-GG-001' }
+    },
+    res,
+    () => {}
+  );
+
+  assert.equal(res.codigo, 200);
+  assert.equal(res.cuerpo.empleado.codigo_empleado, 'SUR-AUXTEC-001');
+  assert.match(consultas[4].sql, /rol_id = \?/);
+  assert.deepEqual(consultas[4].params, [
+    'SUR-AUXTEC-001', 'Técnico Informático', 4, 1, 2, 2
+  ]);
+});
+
+test('actualizarEmpleado no permite a otro ADMIN editar una cuenta ADMIN', async () => {
+  const consultas = mockConexion([
+    [[{ codigo_empleado: 'SUR-TECINF-001', puesto_id: 3, rol: 'ADMIN' }]]
+  ]);
+  const res = crearRespuesta();
+
+  await actualizarEmpleado(
+    {
+      params: { id: '2' },
+      body: { nombre: 'Técnico Informático', puesto_id: 3, activo: true },
+      usuario: { id: 1, codigo_empleado: 'SUR-AC-002' }
+    },
+    res,
+    () => {}
+  );
+
+  assert.equal(res.codigo, 404);
+  assert.equal(consultas.length, 1);
+});
+
+test('eliminarEmpleado permite al Gerente General dar de baja una cuenta ADMIN', async () => {
+  let consulta;
+  pool.execute = async (sql, params) => {
+    consulta = { sql, params };
+    return [{ affectedRows: 1 }];
+  };
+  const res = crearRespuesta();
+
+  await eliminarEmpleado(
+    { params: { id: '2' }, usuario: { id: 1, codigo_empleado: 'SUR-GG-001' } },
+    res,
+    () => {}
+  );
+
+  assert.equal(res.codigo, 200);
+  assert.doesNotMatch(consulta.sql, /r\.nombre <> 'ADMIN'/);
+  assert.deepEqual(consulta.params, [2, 1]);
+});
+
+test('eliminarEmpleado conserva el bloqueo de cuentas ADMIN para otros administradores', async () => {
+  let consulta;
+  pool.execute = async (sql, params) => {
+    consulta = { sql, params };
+    return [{ affectedRows: 0 }];
+  };
+  const res = crearRespuesta();
+
+  await eliminarEmpleado(
+    { params: { id: '2' }, usuario: { id: 1, codigo_empleado: 'SUR-AC-002' } },
+    res,
+    () => {}
+  );
+
+  assert.equal(res.codigo, 404);
+  assert.match(consulta.sql, /r\.nombre <> 'ADMIN'/);
+  assert.deepEqual(consulta.params, [2, 1]);
 });
