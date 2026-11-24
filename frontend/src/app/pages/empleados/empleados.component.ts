@@ -7,6 +7,7 @@ import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideClipboardCheck,
+  lucideDownload,
   lucideEye,
   lucideEyeClosed,
   lucideLayoutDashboard,
@@ -30,6 +31,7 @@ import { DatosPuesto, EmpleadoAdministracion, RrhhService, Puesto } from '../../
   imports: [AppShellComponent, ReactiveFormsModule, RouterLink, NgIcon],
   providers: [provideIcons({
     lucideClipboardCheck,
+    lucideDownload,
     lucideEye,
     lucideEyeClosed,
     lucideLayoutDashboard,
@@ -60,6 +62,7 @@ export class EmpleadosComponent implements OnInit {
   protected readonly busqueda = signal('');
   protected readonly filtroPuesto = signal('');
   protected readonly filtroEstado = signal<'todos' | 'activos' | 'inactivos'>('todos');
+  protected readonly filtroFicha = signal<'todas' | 'incompletas' | 'completas'>('todas');
   protected readonly cargando = signal(true);
   protected readonly guardando = signal(false);
   protected readonly mostrarContrasenaEmpleado = signal(false);
@@ -78,13 +81,16 @@ export class EmpleadosComponent implements OnInit {
     const termino = this.busqueda().trim().toLocaleLowerCase();
     const puesto = this.filtroPuesto();
     const estado = this.filtroEstado();
+    const ficha = this.filtroFicha();
     return this.empleados().filter((empleado) => {
       const coincideBusqueda = `${empleado.codigo_empleado} ${empleado.nombre} ${empleado.nombre_puesto} ${empleado.rol}`
         .toLocaleLowerCase().includes(termino);
       const coincidePuesto = !puesto || String(empleado.puesto_id) === puesto;
       const coincideEstado = estado === 'todos'
         || (estado === 'activos' ? Boolean(empleado.activo) : !empleado.activo);
-      return coincideBusqueda && coincidePuesto && coincideEstado;
+      const coincideFicha = ficha === 'todas'
+        || (ficha === 'completas' ? Boolean(empleado.ficha_completa) : !empleado.ficha_completa);
+      return coincideBusqueda && coincidePuesto && coincideEstado && coincideFicha;
     });
   });
   protected readonly gruposEmpleados = computed(() => {
@@ -141,10 +147,44 @@ export class EmpleadosComponent implements OnInit {
     }
   }
 
+  protected actualizarFiltroFicha(event: Event): void {
+    const ficha = (event.target as HTMLSelectElement).value;
+    if (ficha === 'todas' || ficha === 'incompletas' || ficha === 'completas') {
+      this.filtroFicha.set(ficha);
+    }
+  }
+
   protected limpiarFiltros(): void {
     this.busqueda.set('');
     this.filtroPuesto.set('');
     this.filtroEstado.set('todos');
+    this.filtroFicha.set('todas');
+  }
+
+  protected exportarCsv(): void {
+    const celda = (valor: string) => {
+      // Evita que Excel interprete el texto como fórmula.
+      const texto = /^[=+\-@\t\r]/.test(valor) ? `'${valor}` : valor;
+      return `"${texto.replace(/"/g, '""')}"`;
+    };
+    const filas = [
+      ['Código', 'Nombre', 'Puesto', 'Rol', 'Estado', 'Ficha'],
+      ...this.empleadosFiltrados().map((empleado) => [
+        empleado.codigo_empleado,
+        empleado.nombre,
+        empleado.nombre_puesto,
+        empleado.rol,
+        empleado.activo ? 'Activo' : 'Inactivo',
+        empleado.ficha_completa ? 'Completa' : 'Incompleta',
+      ]),
+    ];
+    const contenido = `\uFEFF${filas.map((fila) => fila.map((valor) => celda(String(valor ?? ''))).join(',')).join('\r\n')}`;
+    const url = URL.createObjectURL(new Blob([contenido], { type: 'text/csv;charset=utf-8' }));
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = `empleados-${new Date().toISOString().slice(0, 10)}.csv`;
+    enlace.click();
+    URL.revokeObjectURL(url);
   }
 
   protected abrirFormulario(): void {

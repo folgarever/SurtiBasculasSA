@@ -54,33 +54,43 @@
             <option value="inactivos">Inactivos</option>
           </select>
         </label>
-        @if (busqueda() || filtroPuesto() || filtroEstado() !== 'todos') {
+        <label class="employee-filter">
+          <span>Ficha</span>
+          <select [value]="filtroFicha()" (change)="actualizarFiltroFicha($event)">
+            <option value="todas">Todas las fichas</option>
+            <option value="incompletas">Incompletas</option>
+            <option value="completas">Completas</option>
+          </select>
+        </label>
+        @if (busqueda() || filtroPuesto() || filtroEstado() !== 'todos' || filtroFicha() !== 'todas') {
           <button class="employee-clear-filters" type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
         }
+        <button class="button button-outline" type="button" [disabled]="empleadosFiltrados().length === 0" (click)="exportarCsv()"><ng-icon name="lucideDownload" size="16" /> Exportar CSV</button>
       </div>
 
       <section class="table-frame employee-table-frame">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Empleado</th><th>Puesto</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Empleado</th><th>Puesto</th><th>Rol</th>            <th>Estado</th><th>Ficha</th><th>Acciones</th></tr></thead>
             @if (cargando()) {
               <tbody>
-                <tr><td colspan="5" class="table-empty">Cargando empleados…</td></tr>
+                            <tr><td colspan="6" class="table-empty">Cargando empleados…</td></tr>
               </tbody>
             } @else if (empleadosFiltrados().length === 0) {
               <tbody>
-                <tr><td colspan="5" class="table-empty">{{ empleados().length ? 'No hay empleados que coincidan con los filtros.' : 'Aún no hay empleados registrados.' }}</td></tr>
+                            <tr><td colspan="6" class="table-empty">{{ empleados().length ? 'No hay empleados que coincidan con los filtros.' : 'Aún no hay empleados registrados.' }}</td></tr>
               </tbody>
             } @else {
               @for (grupo of gruposEmpleados(); track grupo.estado) {
                 <tbody>
-                  <tr class="employee-group-heading"><th scope="rowgroup" colspan="5">{{ grupo.titulo }} <span>{{ grupo.empleados.length }}</span></th></tr>
+                  <tr class="employee-group-heading"><th scope="rowgroup" colspan="6">{{ grupo.titulo }} <span>{{ grupo.empleados.length }}</span></th></tr>
                   @for (empleado of grupo.empleados; track empleado.id) {
                     <tr>
                       <td><strong class="employee-name">{{ empleado.nombre }}</strong><small class="employee-code">{{ empleado.codigo_empleado }}</small></td>
                       <td>{{ empleado.nombre_puesto }}</td>
                       <td>{{ empleado.rol }}</td>
                       <td><span class="state-pill" [class.state-good]="empleado.activo" [class.state-warn]="!empleado.activo">{{ empleado.activo ? 'Activo' : 'Inactivo' }}</span></td>
+                      <td><span class="state-pill" [class.state-good]="empleado.ficha_completa" [class.state-warn]="!empleado.ficha_completa">{{ empleado.ficha_completa ? 'Completa' : 'Incompleta' }}</span></td>
                       <td class="employee-actions">
                         <a class="small-action" [routerLink]="['/admin/empleados', empleado.id]" title="Ver detalle" [attr.aria-label]="'Ver detalle de ' + empleado.nombre"><ng-icon name="lucideClipboardCheck" size="16" /></a>
                         @if (puedeEditar(empleado)) {

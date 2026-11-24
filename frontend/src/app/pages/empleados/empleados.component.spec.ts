@@ -214,6 +214,32 @@ describe('EmpleadosComponent · puestos y permisos', () => {
     expect(root.querySelector('button[title="Editar empleado"]')).not.toBeNull();
   });
 
+  it('filtra por ficha incompleta y exporta solo lo filtrado a CSV', async () => {
+    const base = { nombre_puesto: 'Técnico', puesto_id: 3, rol: 'Empleado', activo: 1 };
+    const fixture = await crear(true, [
+      { ...base, id: 2, codigo_empleado: 'SUR-TEC-001', nombre: 'Ana', ficha_completa: true },
+      { ...base, id: 3, codigo_empleado: 'SUR-TEC-002', nombre: '=Bruno', ficha_completa: false },
+    ]);
+    const root = fixture.nativeElement as HTMLElement;
+    const ficha = root.querySelectorAll<HTMLSelectElement>('.employee-filter select')[2];
+    ficha.value = 'incompletas';
+    ficha.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(root.querySelector('.table-footer')?.textContent).toContain('1 de 2 empleados');
+
+    let blob: Blob | undefined;
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((objeto) => { blob = objeto as Blob; return 'blob:x'; });
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    Array.from(root.querySelectorAll('button')).find((b) => b.textContent?.includes('Exportar CSV'))!.click();
+
+    const texto = await blob!.text();
+    expect(texto).toContain('"\'=Bruno"');
+    expect(texto).toContain('"Incompleta"');
+    expect(texto).not.toContain('Ana');
+    vi.restoreAllMocks();
+  });
+
   it('pide contraseña y crea el puesto desde el modal', async () => {
     const fixture = await crear(true);
     const root = fixture.nativeElement as HTMLElement;
