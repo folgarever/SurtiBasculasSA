@@ -1,4 +1,5 @@
 <div class="app-shell">
+  <a class="skip-link" href="#contenido-principal" (click)="saltarAlContenido($event)">Saltar al contenido</a>
   <aside class="app-sidebar">
     <a class="sidebar-brand" [routerLink]="inicio"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
     <span class="sidebar-caption">{{ caption }}</span>
@@ -31,7 +32,7 @@
     </div>
   </header>
 
-  <main class="workspace" [ngClass]="workspaceClass">
+  <main id="contenido-principal" class="workspace" tabindex="-1" [ngClass]="workspaceClass">
     <ng-content />
   </main>
 </div>

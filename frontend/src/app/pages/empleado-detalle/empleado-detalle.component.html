@@ -59,34 +59,34 @@
       <form class="profile-grid" [formGroup]="formularioFicha" (ngSubmit)="guardarFicha()" novalidate>
         <div class="profile-field profile-field-wide">
           <label for="ficha-nombre">Nombre completo</label>
-          <input id="ficha-nombre" type="text" formControlName="nombre_completo" autocomplete="off" maxlength="150" placeholder="Nombres y apellidos como aparecen en su DPI">
-          @if (formularioFicha.controls.nombre_completo.touched && formularioFicha.controls.nombre_completo.invalid) { <span class="field-error">Ingresa entre 2 y 150 caracteres.</span> }
+          <input id="ficha-nombre" type="text" formControlName="nombre_completo" autocomplete="off" maxlength="150" placeholder="Nombres y apellidos como aparecen en su DPI" [attr.aria-invalid]="formularioFicha.controls.nombre_completo.touched && formularioFicha.controls.nombre_completo.invalid" aria-describedby="ficha-nombre-error">
+          @if (formularioFicha.controls.nombre_completo.touched && formularioFicha.controls.nombre_completo.invalid) { <span class="field-error" id="ficha-nombre-error">Ingresa entre 2 y 150 caracteres.</span> }
         </div>
 
         <div class="profile-field">
           <label for="ficha-dpi">Número de DPI</label>
-          <input id="ficha-dpi" type="text" inputmode="numeric" formControlName="dpi" autocomplete="off" maxlength="17" placeholder="13 dígitos">
-          @if (formularioFicha.controls.dpi.touched && formularioFicha.controls.dpi.invalid) { <span class="field-error">El DPI debe tener 13 dígitos.</span> }
+          <input id="ficha-dpi" type="text" inputmode="numeric" formControlName="dpi" autocomplete="off" maxlength="17" placeholder="13 dígitos" [attr.aria-invalid]="formularioFicha.controls.dpi.touched && formularioFicha.controls.dpi.invalid" aria-describedby="ficha-dpi-error">
+          @if (formularioFicha.controls.dpi.touched && formularioFicha.controls.dpi.invalid) { <span class="field-error" id="ficha-dpi-error">El DPI debe tener 13 dígitos.</span> }
         </div>
 
         <div class="profile-field">
           <label for="ficha-nacimiento">Fecha de nacimiento</label>
           <input id="ficha-nacimiento" type="date" formControlName="fecha_nacimiento" [max]="hoy">
-          <span class="helper-text profile-age">
+          <span class="helper-text profile-age" aria-live="polite">
             @if (edad(); as anios) { Edad: <strong>{{ anios }} {{ anios === 1 ? 'año' : 'años' }}</strong> } @else { La edad se calcula con esta fecha. }
           </span>
         </div>
 
         <div class="profile-field">
           <label for="ficha-correo">Correo electrónico</label>
-          <input id="ficha-correo" type="email" formControlName="correo" autocomplete="off" maxlength="120" placeholder="nombre@correo.com">
-          @if (formularioFicha.controls.correo.touched && formularioFicha.controls.correo.invalid) { <span class="field-error">Ingresa un correo válido.</span> }
+          <input id="ficha-correo" type="email" formControlName="correo" autocomplete="off" maxlength="120" placeholder="nombre@correo.com" [attr.aria-invalid]="formularioFicha.controls.correo.touched && formularioFicha.controls.correo.invalid" aria-describedby="ficha-correo-error">
+          @if (formularioFicha.controls.correo.touched && formularioFicha.controls.correo.invalid) { <span class="field-error" id="ficha-correo-error">Ingresa un correo válido.</span> }
         </div>
 
         <div class="profile-field">
           <label for="ficha-telefono">Teléfono</label>
-          <input id="ficha-telefono" type="tel" formControlName="telefono" autocomplete="off" maxlength="20" placeholder="5555-1234">
-          @if (formularioFicha.controls.telefono.touched && formularioFicha.controls.telefono.invalid) { <span class="field-error">El teléfono debe tener entre 8 y 15 dígitos.</span> }
+          <input id="ficha-telefono" type="tel" formControlName="telefono" autocomplete="off" maxlength="20" placeholder="5555-1234" [attr.aria-invalid]="formularioFicha.controls.telefono.touched && formularioFicha.controls.telefono.invalid" aria-describedby="ficha-telefono-error">
+          @if (formularioFicha.controls.telefono.touched && formularioFicha.controls.telefono.invalid) { <span class="field-error" id="ficha-telefono-error">El teléfono debe tener entre 8 y 15 dígitos.</span> }
         </div>
 
         <div class="profile-field">

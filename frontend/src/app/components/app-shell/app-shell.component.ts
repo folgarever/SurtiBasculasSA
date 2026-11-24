@@ -53,6 +53,12 @@ export class AppShellComponent {
     this.auth.logout();
   }
 
+  // Evita que el router interprete el ancla y mueve el foco al contenido principal.
+  protected saltarAlContenido(event: Event): void {
+    event.preventDefault();
+    document.getElementById('contenido-principal')?.focus();
+  }
+
   protected visible(item: NavItem): boolean {
     switch (item.visible) {
       case 'admin': return this.auth.hasAdminRole();
