@@ -146,7 +146,26 @@ Tu contraseña se verifica en cada alta, edición o baja. Si es incorrecta verá
 3. Revisa los indicadores de puntualidad de 30 días y las tablas de marcaciones recientes, evaluaciones de personal, evaluaciones de conocimiento e incidencias.
 4. Pulsa **Volver al directorio** para regresar.
 
-La ficha es de solo lectura: no modifica la información. Está disponible para cualquier ADMIN y no requiere los permisos reforzados del módulo de evaluaciones.
+Está disponible para cualquier ADMIN y no requiere los permisos reforzados del módulo de evaluaciones.
+
+#### Ficha de personal
+
+En la parte superior del detalle hay una tarjeta con los datos personales del empleado. Sirve para completar poco a poco la información de quienes ya trabajan en la empresa.
+
+- **Datos:** nombre completo, DPI (13 dígitos), fecha de nacimiento, correo, teléfono y fecha de ingreso. La edad se calcula sola a partir de la fecha de nacimiento.
+- **Avance:** una barra indica cuántos de los 7 datos están completos (los 6 anteriores más el currículum).
+- **Currículum:** sube un PDF de máximo 5 MB con **Subir CV**. Con **Ver** se abre una vista previa dentro de la app y con **Descargar** se guarda el archivo.
+- **Guardar:** pulsa **Guardar ficha**. Los errores aparecen junto a cada campo. Si sales con cambios sin guardar, el sistema te pedirá confirmación.
+- **Historial:** el bloque desplegable muestra los últimos 30 movimientos: quién modificó la ficha, qué campos cambió y quién subió o descargó el currículum. Solo se registran los nombres de los campos, nunca sus valores.
+
+#### Notificaciones de ficha y celebraciones
+
+- Si hay empleados activos con la ficha incompleta, la campana avisa cuántos faltan.
+- La campana también avisa los cumpleaños y aniversarios laborales de los próximos 7 días.
+
+#### Exportar el directorio
+
+En `/admin/empleados` el botón **Exportar CSV** descarga los empleados que se están mostrando, con el filtro y el orden aplicados. La columna **Ficha** y su filtro (todas, incompletas, completas) permiten localizar a quien aún no tiene datos. Las columnas de nombre, puesto, rol y ficha se ordenan al pulsar su encabezado, y la lista se pagina de 10, 25 o 50 filas. En pantallas pequeñas las filas se muestran como tarjetas. Tu filtro, orden y página se recuerdan al volver desde el detalle.
 
 ### Puestos y permisos (solo Gerente General)
 

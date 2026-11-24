@@ -1,7 +1,8 @@
 import { AppShellComponent } from '../../components/app-shell/app-shell.component';
+import { ModalFocoDirective } from '../../directives/modal-foco.directive';
 import { NAV_ADMIN, SUGERENCIAS_ADMIN } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -26,11 +27,12 @@ import { AuthService } from '../../services/auth.service';
 import { DatosPuesto, EmpleadoAdministracion, RrhhService, Puesto } from '../../services/rrhh.service';
 
 type ColumnaOrden = 'nombre' | 'puesto' | 'rol' | 'ficha';
+const CLAVE_VISTA = 'empleados.vista';
 
 @Component({
   selector: 'app-empleados',
   standalone: true,
-  imports: [AppShellComponent, ReactiveFormsModule, RouterLink, NgIcon],
+  imports: [AppShellComponent, ReactiveFormsModule, RouterLink, NgIcon, ModalFocoDirective],
   providers: [provideIcons({
     lucideClipboardCheck,
     lucideDownload,
@@ -164,9 +166,45 @@ export class EmpleadosComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.restaurarVista();
     this.cargarEmpleados();
     this.cargarPuestos();
   }
+
+  private restaurarVista(): void {
+    try {
+      const guardada = JSON.parse(sessionStorage.getItem(CLAVE_VISTA) ?? 'null');
+      if (!guardada || typeof guardada !== 'object') return;
+      if (typeof guardada.busqueda === 'string') this.busqueda.set(guardada.busqueda);
+      if (typeof guardada.filtroPuesto === 'string') this.filtroPuesto.set(guardada.filtroPuesto);
+      if (['todos', 'activos', 'inactivos'].includes(guardada.filtroEstado)) this.filtroEstado.set(guardada.filtroEstado);
+      if (['todas', 'incompletas', 'completas'].includes(guardada.filtroFicha)) this.filtroFicha.set(guardada.filtroFicha);
+      if (['nombre', 'puesto', 'rol', 'ficha'].includes(guardada.orden?.columna)) {
+        this.orden.set({ columna: guardada.orden.columna, direccion: guardada.orden.direccion === 'desc' ? 'desc' : 'asc' });
+      }
+      if (this.opcionesPagina.includes(guardada.tamanoPagina)) this.tamanoPagina.set(guardada.tamanoPagina);
+      if (Number.isInteger(guardada.pagina) && guardada.pagina > 0) this.pagina.set(guardada.pagina);
+    } catch {
+      sessionStorage.removeItem(CLAVE_VISTA);
+    }
+  }
+
+  private readonly guardarVista = effect(() => {
+    const vista = {
+      busqueda: this.busqueda(),
+      filtroPuesto: this.filtroPuesto(),
+      filtroEstado: this.filtroEstado(),
+      filtroFicha: this.filtroFicha(),
+      orden: this.orden(),
+      tamanoPagina: this.tamanoPagina(),
+      pagina: this.pagina(),
+    };
+    try {
+      sessionStorage.setItem(CLAVE_VISTA, JSON.stringify(vista));
+    } catch {
+      // El almacenamiento puede estar bloqueado; la vista simplemente no se recuerda.
+    }
+  });
 
   protected actualizarBusqueda(event: Event): void {
     this.busqueda.set((event.target as HTMLInputElement).value);

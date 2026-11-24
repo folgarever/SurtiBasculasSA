@@ -1,4 +1,5 @@
 import { AppShellComponent } from '../../components/app-shell/app-shell.component';
+import { ModalFocoDirective } from '../../directives/modal-foco.directive';
 import { NAV_ADMIN, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
@@ -31,7 +32,7 @@ interface EmpleadoOpcion {
 @Component({
   selector: 'app-rrhh-dashboard',
   standalone: true,
-  imports: [AppShellComponent, ReactiveFormsModule, NgIcon],
+  imports: [AppShellComponent, ReactiveFormsModule, NgIcon, ModalFocoDirective],
   providers: [provideIcons({
     lucideArrowDownToLine,
     lucideArrowRight,

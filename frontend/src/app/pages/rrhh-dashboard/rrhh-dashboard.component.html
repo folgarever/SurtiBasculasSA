@@ -109,7 +109,7 @@
 
 @if (modal() === 'correccion') {
   <div class="modal-backdrop" (click)="cerrarModal()" (keydown.escape)="cerrarModal()">
-    <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="correction-title" (click)="$event.stopPropagation()">
+    <section appModalFoco tabindex="-1" class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="correction-title" (click)="$event.stopPropagation()">
       <div class="modal-header"><div><p class="eyebrow">AUDITORÍA DE ASISTENCIA</p><h2 id="correction-title">Corrección manual</h2></div><button class="icon-button" type="button" aria-label="Cerrar" (click)="cerrarModal()"><ng-icon name="lucideX" size="17" /></button></div>
       @if (seleccionada(); as item) { <p class="modal-context"><strong>{{ item.nombre }}</strong> · {{ formatoFecha(item.fecha) }} · {{ item.codigo_empleado }}</p> }
       <form [formGroup]="correccionForm" (ngSubmit)="guardarCorreccion()">
@@ -131,7 +131,7 @@
 
 @if (modal() === 'incidencia') {
   <div class="modal-backdrop" (click)="cerrarModal()" (keydown.escape)="cerrarModal()">
-    <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="incidence-title" (click)="$event.stopPropagation()">
+    <section appModalFoco tabindex="-1" class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="incidence-title" (click)="$event.stopPropagation()">
       <div class="modal-header"><div><p class="eyebrow">NOVEDAD DE PERSONAL</p><h2 id="incidence-title">Registrar incidencia</h2></div><button class="icon-button" type="button" aria-label="Cerrar" (click)="cerrarModal()"><ng-icon name="lucideX" size="17" /></button></div>
       <form [formGroup]="incidenciaForm" (ngSubmit)="guardarIncidencia()">
         <label for="empleado-incidencia">Empleado</label>
@@ -151,7 +151,7 @@
 }
 @if (modal() === 'rechazo') {
   <div class="modal-backdrop" (click)="cerrarModal()" (keydown.escape)="cerrarModal()">
-    <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="rejection-title" (click)="$event.stopPropagation()">
+    <section appModalFoco tabindex="-1" class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="rejection-title" (click)="$event.stopPropagation()">
       <div class="modal-header"><div><p class="eyebrow">HORAS EXTRAS</p><h2 id="rejection-title">Rechazar solicitud</h2></div><button class="icon-button" type="button" aria-label="Cerrar" (click)="cerrarModal()"><ng-icon name="lucideX" size="17" /></button></div>
       @if (seleccionada(); as item) { <p class="modal-context"><strong>{{ item.nombre }}</strong> · {{ formatoFecha(item.fecha) }} · {{ formatoExtras(item.horas_extras) }}</p> }
       <form [formGroup]="rechazoForm" (ngSubmit)="rechazar()">

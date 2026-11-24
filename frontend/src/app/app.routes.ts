@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
+import { cambiosSinGuardarGuard } from './guards/cambios-sin-guardar.guard';
 import { evaluationGuard } from './guards/evaluation.guard';
 import { roleGuard } from './guards/role.guard';
 import { employeeGuard } from './guards/employee.guard';
@@ -26,7 +27,7 @@ export const routes: Routes = [
 	{ path: 'dashboard', component: EmpleadoDashboardComponent, canActivate: [authGuard] },
 	{ path: 'admin', component: AdminDashboardComponent, canActivate: [adminGuard] },
 	{ path: 'admin/empleados', component: EmpleadosComponent, canActivate: [adminGuard] },
-	{ path: 'admin/empleados/:id', component: EmpleadoDetalleComponent, canActivate: [adminGuard] },
+	{ path: 'admin/empleados/:id', component: EmpleadoDetalleComponent, canActivate: [adminGuard], canDeactivate: [cambiosSinGuardarGuard] },
 	{ path: 'rrhh', component: RrhhDashboardComponent, canActivate: [authGuard, roleGuard] },
 	{ path: 'evaluaciones', component: EvaluacionesComponent, canActivate: [authGuard, evaluationGuard] },
 	{

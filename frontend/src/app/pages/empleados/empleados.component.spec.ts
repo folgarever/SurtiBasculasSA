@@ -94,6 +94,7 @@ describe('EmpleadosComponent · puestos y permisos', () => {
   afterEach(() => {
     httpMock?.verify();
     TestBed.resetTestingModule();
+    sessionStorage.clear();
   });
 
   function escribir(root: HTMLElement, id: string, valor: string): void {
@@ -265,6 +266,29 @@ describe('EmpleadosComponent · puestos y permisos', () => {
     expect(root.querySelector('th[aria-sort="descending"]')?.textContent).toContain('Puesto');
     expect(root.querySelector('.table-pagination')?.textContent).toContain('Página 1 de 2');
     expect(nombres()[0]).toBe('Persona 12');
+  });
+
+  it('restaura y guarda la vista del directorio al volver del detalle', async () => {
+    sessionStorage.setItem('empleados.vista', JSON.stringify({
+      busqueda: 'Persona 03', filtroEstado: 'activos', tamanoPagina: 25,
+      orden: { columna: 'puesto', direccion: 'desc' },
+    }));
+    const empleados = Array.from({ length: 5 }, (_, i) => ({
+      id: i + 1, codigo_empleado: `SUR-${i + 1}`, nombre: `Persona ${String(i + 1).padStart(2, '0')}`,
+      nombre_puesto: 'Técnico', puesto_id: 3, rol: 'Empleado', activo: 1,
+    }));
+    const fixture = await crear(true, empleados);
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelectorAll('.employee-name')).toHaveLength(1);
+    expect(root.querySelector('th[aria-sort="descending"]')?.textContent).toContain('Puesto');
+
+    const buscador = root.querySelector<HTMLInputElement>('input[aria-label="Buscar empleados"]')!;
+    buscador.value = 'Persona';
+    buscador.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    TestBed.tick();
+    expect(JSON.parse(sessionStorage.getItem('empleados.vista')!).busqueda).toBe('Persona');
   });
 
   it('pide contraseña y crea el puesto desde el modal', async () => {

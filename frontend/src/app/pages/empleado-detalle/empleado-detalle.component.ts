@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -109,6 +109,15 @@ export class EmpleadoDetalleComponent implements OnInit {
       distinctUntilChanged(),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe((id) => this.cargar(id));
+  }
+
+  tieneCambiosSinGuardar(): boolean {
+    return this.formularioFicha.dirty;
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  protected avisarAntesDeCerrar(event: BeforeUnloadEvent): void {
+    if (this.tieneCambiosSinGuardar()) event.preventDefault();
   }
 
   protected edad(): number | null {
