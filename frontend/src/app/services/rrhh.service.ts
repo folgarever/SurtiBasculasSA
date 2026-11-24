@@ -61,9 +61,15 @@ export type DatosFicha = Pick<
   'nombre_completo' | 'dpi' | 'fecha_nacimiento' | 'correo' | 'telefono' | 'fecha_ingreso'
 >;
 
+export interface ResumenMiFicha {
+  faltantes: string[];
+  completos: number;
+  total: number;
+}
+
 export interface RegistroAuditoriaFicha {
   id: number;
-  accion: 'ficha' | 'cv_subida' | 'cv_descarga';
+  accion: 'ficha' | 'cv_subida' | 'cv_descarga' | 'ficha_exportada';
   campos: string | null;
   creado_en: string;
   usuario: string | null;
@@ -239,10 +245,20 @@ export class RrhhService {
     });
   }
 
+  exportarFichaEmpleado(id: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/administracion/empleados/${id}/ficha/exportar`, {
+      responseType: 'blob',
+    });
+  }
+
   obtenerAuditoriaFicha(id: number): Observable<{ registros: RegistroAuditoriaFicha[] }> {
     return this.http.get<{ registros: RegistroAuditoriaFicha[] }>(
       `${this.baseUrl}/administracion/empleados/${id}/ficha/auditoria`
     );
+  }
+
+  obtenerMiFicha(): Observable<ResumenMiFicha> {
+    return this.http.get<ResumenMiFicha>(`${environment.apiUrl}/mi-ficha`);
   }
 
   obtenerIncidencias(empleadoId: number): Observable<{ incidencias: IncidenciaRrhh[] }> {

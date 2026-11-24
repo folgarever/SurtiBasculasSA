@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { catchError, forkJoin, of } from 'rxjs';
 import { AuthService } from './auth.service';
 import { DashboardAdmin, DashboardService } from './dashboard.service';
-import { EmpleadoAdministracion, RrhhService } from './rrhh.service';
+import { EmpleadoAdministracion, ResumenMiFicha, RrhhService } from './rrhh.service';
 import {
   EvaluacionConocimiento,
   EvaluacionesConocimientoService,
@@ -89,6 +89,35 @@ export function proximasCelebraciones(
   return resultado.sort((a, b) => a.dias - b.dias || a.empleado.nombre.localeCompare(b.empleado.nombre));
 }
 
+export interface CelebracionMes {
+  empleado: EmpleadoAdministracion;
+  tipo: 'cumpleanos' | 'aniversario';
+  dia: number;
+  anios: number | null;
+}
+
+// Todos los cumpleaños y aniversarios (1 año o más) de empleados activos en el mes indicado.
+export function celebracionesDelMes(empleados: EmpleadoAdministracion[], hoy = new Date()): CelebracionMes[] {
+  const mesActual = hoy.getMonth() + 1;
+  const resultado: CelebracionMes[] = [];
+  const evaluar = (empleado: EmpleadoAdministracion, tipo: CelebracionMes['tipo'], valor?: string | null) => {
+    const coincidencia = /^(\d{4})-(\d{2})-(\d{2})/.exec(valor ?? '');
+    if (!coincidencia) return;
+    const [anioOrigen, mes, dia] = coincidencia.slice(1).map(Number);
+    if (mes !== mesActual) return;
+    const anios = hoy.getFullYear() - anioOrigen;
+    if (tipo === 'aniversario' && anios < 1) return;
+    // Un 29 de febrero se muestra el 28 en los años no bisiestos.
+    const diaMostrado = Math.min(dia, new Date(hoy.getFullYear(), mes, 0).getDate());
+    resultado.push({ empleado, tipo, dia: diaMostrado, anios: tipo === 'aniversario' ? anios : null });
+  };
+  for (const empleado of empleados.filter((item) => item.activo)) {
+    evaluar(empleado, 'cumpleanos', empleado.fecha_nacimiento);
+    evaluar(empleado, 'aniversario', empleado.fecha_ingreso);
+  }
+  return resultado.sort((a, b) => a.dia - b.dia || a.empleado.nombre.localeCompare(b.empleado.nombre));
+}
+
 function describirCelebracion(celebracion: Celebracion): string {
   const cuando = celebracion.dias === 0 ? 'hoy' : celebracion.dias === 1 ? 'mañana' : `el ${celebracion.fecha}`;
   const nombre = celebracion.empleado.nombre;
@@ -160,10 +189,23 @@ export class NotificacionesService {
         .pipe(catchError(() => of({ sugerencias: [] as Sugerencia[] }))),
       evaluacion: this.conocimiento.obtenerMiEvaluacion()
         .pipe(catchError(() => of(null))),
-    }).subscribe(({ propias, evaluacion }) => {
-      this._items.set(this.itemsEmpleado(propias.sugerencias, evaluacion));
+      ficha: this.rrhh.obtenerMiFicha().pipe(catchError(() => of(null))),
+    }).subscribe(({ propias, evaluacion, ficha }) => {
+      this._items.set([...this.itemsEmpleado(propias.sugerencias, evaluacion), ...this.itemsMiFicha(ficha)]);
       this._cargando.set(false);
     });
+  }
+
+  private itemsMiFicha(ficha: ResumenMiFicha | null): NotificacionItem[] {
+    if (!ficha?.faltantes?.length) return [];
+    return [{
+      id: 'mi-ficha-incompleta',
+      titulo: 'Tu ficha de personal está incompleta',
+      detalle: `Falta: ${ficha.faltantes.join(', ')}. Entrega estos datos a Recursos Humanos.`,
+      ruta: '/dashboard',
+      marcador: ficha.faltantes.join(','),
+      tipo: 'empleado',
+    }];
   }
 
   estaLeido(item: NotificacionItem): boolean {

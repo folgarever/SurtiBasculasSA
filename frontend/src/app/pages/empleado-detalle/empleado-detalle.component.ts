@@ -223,6 +223,7 @@ export class EmpleadoDetalleComponent implements OnInit {
   protected descripcionAuditoria(registro: RegistroAuditoriaFicha): string {
     if (registro.accion === 'cv_subida') return 'Cargó el currículum';
     if (registro.accion === 'cv_descarga') return 'Consultó o descargó el currículum';
+    if (registro.accion === 'ficha_exportada') return 'Exportó la ficha a Excel';
     const campos = (registro.campos || '').split(',')
       .map((campo) => ETIQUETAS_CAMPOS[campo] || campo).filter(Boolean);
     return campos.length ? `Modificó: ${campos.join(', ')}` : 'Modificó la ficha';
@@ -248,18 +249,34 @@ export class EmpleadoDetalleComponent implements OnInit {
     if (!detalle) return;
     this.rrhh.descargarCurriculumEmpleado(detalle.empleado.id).subscribe({
       next: (archivo) => {
-        const url = URL.createObjectURL(archivo);
-        const enlace = document.createElement('a');
-        enlace.href = url;
-        enlace.download = detalle.ficha.cv_nombre || `curriculum-${detalle.empleado.codigo_empleado}.pdf`;
-        document.body.appendChild(enlace);
-        enlace.click();
-        enlace.remove();
-        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        this.guardarArchivo(archivo, detalle.ficha.cv_nombre || `curriculum-${detalle.empleado.codigo_empleado}.pdf`);
         this.cargarAuditoria(detalle.empleado.id);
       },
       error: () => this.avisoFicha.set({ tipo: 'error', texto: 'No se pudo descargar el currículum.' }),
     });
+  }
+
+  protected exportarFicha(): void {
+    const detalle = this.detalle();
+    if (!detalle) return;
+    this.rrhh.exportarFichaEmpleado(detalle.empleado.id).subscribe({
+      next: (archivo) => {
+        this.guardarArchivo(archivo, `ficha-${detalle.empleado.codigo_empleado}.xlsx`);
+        this.cargarAuditoria(detalle.empleado.id);
+      },
+      error: () => this.avisoFicha.set({ tipo: 'error', texto: 'No se pudo exportar la ficha.' }),
+    });
+  }
+
+  private guardarArchivo(archivo: Blob, nombre: string): void {
+    const url = URL.createObjectURL(archivo);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = nombre;
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   private actualizarFicha(cambios: Partial<FichaEmpleado>): void {

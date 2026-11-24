@@ -24,6 +24,7 @@ import {
   lucideX,
 } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
+import { celebracionesDelMes } from '../../services/notificaciones.service';
 import { DatosPuesto, EmpleadoAdministracion, RrhhService, Puesto } from '../../services/rrhh.service';
 
 type ColumnaOrden = 'nombre' | 'puesto' | 'rol' | 'ficha';
@@ -124,6 +125,8 @@ export class EmpleadosComponent implements OnInit {
       return (comparacion || a.nombre.localeCompare(b.nombre, 'es')) * factor;
     });
   });
+  protected readonly nombreMes = new Date().toLocaleDateString('es-GT', { month: 'long' });
+  protected readonly celebracionesMes = computed(() => celebracionesDelMes(this.empleados()));
   protected readonly totalPaginas = computed(() =>
     Math.max(1, Math.ceil(this.empleadosOrdenados().length / this.tamanoPagina())));
   protected readonly paginaActual = computed(() => Math.min(this.pagina(), this.totalPaginas()));

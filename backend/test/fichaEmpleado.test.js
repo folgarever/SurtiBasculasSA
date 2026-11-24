@@ -4,6 +4,8 @@ const pool = require('../src/config/db');
 const { validarFicha, calcularEdad, esPdf } = require('../src/utils/fichaEmpleado');
 const {
   actualizarFichaEmpleado,
+  obtenerMiFicha,
+  exportarFichaEmpleado,
   subirCurriculumEmpleado
 } = require('../src/controllers/rrhhController');
 
@@ -130,6 +132,47 @@ test('actualizarFichaEmpleado audita solo los campos modificados, sin guardar va
     (error) => { throw error; }
   );
   assert.equal(sinCambios.length, 0);
+});
+
+test('obtenerMiFicha informa los datos faltantes sin exponer valores', async () => {
+  pool.execute = async () => [[{
+    nombre_completo: 'Ana Pérez', dpi: '1234567890123', fecha_nacimiento: null,
+    correo: null, telefono: '55551234', fecha_ingreso: null, cv_nombre: null
+  }]];
+  const res = crearRespuesta();
+  await obtenerMiFicha({ usuario: { id: 5 } }, res, assert.ifError);
+  assert.deepEqual(res.cuerpo, {
+    faltantes: ['fecha de nacimiento', 'correo', 'fecha de ingreso', 'currículum'],
+    completos: 3,
+    total: 7
+  });
+  assert.equal(JSON.stringify(res.cuerpo).includes('1234567890123'), false);
+});
+
+test('exportarFichaEmpleado genera el Excel y audita la exportación', async () => {
+  const consultas = [];
+  pool.execute = async (sql, parametros) => {
+    consultas.push(sql);
+    if (sql.includes('FROM empleados e')) {
+      return [[{
+        codigo_empleado: 'SUR-AUXTEC-010', nombre: 'Ana', nombre_puesto: 'Técnico', nombre_completo: 'Ana Pérez',
+        dpi: '0123456789012', fecha_nacimiento: '1990-05-01', correo: null, telefono: null,
+        fecha_ingreso: null, cv_nombre: null
+      }]];
+    }
+    return [{ insertId: 1 }];
+  };
+  const { Writable } = require('node:stream');
+  const partes = [];
+  const res = new Writable({ write(trozo, _enc, cb) { partes.push(trozo); cb(); } });
+  res.headers = {};
+  res.setHeader = (clave, valor) => { res.headers[clave] = valor; };
+  await exportarFichaEmpleado({ params: { id: '5' }, usuario: { id: 1 } }, res, assert.ifError);
+  await new Promise((resolve) => res.once('finish', resolve));
+
+  assert.match(res.headers['Content-Disposition'], /ficha-SUR-AUXTEC-010\.xlsx/);
+  assert.equal(Buffer.concat(partes).subarray(0, 2).toString(), 'PK');
+  assert.ok(consultas.some((sql) => sql.includes('INTO empleados_ficha_auditoria')));
 });
 
 test('subirCurriculumEmpleado rechaza archivos que no son PDF y guarda los PDF válidos', async () => {

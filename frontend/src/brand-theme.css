@@ -1685,6 +1685,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .profile-audit ul { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
 .profile-audit li { display: grid; gap: 2px; padding: 8px 12px; border-left: 3px solid var(--color-primary-soft); font-size: .85rem; }
 .profile-audit li small { color: var(--color-ink-soft); }
+.month-celebrations { margin: 0 0 16px; padding: 12px 16px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface, #fff); }
+.month-celebrations summary { cursor: pointer; font-weight: 600; font-size: .9rem; text-transform: capitalize; }
+.month-celebrations ul { display: grid; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; font-size: .85rem; }
+.month-celebrations li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.month-celebrations .month-day { min-width: 2ch; font-weight: 700; color: var(--color-primary); }
 .profile-upload.is-disabled { opacity: .6; pointer-events: none; }
 .profile-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .profile-file-input:focus-visible + * , .profile-cv-actions:has(.profile-file-input:focus-visible) .profile-upload { outline: 2px solid var(--color-primary); outline-offset: 2px; }

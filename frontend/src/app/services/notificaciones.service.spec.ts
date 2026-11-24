@@ -5,7 +5,24 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from './auth.service';
-import { NotificacionesService, proximasCelebraciones } from './notificaciones.service';
+import { celebracionesDelMes, NotificacionesService, proximasCelebraciones } from './notificaciones.service';
+
+describe('celebracionesDelMes', () => {
+  it('lista todo el mes (incluso días pasados), solo activos y aniversarios de 1 año o más', () => {
+    const base = { codigo_empleado: 'X', nombre_puesto: 'T', puesto_id: 1, rol: 'Empleado', activo: 1 };
+    const resultado = celebracionesDelMes([
+      { ...base, id: 1, nombre: 'Ana', fecha_nacimiento: '1990-11-03' },
+      { ...base, id: 2, nombre: 'Luis', fecha_ingreso: '2020-11-28' },
+      { ...base, id: 3, nombre: 'Nuevo', fecha_ingreso: '2026-11-10' },
+      { ...base, id: 4, nombre: 'Baja', activo: 0, fecha_nacimiento: '1990-11-05' },
+      { ...base, id: 5, nombre: 'Otro mes', fecha_nacimiento: '1990-12-05' },
+    ] as never, new Date(2026, 10, 24));
+    expect(resultado.map((c) => [c.empleado.nombre, c.tipo, c.dia, c.anios])).toEqual([
+      ['Ana', 'cumpleanos', 3, null],
+      ['Luis', 'aniversario', 28, 6],
+    ]);
+  });
+});
 
 describe('proximasCelebraciones', () => {
   const empleado = (id: number, nombre: string, extra: Record<string, unknown> = {}) => ({
@@ -121,6 +138,8 @@ describe('NotificacionesService', () => {
       .flush({ sugerencias: [respondida, sinResponder] });
     httpMock.expectOne((peticion) => peticion.url.endsWith('/evaluaciones-conocimiento/mi'))
       .flush(evaluacionPendiente);
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/mi-ficha'))
+      .flush({ faltantes: [], completos: 7, total: 7 });
 
     expect(servicio.items().map((item) => item.id)).toEqual(['respuesta-3', 'evaluacion-21']);
     expect(servicio.noLeidos()).toBe(2);
@@ -218,6 +237,19 @@ describe('NotificacionesService', () => {
     expect(servicio.items()[0].titulo).toBe('Resultado de tu evaluación');
     expect(servicio.items()[0].detalle).toBe('Recomendable para el puesto');
     expect(servicio.noLeidos()).toBe(1);
+  });
+
+  it('recuerda al empleado los datos que faltan en su ficha', () => {
+    servicio.cargar();
+
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/sugerencias/mis-sugerencias')).flush({ sugerencias: [] });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/evaluaciones-conocimiento/mi')).flush(null);
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/mi-ficha'))
+      .flush({ faltantes: ['DPI', 'currículum'], completos: 5, total: 7 });
+
+    const [aviso] = servicio.items();
+    expect(aviso.id).toBe('mi-ficha-incompleta');
+    expect(aviso.detalle).toContain('DPI, currículum');
   });
 
   it('respeta los marcadores guardados para cada usuario', () => {

@@ -33,6 +33,21 @@
       <div class="summary-note"><span class="status-dot"></span><span>Directorio actualizado al consultar</span></div>
     </section>
 
+    @if (celebracionesMes().length) {
+      <details class="month-celebrations">
+        <summary>Celebraciones de {{ nombreMes }} ({{ celebracionesMes().length }})</summary>
+        <ul>
+          @for (item of celebracionesMes(); track item.empleado.id + item.tipo) {
+            <li>
+              <span class="month-day">{{ item.dia }}</span>
+              <a [routerLink]="['/admin/empleados', item.empleado.id]">{{ item.empleado.nombre }}</a>
+              <span>{{ item.tipo === 'cumpleanos' ? 'Cumpleaños' : item.anios + (item.anios === 1 ? ' año' : ' años') + ' en la empresa' }}</span>
+            </li>
+          }
+        </ul>
+      </details>
+    }
+
     <section class="records-section">
       <div class="section-heading employee-list-heading">
         <div><p class="eyebrow">EQUIPO SURTIBASCULAS</p><h2>Directorio de empleados</h2></div>

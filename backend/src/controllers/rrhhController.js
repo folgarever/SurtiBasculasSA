@@ -2,7 +2,7 @@ const ExcelJS = require('exceljs');
 const bcrypt = require('bcrypt');
 const pool = require('../config/db');
 const { CODIGO_ADMIN_RRHH, CODIGO_GERENTE_GENERAL } = require('../config/authorization');
-const { validarFicha, esPdf } = require('../utils/fichaEmpleado');
+const { validarFicha, esPdf, calcularEdad } = require('../utils/fichaEmpleado');
 
 function filtrosReporte(query) {
   const condiciones = [];
@@ -1023,6 +1023,57 @@ async function descargarCurriculumEmpleado(req, res, next) {
   }
 }
 
+async function exportarFichaEmpleado(req, res, next) {
+  const empleadoId = identificadorEmpleado(req);
+  if (!empleadoId) {
+    return res.status(400).json({ mensaje: 'El identificador del empleado no es válido.' });
+  }
+  try {
+    const [filas] = await pool.execute(
+      `SELECT e.codigo_empleado, e.nombre, p.nombre_puesto, f.nombre_completo, f.dpi,
+              f.fecha_nacimiento, f.correo, f.telefono, f.fecha_ingreso, f.cv_nombre
+       FROM empleados e
+       LEFT JOIN puestos p ON p.id = e.puesto_id
+       LEFT JOIN empleados_ficha f ON f.empleado_id = e.id
+       WHERE e.id = ? LIMIT 1`,
+      [empleadoId]
+    );
+    const fila = filas[0];
+    if (!fila) return res.status(404).json({ mensaje: 'Empleado no encontrado.' });
+
+    const edad = fila.fecha_nacimiento ? calcularEdad(fila.fecha_nacimiento) : null;
+    const libro = new ExcelJS.Workbook();
+    libro.creator = 'SURTIBÁSCULAS S.A.';
+    libro.created = new Date();
+    const hoja = libro.addWorksheet('Ficha');
+    hoja.columns = [{ header: 'Dato', key: 'dato', width: 28 }, { header: 'Valor', key: 'valor', width: 46 }];
+    hoja.getRow(1).font = { bold: true };
+    hoja.addRows([
+      { dato: 'Código de empleado', valor: fila.codigo_empleado },
+      { dato: 'Nombre en el sistema', valor: fila.nombre },
+      { dato: 'Puesto', valor: fila.nombre_puesto || '' },
+      { dato: 'Nombre completo', valor: fila.nombre_completo || '' },
+      // Como texto para conservar los ceros iniciales del DPI y el teléfono.
+      { dato: 'DPI', valor: fila.dpi ? String(fila.dpi) : '' },
+      { dato: 'Fecha de nacimiento', valor: fila.fecha_nacimiento || '' },
+      { dato: 'Edad', valor: edad ?? '' },
+      { dato: 'Correo', valor: fila.correo || '' },
+      { dato: 'Teléfono', valor: fila.telefono ? String(fila.telefono) : '' },
+      { dato: 'Fecha de ingreso', valor: fila.fecha_ingreso || '' },
+      { dato: 'Currículum', valor: fila.cv_nombre || 'Sin cargar' }
+    ]);
+    hoja.getColumn('valor').alignment = { horizontal: 'left' };
+
+    await registrarAuditoriaFicha(empleadoId, req.usuario?.id, 'ficha_exportada', 'ficha');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="ficha-${fila.codigo_empleado}.xlsx"`);
+    await libro.xlsx.write(res);
+    return res.end();
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function obtenerIncidencias(req, res, next) {
   try {
     const condiciones = [];
@@ -1074,6 +1125,30 @@ async function registrarIncidencia(req, res, next) {
       [empleadoId, fechaInicio, fechaFin, tipo, String(motivo).trim(), req.usuario.id]
     );
     return res.status(201).json({ mensaje: 'Incidencia registrada.', id: resultado.insertId });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+const ETIQUETAS_FICHA = {
+  nombre_completo: 'nombre completo', dpi: 'DPI', fecha_nacimiento: 'fecha de nacimiento',
+  correo: 'correo', telefono: 'teléfono', fecha_ingreso: 'fecha de ingreso', cv_nombre: 'currículum'
+};
+
+// Solo informa qué datos faltan; nunca devuelve los valores de la ficha.
+async function obtenerMiFicha(req, res, next) {
+  try {
+    const [filas] = await pool.execute(
+      `SELECT f.nombre_completo, f.dpi, f.fecha_nacimiento, f.correo, f.telefono, f.fecha_ingreso, f.cv_nombre
+       FROM empleados e
+       LEFT JOIN empleados_ficha f ON f.empleado_id = e.id
+       WHERE e.id = ? LIMIT 1`,
+      [req.usuario.id]
+    );
+    if (!filas[0]) return res.status(404).json({ mensaje: 'Empleado no encontrado.' });
+    const claves = Object.keys(ETIQUETAS_FICHA);
+    const faltantes = claves.filter((clave) => !filas[0][clave]).map((clave) => ETIQUETAS_FICHA[clave]);
+    return res.json({ faltantes, completos: claves.length - faltantes.length, total: claves.length });
   } catch (error) {
     return next(error);
   }
@@ -1179,6 +1254,8 @@ module.exports = {
   subirCurriculumEmpleado,
   descargarCurriculumEmpleado,
   obtenerAuditoriaFicha,
+  obtenerMiFicha,
+  exportarFichaEmpleado,
   obtenerPuestos,
   registrarPuesto,
   actualizarPuesto,
