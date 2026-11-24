@@ -39,7 +39,25 @@ export interface EmpleadoAdministracion extends EmpleadoRrhh {
   nombre_puesto: string;
   puesto_id: number;
   rol: string;
+  ficha_completa?: boolean;
 }
+
+export interface FichaEmpleado {
+  nombre_completo: string | null;
+  dpi: string | null;
+  fecha_nacimiento: string | null;
+  correo: string | null;
+  telefono: string | null;
+  fecha_ingreso: string | null;
+  cv_nombre: string | null;
+  cv_actualizado_en: string | null;
+  actualizado_en: string | null;
+}
+
+export type DatosFicha = Pick<
+  FichaEmpleado,
+  'nombre_completo' | 'dpi' | 'fecha_nacimiento' | 'correo' | 'telefono' | 'fecha_ingreso'
+>;
 
 export interface IncidenciaRrhh {
   id: number;
@@ -55,6 +73,7 @@ export interface IncidenciaRrhh {
 
 export interface DetalleEmpleado {
   empleado: EmpleadoAdministracion;
+  ficha: FichaEmpleado;
   indicadores: {
     dias_registrados_30d: number;
     atrasos_30d: number;
@@ -188,6 +207,26 @@ export class RrhhService {
 
   obtenerDetalleEmpleado(id: number): Observable<DetalleEmpleado> {
     return this.http.get<DetalleEmpleado>(`${this.baseUrl}/administracion/empleados/${id}/detalle`);
+  }
+
+  guardarFichaEmpleado(id: number, datos: DatosFicha): Observable<{ mensaje: string; ficha: DatosFicha }> {
+    return this.http.put<{ mensaje: string; ficha: DatosFicha }>(
+      `${this.baseUrl}/administracion/empleados/${id}/ficha`, datos
+    );
+  }
+
+  subirCurriculumEmpleado(id: number, archivo: File): Observable<{ mensaje: string; cv_nombre: string }> {
+    const datos = new FormData();
+    datos.append('curriculum', archivo);
+    return this.http.put<{ mensaje: string; cv_nombre: string }>(
+      `${this.baseUrl}/administracion/empleados/${id}/curriculum`, datos
+    );
+  }
+
+  descargarCurriculumEmpleado(id: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/administracion/empleados/${id}/curriculum`, {
+      responseType: 'blob',
+    });
   }
 
   obtenerIncidencias(empleadoId: number): Observable<{ incidencias: IncidenciaRrhh[] }> {

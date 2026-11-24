@@ -2,6 +2,7 @@ const ExcelJS = require('exceljs');
 const bcrypt = require('bcrypt');
 const pool = require('../config/db');
 const { CODIGO_ADMIN_RRHH, CODIGO_GERENTE_GENERAL } = require('../config/authorization');
+const { validarFicha, esPdf } = require('../utils/fichaEmpleado');
 
 function filtrosReporte(query) {
   const condiciones = [];
@@ -171,13 +172,17 @@ async function obtenerEmpleadosActivos(req, res, next) {
 async function obtenerEmpleadosAdministracion(req, res, next) {
   try {
     const [empleados] = await pool.execute(
-      `SELECT e.id, e.codigo_empleado, e.nombre, e.puesto_id, e.activo, p.nombre_puesto, r.nombre AS rol
+      `SELECT e.id, e.codigo_empleado, e.nombre, e.puesto_id, e.activo, p.nombre_puesto, r.nombre AS rol,
+              (f.nombre_completo IS NOT NULL AND f.dpi IS NOT NULL AND f.fecha_nacimiento IS NOT NULL
+               AND f.correo IS NOT NULL AND f.telefono IS NOT NULL AND f.fecha_ingreso IS NOT NULL
+               AND f.cv_nombre IS NOT NULL) AS ficha_completa
        FROM empleados e
        INNER JOIN puestos p ON p.id = e.puesto_id
        INNER JOIN roles r ON r.id = e.rol_id
+       LEFT JOIN empleados_ficha f ON f.empleado_id = e.id
        ORDER BY e.nombre ASC`
     );
-    return res.json({ empleados });
+    return res.json({ empleados: empleados.map((empleado) => ({ ...empleado, ficha_completa: Boolean(empleado.ficha_completa) })) });
   } catch (error) {
     return next(error);
   }
@@ -747,7 +752,8 @@ async function obtenerDetalleEmpleado(req, res, next) {
       [indicadores],
       [evaluaciones],
       [conocimiento],
-      [incidencias]
+      [incidencias],
+      [fichas]
     ] = await Promise.all([
       pool.execute(
         `SELECT e.id, e.codigo_empleado, e.nombre, e.puesto_id, e.activo, p.nombre_puesto, r.nombre AS rol
@@ -809,6 +815,14 @@ async function obtenerDetalleEmpleado(req, res, next) {
          WHERE empleado_id = ?
          ORDER BY fecha_inicio DESC, id DESC`,
         [empleadoId]
+      ),
+      pool.execute(
+        `SELECT nombre_completo, dpi, fecha_nacimiento, correo, telefono, fecha_ingreso,
+                cv_nombre, cv_actualizado_en, actualizado_en
+         FROM empleados_ficha
+         WHERE empleado_id = ?
+         LIMIT 1`,
+        [empleadoId]
       )
     ]);
 
@@ -823,6 +837,7 @@ async function obtenerDetalleEmpleado(req, res, next) {
 
     return res.json({
       empleado: empleados[0],
+      ficha: formatearFicha(fichas[0]),
       indicadores: {
         dias_registrados_30d: dias,
         atrasos_30d: atrasos,
@@ -834,6 +849,123 @@ async function obtenerDetalleEmpleado(req, res, next) {
       conocimiento,
       incidencias
     });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+function formatearFicha(ficha) {
+  return {
+    nombre_completo: ficha?.nombre_completo ?? null,
+    dpi: ficha?.dpi ?? null,
+    fecha_nacimiento: ficha?.fecha_nacimiento ?? null,
+    correo: ficha?.correo ?? null,
+    telefono: ficha?.telefono ?? null,
+    fecha_ingreso: ficha?.fecha_ingreso ?? null,
+    cv_nombre: ficha?.cv_nombre ?? null,
+    cv_actualizado_en: ficha?.cv_actualizado_en ?? null,
+    actualizado_en: ficha?.actualizado_en ?? null
+  };
+}
+
+async function empleadoExiste(empleadoId) {
+  const [empleados] = await pool.execute('SELECT id FROM empleados WHERE id = ? LIMIT 1', [empleadoId]);
+  return Boolean(empleados[0]);
+}
+
+function identificadorEmpleado(req) {
+  const id = Number(req.params.id);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+async function actualizarFichaEmpleado(req, res, next) {
+  const empleadoId = identificadorEmpleado(req);
+  if (!empleadoId) {
+    return res.status(400).json({ mensaje: 'El identificador del empleado no es válido.' });
+  }
+
+  const { errores, valores } = validarFicha(req.body);
+  if (errores.length) {
+    return res.status(400).json({ mensaje: errores[0], errores });
+  }
+
+  try {
+    if (!(await empleadoExiste(empleadoId))) {
+      return res.status(404).json({ mensaje: 'Empleado no encontrado.' });
+    }
+
+    // Se crea la fila vacía y luego se actualiza: un upsert con ON DUPLICATE KEY podría
+    // sobrescribir la ficha de otra persona si el DPI ya existe.
+    await pool.execute('INSERT IGNORE INTO empleados_ficha (empleado_id) VALUES (?)', [empleadoId]);
+    await pool.execute(
+      `UPDATE empleados_ficha
+       SET nombre_completo = ?, dpi = ?, fecha_nacimiento = ?, correo = ?,
+           telefono = ?, fecha_ingreso = ?, actualizado_por = ?
+       WHERE empleado_id = ?`,
+      [
+        valores.nombre_completo, valores.dpi, valores.fecha_nacimiento, valores.correo,
+        valores.telefono, valores.fecha_ingreso, req.usuario?.id ?? null, empleadoId
+      ]
+    );
+    return res.json({ mensaje: 'Ficha del empleado actualizada correctamente.', ficha: valores });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ mensaje: 'Ese DPI ya está registrado para otro empleado.' });
+    }
+    return next(error);
+  }
+}
+
+async function subirCurriculumEmpleado(req, res, next) {
+  const empleadoId = identificadorEmpleado(req);
+  if (!empleadoId) {
+    return res.status(400).json({ mensaje: 'El identificador del empleado no es válido.' });
+  }
+  if (!req.file || !esPdf(req.file.buffer)) {
+    return res.status(400).json({ mensaje: 'Adjunta el currículum en formato PDF.' });
+  }
+
+  const nombre = String(req.file.originalname || '')
+    .replace(/[\\/]/g, '')
+    .replace(/[\u0000-\u001f]/g, '')
+    .trim()
+    .slice(-150) || 'curriculum.pdf';
+
+  try {
+    if (!(await empleadoExiste(empleadoId))) {
+      return res.status(404).json({ mensaje: 'Empleado no encontrado.' });
+    }
+    await pool.execute('INSERT IGNORE INTO empleados_ficha (empleado_id) VALUES (?)', [empleadoId]);
+    await pool.execute(
+      `UPDATE empleados_ficha
+       SET cv_nombre = ?, cv_contenido = ?, cv_actualizado_en = NOW(), actualizado_por = ?
+       WHERE empleado_id = ?`,
+      [nombre, req.file.buffer, req.usuario?.id ?? null, empleadoId]
+    );
+    return res.json({ mensaje: 'Currículum guardado correctamente.', cv_nombre: nombre });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function descargarCurriculumEmpleado(req, res, next) {
+  const empleadoId = identificadorEmpleado(req);
+  if (!empleadoId) {
+    return res.status(400).json({ mensaje: 'El identificador del empleado no es válido.' });
+  }
+  try {
+    const [fichas] = await pool.execute(
+      `SELECT cv_contenido FROM empleados_ficha
+       WHERE empleado_id = ? AND cv_contenido IS NOT NULL
+       LIMIT 1`,
+      [empleadoId]
+    );
+    if (!fichas[0]) {
+      return res.status(404).json({ mensaje: 'Este empleado aún no tiene currículum cargado.' });
+    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="curriculum-empleado-${empleadoId}.pdf"`);
+    return res.send(fichas[0].cv_contenido);
   } catch (error) {
     return next(error);
   }
@@ -991,6 +1123,9 @@ module.exports = {
   obtenerEmpleadosAdministracion,
   obtenerEmpleadoAdministracion,
   obtenerDetalleEmpleado,
+  actualizarFichaEmpleado,
+  subirCurriculumEmpleado,
+  descargarCurriculumEmpleado,
   obtenerPuestos,
   registrarPuesto,
   actualizarPuesto,

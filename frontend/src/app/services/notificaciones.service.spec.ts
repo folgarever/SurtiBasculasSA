@@ -119,6 +119,8 @@ describe('NotificacionesService', () => {
           candidatos_completados: 3,
         },
       });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/rrhh/administracion/empleados'))
+      .flush({ empleados: [] });
 
     expect(servicio.items().map((item) => item.id)).toEqual([
       'sugerencias-pendientes',
@@ -131,6 +133,45 @@ describe('NotificacionesService', () => {
 
     servicio.marcarTodos();
     expect(servicio.noLeidos()).toBe(0);
+  });
+
+  it('avisa al administrador de las fichas de empleados activos sin completar', () => {
+    admin = true;
+    servicio.cargar();
+
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/sugerencias/admin')).flush({ sugerencias: [] });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/dashboard/admin')).flush({
+      periodo: '2026-11',
+      resumen: { evaluaciones_pendientes: 0, candidatos_registro: 0, candidatos_completados: 0 },
+    });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/rrhh/administracion/empleados')).flush({
+      empleados: [
+        { id: 5, activo: 1, ficha_completa: false },
+        { id: 2, activo: 1, ficha_completa: false },
+        { id: 8, activo: 1, ficha_completa: true },
+        { id: 9, activo: 0, ficha_completa: false },
+      ],
+    });
+
+    expect(servicio.items()).toHaveLength(1);
+    expect(servicio.items()[0]).toMatchObject({
+      id: 'fichas-incompletas',
+      ruta: '/admin/empleados',
+      marcador: '2,5',
+      tipo: 'empleado',
+    });
+  });
+
+  it('no falla si el servidor responde sin la lista de sugerencias', () => {
+    admin = true;
+    servicio.cargar();
+
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/sugerencias/admin')).flush({});
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/dashboard/admin')).flush(null);
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/rrhh/administracion/empleados')).flush({});
+
+    expect(servicio.items()).toEqual([]);
+    expect(servicio.cargando()).toBe(false);
   });
 
   it('muestra el resultado de selección al candidato', () => {
@@ -163,6 +204,8 @@ describe('NotificacionesService', () => {
         candidatos_registro: 0,
         candidatos_completados: 0,
       } });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/rrhh/administracion/empleados'))
+      .flush({ empleados: [] });
 
     expect(servicio.noLeidos()).toBe(0);
   });

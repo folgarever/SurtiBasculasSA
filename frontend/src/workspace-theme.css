@@ -102,7 +102,7 @@
 
   .app-shell :is(.panel-card, .summary-card, .module-card, .records-section, .table-frame,
     .summary-strip, .evaluation-panel, .evaluation-detail, .knowledge-panel, .knowledge-history,
-    .knowledge-kpi, .suggestion-form-card, .suggestion-card, .modal-panel) {
+    .knowledge-kpi, .suggestion-form-card, .suggestion-card, .modal-panel, .profile-card) {
     border-color: var(--workspace-border);
     border-radius: 18px;
     background-color: var(--workspace-surface);
@@ -177,8 +177,8 @@
 
   .app-shell :is(.search-field, .date-filter, .employee-search),
   .app-shell :is(.modal-panel, .evaluation-field, .suggestion-form, .suggestion-reply,
-    .knowledge-filters, .question-editor, .selection-editor, .selection-inline-form)
-    :is(input:not([type="radio"]):not([type="checkbox"]), select, textarea) {
+    .knowledge-filters, .question-editor, .selection-editor, .selection-inline-form, .profile-card)
+    :is(input:not([type="radio"]):not([type="checkbox"]):not([type="file"]), select, textarea) {
     border: 1px solid var(--workspace-border);
     border-radius: 10px;
     background: var(--workspace-soft);
@@ -412,15 +412,15 @@
   .app-shell .topbar { box-shadow: none; }
   .app-shell :is(.panel-card, .records-section, .table-frame, .summary-strip,
     .evaluation-panel, .evaluation-detail, .knowledge-panel, .knowledge-history,
-    .knowledge-kpi, .suggestion-form-card, .suggestion-card, .modal-panel) {
+    .knowledge-kpi, .suggestion-form-card, .suggestion-card, .modal-panel, .profile-card) {
     border-radius: 8px;
     box-shadow: none;
   }
   .app-shell :is(.button, .details-button, .icon-button),
   .app-shell :is(.search-field, .date-filter, .employee-search),
   .app-shell :is(.modal-panel, .evaluation-field, .suggestion-form, .suggestion-reply,
-    .knowledge-filters, .question-editor, .selection-editor, .selection-inline-form)
-    :is(input:not([type="radio"]):not([type="checkbox"]), select, textarea) {
+    .knowledge-filters, .question-editor, .selection-editor, .selection-inline-form, .profile-card)
+    :is(input:not([type="radio"]):not([type="checkbox"]):not([type="file"]), select, textarea) {
     border-radius: 6px;
   }
   .app-shell .table-scroll { overscroll-behavior-x: contain; }

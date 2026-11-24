@@ -1,4 +1,5 @@
 const express = require('express');
+const multer = require('multer');
 const {
   verificarToken,
   permitirRoles,
@@ -15,6 +16,9 @@ const {
   obtenerEmpleadosAdministracion,
   obtenerEmpleadoAdministracion,
   obtenerDetalleEmpleado,
+  actualizarFichaEmpleado,
+  subirCurriculumEmpleado,
+  descargarCurriculumEmpleado,
   obtenerPuestos,
   registrarPuesto,
   actualizarPuesto,
@@ -28,6 +32,23 @@ const {
 } = require('../controllers/rrhhController');
 
 const router = express.Router();
+const cargarCurriculum = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+}).single('curriculum');
+
+function validarCargaCurriculum(req, res, next) {
+  cargarCurriculum(req, res, (error) => {
+    if (error instanceof multer.MulterError) {
+      const mensaje = error.code === 'LIMIT_FILE_SIZE'
+        ? 'El currículum no puede superar 5 MB.'
+        : 'Adjunta un solo archivo PDF como currículum.';
+      return res.status(400).json({ mensaje });
+    }
+    if (error) return next(error);
+    return next();
+  });
+}
 
 router.use(verificarToken, permitirRoles(2, 3, 'ADMIN'));
 router.get('/asistencias', obtenerTodasAsistencias);
@@ -37,6 +58,14 @@ router.put('/horas-extras/:id/rechazar', permitirRrhhOGerente, rechazarHorasExtr
 router.get('/empleados', obtenerEmpleadosActivos);
 router.get('/administracion/empleados', permitirRoles('ADMIN'), obtenerEmpleadosAdministracion);
 router.get('/administracion/empleados/:id/detalle', permitirRoles('ADMIN'), obtenerDetalleEmpleado);
+router.put('/administracion/empleados/:id/ficha', permitirRoles('ADMIN'), actualizarFichaEmpleado);
+router.get('/administracion/empleados/:id/curriculum', permitirRoles('ADMIN'), descargarCurriculumEmpleado);
+router.put(
+  '/administracion/empleados/:id/curriculum',
+  permitirRoles('ADMIN'),
+  validarCargaCurriculum,
+  subirCurriculumEmpleado
+);
 router.get('/administracion/empleados/:id', permitirRoles('ADMIN'), obtenerEmpleadoAdministracion);
 router.get('/administracion/puestos', permitirRoles('ADMIN'), obtenerPuestos);
 router.post(

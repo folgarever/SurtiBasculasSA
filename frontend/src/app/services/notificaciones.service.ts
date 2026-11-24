@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { catchError, forkJoin, of } from 'rxjs';
 import { AuthService } from './auth.service';
 import { DashboardAdmin, DashboardService } from './dashboard.service';
+import { EmpleadoAdministracion, RrhhService } from './rrhh.service';
 import {
   EvaluacionConocimiento,
   EvaluacionesConocimientoService,
@@ -20,7 +21,7 @@ import {
   sugerenciaRespondida,
 } from './sugerencias.service';
 
-export type TipoNotificacion = 'sugerencia' | 'evaluacion' | 'seleccion';
+export type TipoNotificacion = 'sugerencia' | 'evaluacion' | 'seleccion' | 'empleado';
 
 export interface NotificacionItem {
   id: string;
@@ -51,6 +52,7 @@ export class NotificacionesService {
   private readonly conocimiento = inject(EvaluacionesConocimientoService);
   private readonly seleccion = inject(EvaluacionesSeleccionService);
   private readonly dashboard = inject(DashboardService);
+  private readonly rrhh = inject(RrhhService);
 
   private claveVistas = 'surtibasculas_notificaciones_vistas:anonimo';
   private readonly vistas = signal<Record<string, string>>({});
@@ -87,8 +89,9 @@ export class NotificacionesService {
         sugerencias: this.sugerencias.obtenerTodas()
           .pipe(catchError(() => of({ sugerencias: [] as Sugerencia[] }))),
         resumen: this.dashboard.obtenerResumenAdmin().pipe(catchError(() => of(null))),
-      }).subscribe(({ sugerencias, resumen }) => {
-        this._items.set(this.itemsAdmin(sugerencias.sugerencias, resumen));
+        empleados: this.rrhh.obtenerEmpleadosAdministracion().pipe(catchError(() => of(null))),
+      }).subscribe(({ sugerencias, resumen, empleados }) => {
+        this._items.set(this.itemsAdmin(sugerencias?.sugerencias ?? [], resumen, empleados?.empleados ?? []));
         this._cargando.set(false);
       });
       return;
@@ -164,9 +167,26 @@ export class NotificacionesService {
     return items;
   }
 
-  private itemsAdmin(sugerencias: Sugerencia[], resumen: DashboardAdmin | null): NotificacionItem[] {
+  private itemsAdmin(
+    sugerencias: Sugerencia[],
+    resumen: DashboardAdmin | null,
+    empleados: EmpleadoAdministracion[] = [],
+  ): NotificacionItem[] {
     const items: NotificacionItem[] = [];
     const pendientes = sugerencias.filter((sugerencia) => !sugerenciaRespondida(sugerencia));
+    const fichasIncompletas = empleados.filter((empleado) => empleado.activo && !empleado.ficha_completa);
+
+    if (fichasIncompletas.length) {
+      const cantidad = fichasIncompletas.length;
+      items.push({
+        id: 'fichas-incompletas',
+        titulo: 'Fichas de personal por completar',
+        detalle: `${cantidad} ${cantidad === 1 ? 'empleado activo necesita' : 'empleados activos necesitan'} DPI, contacto, fecha de ingreso o currículum`,
+        ruta: cantidad === 1 ? `/admin/empleados/${fichasIncompletas[0].id}` : '/admin/empleados',
+        marcador: fichasIncompletas.map((empleado) => empleado.id).sort((a, b) => a - b).join(','),
+        tipo: 'empleado',
+      });
+    }
 
     if (pendientes.length) {
       items.push({

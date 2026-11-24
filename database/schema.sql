@@ -73,6 +73,25 @@ INSERT INTO empleados (codigo_empleado, nombre, password_hash, rol_id, puesto_id
     ('SUR-AUXTEC-009', 'Marvin', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXTEC'), 1, 1),
     ('SUR-AUXTEC-010', 'Eddy', '$2b$10$Agx1aYuJzHgrNUR3mKrwmufuSp6A78m.mo4ClxF3Otx5P5Hd88v4S', (SELECT id FROM roles WHERE nombre='Empleado'), (SELECT id FROM puestos WHERE codigo_abreviatura='AUXTEC'), 1, 1);
 
+-- Ficha de personal (datos operativos y currículum). Ver migración 2026-11-24.
+CREATE TABLE empleados_ficha (
+    empleado_id INT NOT NULL PRIMARY KEY,
+    nombre_completo VARCHAR(150) NULL,
+    dpi CHAR(13) NULL,
+    fecha_nacimiento DATE NULL,
+    correo VARCHAR(120) NULL,
+    telefono VARCHAR(20) NULL,
+    fecha_ingreso DATE NULL,
+    cv_nombre VARCHAR(150) NULL,
+    cv_contenido LONGBLOB NULL,
+    cv_actualizado_en TIMESTAMP NULL,
+    actualizado_por INT NULL,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_empleados_ficha_dpi (dpi),
+    FOREIGN KEY (empleado_id) REFERENCES empleados(id) ON DELETE CASCADE,
+    FOREIGN KEY (actualizado_por) REFERENCES empleados(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
 CREATE TABLE marcaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     empleado_id INT NOT NULL,

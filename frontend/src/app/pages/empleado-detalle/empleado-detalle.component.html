@@ -39,6 +39,91 @@
       <span class="state-pill" [class.state-good]="datos.empleado.activo" [class.state-warn]="!datos.empleado.activo">{{ datos.empleado.activo ? 'Activo' : 'Inactivo' }}</span>
     </section>
 
+    <section class="profile-card" aria-labelledby="ficha-titulo">
+      <div class="profile-card-header">
+        <div>
+          <p class="eyebrow">DATOS PERSONALES</p>
+          <h2 id="ficha-titulo">Ficha del empleado</h2>
+        </div>
+        <div class="profile-progress" [class.is-complete]="progresoFicha().completos === progresoFicha().total">
+          <strong>{{ progresoFicha().completos }} de {{ progresoFicha().total }}</strong>
+          <span>datos completados</span>
+          <div class="profile-progress-bar" aria-hidden="true"><span [style.width.%]="(progresoFicha().completos / progresoFicha().total) * 100"></span></div>
+        </div>
+      </div>
+
+      @if (avisoFicha(); as aviso) {
+        <div class="alert" [class.alert-success]="aviso.tipo === 'success'" [class.alert-error]="aviso.tipo === 'error'" [attr.role]="aviso.tipo === 'error' ? 'alert' : 'status'">{{ aviso.texto }} <button type="button" aria-label="Cerrar aviso" (click)="avisoFicha.set(null)">×</button></div>
+      }
+
+      <form class="profile-grid" [formGroup]="formularioFicha" (ngSubmit)="guardarFicha()" novalidate>
+        <div class="profile-field profile-field-wide">
+          <label for="ficha-nombre">Nombre completo</label>
+          <input id="ficha-nombre" type="text" formControlName="nombre_completo" autocomplete="off" maxlength="150" placeholder="Nombres y apellidos como aparecen en su DPI">
+          @if (formularioFicha.controls.nombre_completo.touched && formularioFicha.controls.nombre_completo.invalid) { <span class="field-error">Ingresa entre 2 y 150 caracteres.</span> }
+        </div>
+
+        <div class="profile-field">
+          <label for="ficha-dpi">Número de DPI</label>
+          <input id="ficha-dpi" type="text" inputmode="numeric" formControlName="dpi" autocomplete="off" maxlength="17" placeholder="13 dígitos">
+          @if (formularioFicha.controls.dpi.touched && formularioFicha.controls.dpi.invalid) { <span class="field-error">El DPI debe tener 13 dígitos.</span> }
+        </div>
+
+        <div class="profile-field">
+          <label for="ficha-nacimiento">Fecha de nacimiento</label>
+          <input id="ficha-nacimiento" type="date" formControlName="fecha_nacimiento" [max]="hoy">
+          <span class="helper-text profile-age">
+            @if (edad(); as anios) { Edad: <strong>{{ anios }} {{ anios === 1 ? 'año' : 'años' }}</strong> } @else { La edad se calcula con esta fecha. }
+          </span>
+        </div>
+
+        <div class="profile-field">
+          <label for="ficha-correo">Correo electrónico</label>
+          <input id="ficha-correo" type="email" formControlName="correo" autocomplete="off" maxlength="120" placeholder="nombre@correo.com">
+          @if (formularioFicha.controls.correo.touched && formularioFicha.controls.correo.invalid) { <span class="field-error">Ingresa un correo válido.</span> }
+        </div>
+
+        <div class="profile-field">
+          <label for="ficha-telefono">Teléfono</label>
+          <input id="ficha-telefono" type="tel" formControlName="telefono" autocomplete="off" maxlength="20" placeholder="5555-1234">
+          @if (formularioFicha.controls.telefono.touched && formularioFicha.controls.telefono.invalid) { <span class="field-error">El teléfono debe tener entre 8 y 15 dígitos.</span> }
+        </div>
+
+        <div class="profile-field">
+          <label for="ficha-ingreso">Fecha de ingreso a la empresa</label>
+          <input id="ficha-ingreso" type="date" formControlName="fecha_ingreso" [max]="hoy">
+        </div>
+
+        <div class="profile-actions">
+          <button class="button button-accent" type="submit" [disabled]="guardandoFicha()"><ng-icon name="lucideSave" size="16" /> {{ guardandoFicha() ? 'Guardando…' : 'Guardar datos' }}</button>
+          @if (formularioFicha.dirty) { <span class="helper-text">Hay cambios sin guardar.</span> }
+        </div>
+      </form>
+
+      <div class="profile-cv">
+        <div class="profile-cv-icon" aria-hidden="true"><ng-icon name="lucideFileText" size="22" /></div>
+        <div class="profile-cv-info">
+          <strong>Currículum vitae</strong>
+          @if (datos.ficha.cv_nombre) {
+            <span>{{ datos.ficha.cv_nombre }}</span>
+            <small>Actualizado el {{ formatoFecha(datos.ficha.cv_actualizado_en) }}</small>
+          } @else {
+            <span>Aún no se ha cargado un currículum.</span>
+            <small>Solo se aceptan archivos PDF de hasta 5 MB.</small>
+          }
+        </div>
+        <div class="profile-cv-actions">
+          @if (datos.ficha.cv_nombre) {
+            <button class="button button-outline" type="button" (click)="descargarCurriculum()"><ng-icon name="lucideDownload" size="16" /> Descargar</button>
+          }
+          <label class="button button-outline profile-upload" [class.is-disabled]="subiendoCv()" for="ficha-cv">
+            <ng-icon name="lucideUpload" size="16" /> {{ subiendoCv() ? 'Subiendo…' : datos.ficha.cv_nombre ? 'Reemplazar PDF' : 'Subir PDF' }}
+          </label>
+          <input id="ficha-cv" class="profile-file-input" type="file" accept="application/pdf,.pdf" [disabled]="subiendoCv()" (change)="seleccionarCurriculum($event)">
+        </div>
+      </div>
+    </section>
+
     <section class="summary-strip">
       <div class="summary-metric"><span class="summary-number">{{ datos.indicadores.puntualidad_30d }}%</span><span class="summary-label">PUNTUALIDAD 30 DÍAS</span></div>
       <div class="summary-metric"><span class="summary-number">{{ datos.indicadores.dias_registrados_30d }}</span><span class="summary-label">DÍAS REGISTRADOS</span></div>
