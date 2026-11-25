@@ -81,6 +81,8 @@ El panel agrupa el resumen diario, los pendientes y el detalle de asistencia; el
 
 `GET /api/health` verifica la conexión a MySQL y responde `{ "estado": "ok", "base_de_datos": "ok" }`. Si la base de datos falla, devuelve `500` con `estado: "error"`; es el primer endpoint a revisar cuando el login responde «Error interno del servidor».
 
+En Vercel, el pool de MySQL permite hasta cuatro conexiones por instancia y cierra conexiones inactivas después de cinco segundos. `@vercel/functions` mantiene activa la instancia durante ese cierre en Fluid Compute. El límite es por instancia, no global: si persiste `Too many connections`, revisa también las conexiones de otras aplicaciones, la concurrencia y el límite de conexiones del proveedor de MySQL.
+
 ## Nómina inicial
 
 | Código | Nombre | Cargo | Acceso |

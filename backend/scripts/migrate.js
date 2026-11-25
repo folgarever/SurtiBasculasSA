@@ -221,6 +221,8 @@ async function ejecutar(argumentos = process.argv.slice(2)) {
   const configuracionConexion = { ...pool.obtenerConfiguracion() };
   delete configuracionConexion.waitForConnections;
   delete configuracionConexion.connectionLimit;
+  delete configuracionConexion.maxIdle;
+  delete configuracionConexion.idleTimeout;
   delete configuracionConexion.queueLimit;
   const connection = await mysql.createConnection({
     ...configuracionConexion,

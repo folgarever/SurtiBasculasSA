@@ -1,6 +1,9 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 
 const mysql = require('mysql2/promise');
+const { attachDatabasePool } = require('@vercel/functions');
+
+const TIEMPO_INACTIVIDAD_VERCEL = 5000;
 
 function obtenerConfiguracion(entorno = process.env) {
   const host = String(entorno.DB_HOST || '').toLowerCase();
@@ -24,6 +27,12 @@ function obtenerConfiguracion(entorno = process.env) {
     dateStrings: true,
   };
 
+  if (entorno.VERCEL === '1') {
+    configuracion.connectionLimit = 4;
+    configuracion.maxIdle = 1;
+    configuracion.idleTimeout = TIEMPO_INACTIVIDAD_VERCEL;
+  }
+
   if (usarSsl) {
     configuracion.ssl = { rejectUnauthorized: verificarCertificado };
   }
@@ -32,6 +41,14 @@ function obtenerConfiguracion(entorno = process.env) {
 }
 
 const pool = mysql.createPool(obtenerConfiguracion());
+
+if (process.env.VERCEL === '1') {
+  // mysql2 comprueba conexiones inactivas una vez por segundo.
+  attachDatabasePool({
+    on: pool.on.bind(pool),
+    config: { idleTimeout: TIEMPO_INACTIVIDAD_VERCEL + 1000 },
+  });
+}
 
 module.exports = pool;
 module.exports.obtenerConfiguracion = obtenerConfiguracion;
