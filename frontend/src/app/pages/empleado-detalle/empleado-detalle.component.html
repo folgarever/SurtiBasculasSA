@@ -137,20 +137,30 @@
         <div class="profile-documents-header">
           <div><strong id="documentos-titulo">Documentos del empleado</strong><small>Copia de DPI, contrato, antecedentes u otros. Solo PDF de hasta 5 MB.</small></div>
           <div class="profile-documents-upload">
-            <select aria-label="Tipo de documento" [value]="tipoDocumento()" (change)="tipoDocumento.set($any($event.target).value)">
-              @for (tipo of tiposDocumento; track tipo.valor) { <option [value]="tipo.valor">{{ tipo.etiqueta }}</option> }
-            </select>
+            <div class="profile-field">
+              <label for="tipo-documento">Tipo de documento</label>
+              <select id="tipo-documento" aria-label="Tipo de documento" [value]="tipoDocumento()" (change)="tipoDocumento.set($any($event.target).value)">
+                @for (tipo of tiposDocumento; track tipo.valor) { <option [value]="tipo.valor">{{ tipo.etiqueta }}</option> }
+              </select>
+            </div>
             @if (tipoDocumento() === 'otro') {
-              <input
-                type="text"
-                aria-label="Nombre del documento"
-                placeholder="Nombre del documento"
-                maxlength="150"
-                [value]="nombreDocumentoOtro()"
-                (input)="nombreDocumentoOtro.set($any($event.target).value)"
-              >
+              <div class="profile-field">
+                <label for="nombre-documento-otro">Nombre del documento</label>
+                <input
+                  id="nombre-documento-otro"
+                  type="text"
+                  aria-label="Nombre del documento"
+                  placeholder="Escribe el nombre"
+                  maxlength="150"
+                  [value]="nombreDocumentoOtro()"
+                  (input)="nombreDocumentoOtro.set($any($event.target).value)"
+                >
+              </div>
             }
-            <input type="date" aria-label="Fecha de vencimiento (opcional)" [value]="vencimientoDocumento()" (input)="vencimientoDocumento.set($any($event.target).value)">
+            <div class="profile-field">
+              <label for="fecha-vencimiento-documento">Fecha de vencimiento</label>
+              <input id="fecha-vencimiento-documento" type="date" aria-label="Fecha de vencimiento (opcional)" [value]="vencimientoDocumento()" (input)="vencimientoDocumento.set($any($event.target).value)">
+            </div>
             <label class="button button-outline profile-upload" [class.is-disabled]="subiendoDocumento() || (tipoDocumento() === 'otro' && !nombreDocumentoOtro().trim())" for="documento-archivo">
               <ng-icon name="lucideUpload" size="16" /> {{ subiendoDocumento() ? 'Subiendo…' : 'Subir documento' }}
             </label>
