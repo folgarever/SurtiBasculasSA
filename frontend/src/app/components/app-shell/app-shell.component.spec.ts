@@ -68,6 +68,13 @@ describe('AppShellComponent', () => {
     expect(menu).not.toContain('Mis solicitudes');
   });
 
+  it('no repite el título de módulos en el menú administrativo', () => {
+    auth.hasAdminRole.mockReturnValue(true);
+    const root = crear().nativeElement as HTMLElement;
+
+    expect(root.querySelector('.sidebar-caption')).toBeNull();
+  });
+
   it('mantiene el menú de empleado aunque la página solicite el menú ADMIN', () => {
     auth.hasAdminRole.mockReturnValue(false);
     const menu = enlaces(crear());

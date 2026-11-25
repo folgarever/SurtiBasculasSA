@@ -2,7 +2,9 @@
   <a class="skip-link" href="#contenido-principal" (click)="saltarAlContenido($event)">Saltar al contenido</a>
   <aside class="app-sidebar">
     <a class="sidebar-brand" [routerLink]="esAdmin ? '/admin' : inicio"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
-    <span class="sidebar-caption">{{ caption }}</span>
+    @if (!esAdmin) {
+      <span class="sidebar-caption">{{ caption }}</span>
+    }
     <nav class="sidebar-nav" aria-label="Navegación principal">
       @if (esAdmin) {
         @for (seccion of seccionesAdmin; track seccion.label) {
