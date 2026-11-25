@@ -15,7 +15,7 @@ import {
 import { AuthService } from '../../services/auth.service';
 import { NotificacionesComponent } from '../notificaciones/notificaciones.component';
 import { SelectorTemaComponent } from '../selector-tema/selector-tema.component';
-import { NavItem } from './nav-items';
+import { NavItem, obtenerNavegacion } from './nav-items';
 
 @Component({
   selector: 'app-shell',
@@ -36,6 +36,7 @@ import { NavItem } from './nav-items';
 export class AppShellComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  protected readonly navegacion = obtenerNavegacion(this.auth.hasAdminRole());
 
   @Input() inicio = '/dashboard';
   @Input() caption = 'ESPACIO DE TRABAJO';

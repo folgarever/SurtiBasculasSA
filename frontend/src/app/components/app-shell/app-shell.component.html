@@ -4,7 +4,7 @@
     <a class="sidebar-brand" [routerLink]="inicio"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
     <span class="sidebar-caption">{{ caption }}</span>
     <nav class="sidebar-nav" aria-label="Navegación principal">
-      @for (item of items; track item.route) {
+      @for (item of navegacion.items; track item.route) {
         @if (visible(item)) {
           <a class="sidebar-link" [class.is-active]="esActivo(item.route)" [attr.aria-current]="esActivo(item.route) ? 'page' : null" [routerLink]="item.route">
             @if (item.icon) { <ng-icon [name]="item.icon" size="18" /> }
@@ -13,7 +13,7 @@
         }
       }
     </nav>
-    @for (item of bottomItems; track item.route) {
+    @for (item of navegacion.bottomItems; track item.route) {
       @if (visible(item)) {
         <a class="sidebar-link sidebar-bottom-link" [class.is-active]="bottomActive === item.route && esActivo(item.route)" [attr.aria-current]="bottomActive === item.route && esActivo(item.route) ? 'page' : null" [routerLink]="item.route">
           @if (item.icon) { <ng-icon [name]="item.icon" size="18" /> }

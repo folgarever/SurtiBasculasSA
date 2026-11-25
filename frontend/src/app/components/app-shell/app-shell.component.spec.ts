@@ -57,12 +57,29 @@ describe('AppShellComponent', () => {
       .map((enlace) => enlace.textContent?.trim() ?? '');
   }
 
+  it('mantiene el menú ADMIN aunque la página solicite el menú de empleado', () => {
+    auth.hasAdminRole.mockReturnValue(true);
+    const menu = enlaces(crear());
+
+    expect(menu).toContain('Empleados');
+    expect(menu).toContain('Solicitudes');
+    expect(menu).not.toContain('Mis solicitudes');
+  });
+
+  it('mantiene el menú de empleado aunque la página solicite el menú ADMIN', () => {
+    auth.hasAdminRole.mockReturnValue(false);
+    const menu = enlaces(crear());
+
+    expect(menu).toContain('Mis solicitudes');
+    expect(menu).not.toContain('Empleados');
+  });
+
   it('oculta los módulos de evaluación cuando el rol no los permite', () => {
     auth.hasEvaluationRole.mockReturnValue(true);
-    expect(enlaces(crear())).toContain('Evaluación de personal');
+    expect(enlaces(crear())).toContain('Evaluaciones');
 
     auth.hasEvaluationRole.mockReturnValue(false);
-    expect(enlaces(crear())).not.toContain('Evaluación de personal');
+    expect(enlaces(crear())).not.toContain('Evaluaciones');
   });
 
   it('muestra el foro correcto según el rol', () => {
