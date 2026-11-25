@@ -9,6 +9,7 @@ import { NAV_ADMIN, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from './nav-items'
 describe('AppShellComponent', () => {
   const auth = {
     hasAdminRole: vi.fn(),
+    esGerenteGeneral: vi.fn(),
     hasRrhhRole: vi.fn(),
     hasEvaluationRole: vi.fn(),
     isCandidate: vi.fn(),
@@ -18,6 +19,7 @@ describe('AppShellComponent', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     auth.hasAdminRole.mockReturnValue(false);
+    auth.esGerenteGeneral.mockReturnValue(false);
     auth.hasRrhhRole.mockReturnValue(false);
     auth.hasEvaluationRole.mockReturnValue(false);
     auth.isCandidate.mockReturnValue(false);
@@ -83,6 +85,42 @@ describe('AppShellComponent', () => {
     expect(enlaces(crear())).not.toContain('Evaluaciones');
   });
 
+  it('prioriza el espacio personal para administradores que son empleados', () => {
+    auth.hasAdminRole.mockReturnValue(true);
+    auth.hasEvaluationRole.mockReturnValue(false);
+    const root = crear().nativeElement as HTMLElement;
+    const secciones = Array.from(root.querySelectorAll('.sidebar-section'))
+      .map((seccion) => seccion.getAttribute('aria-label'));
+
+    expect(secciones).toEqual(['Inicio', 'Mi espacio', 'Gestión de personal', 'Comunicación']);
+    expect(root.querySelector('[href="/evaluaciones-conocimiento"]')?.textContent).toContain('Mi evaluación');
+    expect(root.querySelector('[href="/admin/evaluaciones-conocimiento"]')).toBeNull();
+    expect(root.querySelector('[href="/solicitudes"]')).not.toBeNull();
+  });
+
+  it('prioriza la gestión para el Gerente General y conserva sus accesos personales', () => {
+    auth.hasAdminRole.mockReturnValue(true);
+    auth.esGerenteGeneral.mockReturnValue(true);
+    auth.hasEvaluationRole.mockReturnValue(true);
+    const root = crear().nativeElement as HTMLElement;
+    const secciones = Array.from(root.querySelectorAll('.sidebar-section'))
+      .map((seccion) => seccion.getAttribute('aria-label'));
+
+    expect(secciones).toEqual(['Inicio', 'Gestión de personal', 'Evaluación y selección', 'Comunicación', 'Mi espacio']);
+    expect(root.querySelector('[href="/admin/evaluaciones-conocimiento"]')).not.toBeNull();
+    expect(root.querySelector('[href="/dashboard"]')).not.toBeNull();
+  });
+
+  it('conserva los módulos de evaluación para un administrador autorizado que no es gerente', () => {
+    auth.hasAdminRole.mockReturnValue(true);
+    auth.hasEvaluationRole.mockReturnValue(true);
+    const root = crear().nativeElement as HTMLElement;
+
+    expect(root.querySelector('[aria-label="Evaluación y selección"]')).not.toBeNull();
+    expect(root.querySelector('[href="/admin/evaluaciones-seleccion"]')).not.toBeNull();
+    expect(root.querySelector('[href="/evaluaciones-conocimiento"]')).not.toBeNull();
+  });
+
   it('muestra el foro correcto según el rol', () => {
     auth.hasAdminRole.mockReturnValue(true);
     expect(enlaces(crear())).toContain('Sugerencias');
@@ -98,13 +136,13 @@ describe('AppShellComponent', () => {
     expect(auth.logout).toHaveBeenCalledOnce();
   });
 
-  it('solo marca el enlace inferior como activo en su propia ruta', () => {
+  it('marca sugerencias como activa solo en su propia ruta', () => {
     auth.hasAdminRole.mockReturnValue(true);
     const url = vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/admin');
     const fixture = crear();
     fixture.componentRef.setInput('bottomActive', SUGERENCIAS_ADMIN.route);
     fixture.detectChanges();
-    const enlace = fixture.nativeElement.querySelector('.sidebar-bottom-link') as HTMLAnchorElement;
+    const enlace = fixture.nativeElement.querySelector('a[href="/admin/sugerencias"]') as HTMLAnchorElement;
     expect(enlace.classList.contains('is-active')).toBe(false);
     expect(enlace.getAttribute('aria-current')).toBeNull();
 
@@ -112,8 +150,16 @@ describe('AppShellComponent', () => {
     const activo = crear();
     activo.componentRef.setInput('bottomActive', SUGERENCIAS_ADMIN.route);
     activo.detectChanges();
-    const enlaceActivo = activo.nativeElement.querySelector('.sidebar-bottom-link') as HTMLAnchorElement;
+    const enlaceActivo = activo.nativeElement.querySelector('a[href="/admin/sugerencias"]') as HTMLAnchorElement;
     expect(enlaceActivo.classList.contains('is-active')).toBe(true);
     expect(enlaceActivo.getAttribute('aria-current')).toBe('page');
+  });
+
+  it('mantiene activo Empleados al consultar una ficha', () => {
+    auth.hasAdminRole.mockReturnValue(true);
+    vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/admin/empleados/7?tab=datos');
+    const root = crear().nativeElement as HTMLElement;
+    expect(root.querySelector('a[href="/admin/empleados"]')?.getAttribute('aria-current')).toBe('page');
+    expect(root.querySelector('a[href="/admin"]')?.getAttribute('aria-current')).toBeNull();
   });
 });

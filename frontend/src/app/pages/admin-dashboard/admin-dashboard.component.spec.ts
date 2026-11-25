@@ -62,6 +62,7 @@ describe('AdminDashboardComponent', () => {
                   getUsuario: () => ({ nombre: 'Héctor', rol: 'ADMIN' }),
           hasEvaluationRole: () => true,
           hasAdminRole: () => true,
+          esGerenteGeneral: () => true,
         } },
         {
           provide: NotificacionesService,
@@ -101,6 +102,8 @@ describe('AdminDashboardComponent', () => {
     expect((fixture.nativeElement.querySelector('.kpi-ring') as HTMLElement | null)?.getAttribute('aria-label')).toContain('80%');
     expect(fixture.nativeElement.querySelector('.goal-strip')?.textContent).toContain('META DEL DÍA');
     expect(fixture.nativeElement.querySelector('.sparkline polyline')?.getAttribute('points')).toContain(',');
+    expect(fixture.nativeElement.querySelector('.module-grid a[href="/solicitudes"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.module-grid a[href="/admin/sugerencias"]')).not.toBeNull();
     expect(fixture.componentInstance.resumen()?.puntualidad_hoy).toBe(80);
   });
 

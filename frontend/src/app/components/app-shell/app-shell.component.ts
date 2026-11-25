@@ -15,7 +15,7 @@ import {
 import { AuthService } from '../../services/auth.service';
 import { NotificacionesComponent } from '../notificaciones/notificaciones.component';
 import { SelectorTemaComponent } from '../selector-tema/selector-tema.component';
-import { NavItem, obtenerNavegacion } from './nav-items';
+import { NavItem, obtenerNavegacion, obtenerSeccionesAdmin } from './nav-items';
 
 @Component({
   selector: 'app-shell',
@@ -36,7 +36,13 @@ import { NavItem, obtenerNavegacion } from './nav-items';
 export class AppShellComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  protected readonly navegacion = obtenerNavegacion(this.auth.hasAdminRole());
+  protected readonly esAdmin = this.auth.hasAdminRole();
+  protected readonly navegacion = obtenerNavegacion(this.esAdmin);
+  protected readonly seccionesAdmin = this.esAdmin
+    ? obtenerSeccionesAdmin(this.auth.esGerenteGeneral())
+        .map((seccion) => ({ ...seccion, items: seccion.items.filter((item) => this.visible(item)) }))
+        .filter((seccion) => seccion.items.length > 0)
+    : [];
 
   @Input() inicio = '/dashboard';
   @Input() caption = 'ESPACIO DE TRABAJO';
@@ -73,6 +79,7 @@ export class AppShellComponent {
   }
 
   protected esActivo(route: string): boolean {
-    return this.router.url === route;
+    const url = this.router.url.split(/[?#]/, 1)[0];
+    return url === route || (route === '/admin/empleados' && url.startsWith(`${route}/`));
   }
 }

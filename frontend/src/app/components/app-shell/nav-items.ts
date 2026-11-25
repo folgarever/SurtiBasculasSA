@@ -7,6 +7,11 @@ export interface NavItem {
   visible?: NavVisibility;
 }
 
+export interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
 export const NAV_ADMIN: NavItem[] = [
   { label: 'Dashboard', route: '/admin', icon: 'lucideLayoutDashboard' },
   { label: 'Mi jornada', route: '/dashboard', icon: 'lucideClipboardCheck' },
@@ -16,6 +21,7 @@ export const NAV_ADMIN: NavItem[] = [
   { label: 'Evaluación de personal', route: '/evaluaciones', icon: 'lucideUserRoundCog', visible: 'evaluation' },
   { label: 'Evaluaciones de conocimiento', route: '/admin/evaluaciones-conocimiento', icon: 'lucideClipboardCheck', visible: 'evaluation' },
   { label: 'Pruebas de selección', route: '/admin/evaluaciones-seleccion', icon: 'lucideClipboardCheck', visible: 'evaluation' },
+  { label: 'Mi evaluación de conocimiento', route: '/evaluaciones-conocimiento', icon: 'lucideClipboardCheck' },
 ];
 
 export const NAV_EMPLEADO: NavItem[] = [
@@ -45,4 +51,17 @@ export function obtenerNavegacion(esAdmin: boolean): { items: NavItem[]; bottomI
   return esAdmin
     ? { items: NAV_ADMIN, bottomItems: [SUGERENCIAS_ADMIN] }
     : { items: NAV_EMPLEADO, bottomItems: [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO] };
+}
+
+export function obtenerSeccionesAdmin(esGerenteGeneral: boolean): NavSection[] {
+  const porRuta = (rutas: string[]) => NAV_ADMIN.filter((item) => rutas.includes(item.route));
+  const inicio = { label: 'Inicio', items: porRuta(['/admin']) };
+  const personal = { label: 'Mi espacio', items: porRuta(['/dashboard', '/evaluaciones-conocimiento']) };
+  const gestion = { label: 'Gestión de personal', items: porRuta(['/admin/empleados', '/rrhh', '/solicitudes']) };
+  const evaluaciones = { label: 'Evaluación y selección', items: porRuta(['/evaluaciones', '/admin/evaluaciones-conocimiento', '/admin/evaluaciones-seleccion']) };
+  const comunicacion = { label: 'Comunicación', items: [SUGERENCIAS_ADMIN] };
+
+  return esGerenteGeneral
+    ? [inicio, gestion, evaluaciones, comunicacion, personal]
+    : [inicio, personal, gestion, evaluaciones, comunicacion];
 }

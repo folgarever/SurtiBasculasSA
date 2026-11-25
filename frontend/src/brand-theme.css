@@ -718,6 +718,9 @@ body { background: var(--color-canvas); color: var(--color-ink); font-size: 14px
 .sidebar-brand small { display: block; margin-top: 4px; color: var(--color-mid-gray); font-size: .61rem; font-weight: 500; letter-spacing: .035em; }
 .sidebar-caption { margin: 25px 10px 9px; color: #8a8f98; font-size: .62rem; font-weight: 700; letter-spacing: .08em; }
 .sidebar-nav { display: grid; gap: 4px; }
+.sidebar-section { display: grid; gap: 4px; }
+.sidebar-section-title { margin: 14px 11px 3px; color: #aab9cc; font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.sidebar-section:first-child .sidebar-section-title { margin-top: 0; }
 .sidebar-link {
   display: flex;
   min-height: 42px;
@@ -1334,16 +1337,6 @@ tbody tr:hover { background: var(--color-surface-alt); }
 .topbar .icon-button { border-radius: var(--radius-2xl); background: var(--color-surface-alt); }
 .topbar .icon-button:hover { background: var(--color-hairline); }
 
-@media (min-width: 761px) {
-  .sidebar-nav:has(> a[href$="/admin/evaluaciones-seleccion"]) {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-  }
-  .sidebar-nav > a[href$="/admin/evaluaciones-seleccion"] { margin-top: auto; }
-  .sidebar-nav:has(> a[href$="/admin/evaluaciones-seleccion"]) ~ .sidebar-bottom-link { margin-top: 0; }
-}
-
 .admin-welcome { padding: 32px 36px; background: var(--color-ink-soft); box-shadow: var(--shadow-card); }
 .admin-welcome::after {
   top: 0;
@@ -1471,6 +1464,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   }
   .sidebar-brand { flex: 0 0 auto; padding: 0 10px 0 0; }
   .sidebar-nav { display: contents; }
+  .sidebar-section { display: contents; }
+  .sidebar-section-title { display: none; }
   .sidebar-link, .sidebar-bottom-link { flex: 0 0 auto; margin: 0; white-space: nowrap; }
   .admin-welcome { padding: 26px 24px; }
   .login-form-side { background: var(--color-canvas); }

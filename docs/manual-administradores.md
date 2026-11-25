@@ -43,15 +43,16 @@ Si intentas abrir una ruta sin permiso, el sistema te devuelve al inicio o muest
 
 ## 2. Estructura de la interfaz
 
-La barra lateral izquierda reúne los módulos disponibles para tu cuenta:
+La barra lateral agrupa los módulos en **Inicio**, **Gestión de personal**, **Evaluación y selección**, **Comunicación** y **Mi espacio**. Para el Gerente General se muestra primero la gestión; para los demás administradores, Mi espacio aparece antes de la gestión. Las secciones y módulos de evaluación administrativa solo aparecen cuando la cuenta tiene permiso.
 
 | Módulo | Ruta | Uso principal |
 |---|---|---|
 | Dashboard | `/admin` | Indicadores del día y actividad reciente |
 | Mi jornada | `/dashboard` | Registro personal de entrada y salida para empleados y ADMIN, excepto `SUR-GG-001` |
+| Mi evaluación de conocimiento | `/evaluaciones-conocimiento` | Consulta y respuesta de la evaluación personal |
 | Empleados | `/admin/empleados` | Directorio de personal, altas, ediciones, bajas y ficha integral |
 | Control de asistencia | `/rrhh` | Marcaciones, incidencias y reportes |
-| Solicitudes | `/solicitudes` | Bandeja compartida para aprobar o rechazar vacaciones y permisos |
+| Solicitudes | `/solicitudes` | Solicitudes propias y bandeja para aprobar o rechazar vacaciones y permisos del personal |
 | Evaluación de personal | `/evaluaciones` | Evaluaciones generales del personal |
 | Evaluaciones de conocimiento | `/admin/evaluaciones-conocimiento` | Frecuencia por puesto, banco por periodo y resultados |
 | Pruebas de selección | `/admin/evaluaciones-seleccion` | Candidatos, plantillas editables y resultados |

@@ -77,7 +77,7 @@ export class EmpleadoDashboardComponent implements OnInit {
     this.actualizarReloj();
     interval(1000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.actualizarReloj());
     this.cargarHistorial();
-    this.cargarRespuestasNuevas();
+    if (!this.esAdmin) this.cargarRespuestasNuevas();
     this.cargarMiEvaluacion();
   }
 

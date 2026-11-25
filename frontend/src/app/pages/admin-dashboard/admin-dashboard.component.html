@@ -238,6 +238,13 @@
           <span class="module-description">Altas, datos de puesto y accesos.</span>
           <span class="module-arrow"><ng-icon name="lucideArrowUpRight" size="16" /></span>
         </a>
+        <a class="module-card" routerLink="/solicitudes">
+          <span class="module-icon"><ng-icon name="lucideCalendarDays" size="22" /></span>
+          <span class="module-eyebrow">PERSONAL</span>
+          <strong>Solicitudes</strong>
+          <span class="module-description">Vacaciones y permisos propios y del personal.</span>
+          <span class="module-arrow"><ng-icon name="lucideArrowUpRight" size="16" /></span>
+        </a>
         @if (puedeEvaluar) {
           <a class="module-card module-evaluations" routerLink="/evaluaciones">
             <span class="module-icon"><ng-icon name="lucideUserRoundCog" size="22" /></span>
@@ -261,6 +268,13 @@
             <span class="module-arrow"><ng-icon name="lucideArrowUpRight" size="16" /></span>
           </a>
         }
+        <a class="module-card" routerLink="/admin/sugerencias">
+          <span class="module-icon"><ng-icon name="lucideMessageSquare" size="22" /></span>
+          <span class="module-eyebrow">COMUNICACIÓN</span>
+          <strong>Sugerencias</strong>
+          <span class="module-description">Consulta y responde las sugerencias del personal.</span>
+          <span class="module-arrow"><ng-icon name="lucideArrowUpRight" size="16" /></span>
+        </a>
       </div>
     </section>
   }

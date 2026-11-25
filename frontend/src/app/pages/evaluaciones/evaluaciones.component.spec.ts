@@ -21,6 +21,7 @@ describe('EvaluacionesComponent', () => {
           useValue: {
             getUsuario: () => null,
             hasAdminRole: () => true,
+            esGerenteGeneral: () => false,
             hasRrhhRole: () => true,
             hasEvaluationRole: () => true,
             isCandidate: () => false,
