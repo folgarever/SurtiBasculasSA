@@ -70,7 +70,8 @@ describe('AppShellComponent', () => {
     auth.hasAdminRole.mockReturnValue(false);
     const menu = enlaces(crear());
 
-    expect(menu).toContain('Mis solicitudes');
+    expect(menu).not.toContain('Mis solicitudes');
+    expect(menu).toContain('Mi jornada');
     expect(menu).not.toContain('Empleados');
   });
 

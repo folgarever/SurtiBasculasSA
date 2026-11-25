@@ -12,6 +12,7 @@ describe('obtenerNavegacion', () => {
     const navegacion = obtenerNavegacion(false);
 
     expect(navegacion.items).toBe(NAV_EMPLEADO);
+    expect(navegacion.items.some((item) => item.route === '/solicitudes')).toBe(false);
     expect(navegacion.bottomItems).toEqual([SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO]);
   });
 });

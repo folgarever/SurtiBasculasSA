@@ -7,6 +7,7 @@ import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideArrowRight,
+  lucideCalendarDays,
   lucideClipboardCheck,
   lucideLayoutDashboard,
   lucideLightbulb,
@@ -31,6 +32,7 @@ import { contarRespuestasNuevas, leerRespuestasVistas, SugerenciasService } from
   imports: [AppShellComponent, NgIcon, RouterLink],
   providers: [provideIcons({
     lucideArrowRight,
+    lucideCalendarDays,
     lucideClipboardCheck,
     lucideLayoutDashboard,
     lucideLightbulb,
