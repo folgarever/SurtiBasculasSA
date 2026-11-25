@@ -52,8 +52,6 @@ export class AppShellComponent {
   @Input() admin = false;
   @Input() nombre = '';
   @Input() inicial = 'U';
-  @Input() footerTitulo = 'Portal activo';
-  @Input() footerDetalle = 'Gestión de personal';
   @Input() items: NavItem[] = [];
   @Input() bottomItems: NavItem[] = [];
   @Input() bottomActive = '';

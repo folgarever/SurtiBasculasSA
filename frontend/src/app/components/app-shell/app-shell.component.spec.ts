@@ -129,6 +129,20 @@ describe('AppShellComponent', () => {
     expect(enlaces(crear())).toContain('Mis sugerencias');
   });
 
+  it('mantiene el mismo estado al cambiar de módulo', () => {
+    auth.hasAdminRole.mockReturnValue(true);
+    const url = vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/admin');
+    const fixture = crear();
+    const footer = fixture.nativeElement.querySelector('.sidebar-footer') as HTMLElement;
+    expect(footer.textContent).toContain('Sistema activo');
+    expect(footer.textContent).toContain('Gestión de personal');
+
+    url.mockReturnValue('/dashboard');
+    fixture.detectChanges();
+    expect(footer.textContent).toContain('Sistema activo');
+    expect(footer.textContent).toContain('Gestión de personal');
+  });
+
   it('cierra sesión desde la barra superior', () => {
     const fixture = crear();
     const root = fixture.nativeElement as HTMLElement;
