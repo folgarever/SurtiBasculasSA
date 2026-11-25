@@ -1685,18 +1685,33 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .employee-workspace .summary-strip {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
-  min-height: 88px;
+  min-height: 96px;
   margin: 22px 0 28px;
+  padding: 14px 18px;
 }
 .employee-workspace .summary-metric {
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  justify-content: start;
+  align-items: center;
   min-width: 0;
-  min-height: 48px;
-  padding: 0 18px;
-  gap: 10px;
+  min-height: 56px;
+  padding: 0 16px;
+  gap: 8px;
 }
-.employee-workspace .summary-metric:first-child { justify-content: flex-start; }
-.employee-workspace .summary-label { max-width: 125px; }
+.employee-workspace .summary-metric:first-child {
+  justify-content: start;
+}
+.employee-workspace .summary-number {
+  min-width: 48px;
+  text-align: right;
+  white-space: nowrap;
+}
+.employee-workspace .summary-label {
+  max-width: 118px;
+  line-height: 1.25;
+  white-space: normal;
+}
 .employee-workspace .section-heading {
   margin: 24px 0 10px;
 }
