@@ -92,7 +92,7 @@ describe('AppShellComponent', () => {
     const secciones = Array.from(root.querySelectorAll('.sidebar-section'))
       .map((seccion) => seccion.getAttribute('aria-label'));
 
-    expect(secciones).toEqual(['Inicio', 'Mi espacio', 'Gestión de personal', 'Comunicación']);
+    expect(secciones).toEqual(['Módulos', 'Gestión de personal', 'Mi espacio', 'Comunicación']);
     expect(root.querySelector('[href="/evaluaciones-conocimiento"]')?.textContent).toContain('Mi evaluación');
     expect(root.querySelector('[href="/admin/evaluaciones-conocimiento"]')).toBeNull();
     expect(root.querySelector('[href="/solicitudes"]')).not.toBeNull();
@@ -106,7 +106,7 @@ describe('AppShellComponent', () => {
     const secciones = Array.from(root.querySelectorAll('.sidebar-section'))
       .map((seccion) => seccion.getAttribute('aria-label'));
 
-    expect(secciones).toEqual(['Inicio', 'Gestión de personal', 'Evaluación y selección', 'Comunicación', 'Mi espacio']);
+    expect(secciones).toEqual(['Módulos', 'Gestión de personal', 'Mi espacio', 'Evaluación y selección', 'Comunicación']);
     expect(root.querySelector('[href="/admin/evaluaciones-conocimiento"]')).not.toBeNull();
     expect(root.querySelector('[href="/dashboard"]')).not.toBeNull();
   });

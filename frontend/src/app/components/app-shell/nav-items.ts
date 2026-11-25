@@ -53,15 +53,13 @@ export function obtenerNavegacion(esAdmin: boolean): { items: NavItem[]; bottomI
     : { items: NAV_EMPLEADO, bottomItems: [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO] };
 }
 
-export function obtenerSeccionesAdmin(esGerenteGeneral: boolean): NavSection[] {
+export function obtenerSeccionesAdmin(_esGerenteGeneral: boolean): NavSection[] {
   const porRuta = (rutas: string[]) => NAV_ADMIN.filter((item) => rutas.includes(item.route));
-  const inicio = { label: 'Inicio', items: porRuta(['/admin']) };
+  const modulos = { label: 'Módulos', items: porRuta(['/admin']) };
   const personal = { label: 'Mi espacio', items: porRuta(['/dashboard', '/evaluaciones-conocimiento']) };
   const gestion = { label: 'Gestión de personal', items: porRuta(['/admin/empleados', '/rrhh', '/solicitudes']) };
   const evaluaciones = { label: 'Evaluación y selección', items: porRuta(['/evaluaciones', '/admin/evaluaciones-conocimiento', '/admin/evaluaciones-seleccion']) };
   const comunicacion = { label: 'Comunicación', items: [SUGERENCIAS_ADMIN] };
 
-  return esGerenteGeneral
-    ? [inicio, gestion, evaluaciones, comunicacion, personal]
-    : [inicio, personal, gestion, evaluaciones, comunicacion];
+  return [modulos, gestion, personal, evaluaciones, comunicacion];
 }
