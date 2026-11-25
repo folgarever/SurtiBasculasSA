@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { NotificacionesService } from '../../services/notificaciones.service';
+import { RrhhService } from '../../services/rrhh.service';
 import { AppShellComponent } from './app-shell.component';
 import { NAV_ADMIN, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from './nav-items';
 
@@ -13,8 +14,10 @@ describe('AppShellComponent', () => {
     hasRrhhRole: vi.fn(),
     hasEvaluationRole: vi.fn(),
     isCandidate: vi.fn(),
+    getUsuario: vi.fn(),
     logout: vi.fn(),
   };
+  const rrhh = { descargarMiFoto: vi.fn() };
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -23,11 +26,14 @@ describe('AppShellComponent', () => {
     auth.hasRrhhRole.mockReturnValue(false);
     auth.hasEvaluationRole.mockReturnValue(false);
     auth.isCandidate.mockReturnValue(false);
+    auth.getUsuario.mockReturnValue(null);
+    rrhh.descargarMiFoto.mockReturnValue({ pipe: () => ({ subscribe: vi.fn() }) });
     await TestBed.configureTestingModule({
       imports: [AppShellComponent],
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: auth },
+        { provide: RrhhService, useValue: rrhh },
         {
           provide: NotificacionesService,
           useValue: {

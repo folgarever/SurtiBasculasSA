@@ -34,6 +34,17 @@ describe('SelectorTemaComponent', () => {
     expect(activador.getAttribute('aria-expanded')).toBe('false');
   });
 
+  it('muestra la foto de perfil cuando está disponible', () => {
+    const fixture = TestBed.createComponent(SelectorTemaComponent);
+    fixture.componentRef.setInput('nombre', 'Ana Pérez');
+    fixture.componentRef.setInput('foto', 'blob:foto-perfil');
+    fixture.detectChanges();
+    const foto = (fixture.nativeElement as HTMLElement).querySelector('.avatar img');
+
+    expect(foto?.getAttribute('src')).toBe('blob:foto-perfil');
+    expect(foto?.getAttribute('alt')).toBe('Foto de Ana Pérez');
+  });
+
   it('cierra con Escape y al hacer clic fuera', () => {
     const fixture = TestBed.createComponent(SelectorTemaComponent);
     fixture.detectChanges();

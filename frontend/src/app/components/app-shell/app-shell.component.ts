@@ -1,5 +1,8 @@
 import { NgClass } from '@angular/common';
-import { Component, Input, inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, DestroyRef, Input, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -13,6 +16,7 @@ import {
   lucideUsers,
 } from '@ng-icons/lucide';
 import { AuthService } from '../../services/auth.service';
+import { RrhhService } from '../../services/rrhh.service';
 import { NotificacionesComponent } from '../notificaciones/notificaciones.component';
 import { SelectorTemaComponent } from '../selector-tema/selector-tema.component';
 import { NavItem, obtenerNavegacion, obtenerSeccionesAdmin } from './nav-items';
@@ -33,9 +37,14 @@ import { NavItem, obtenerNavegacion, obtenerSeccionesAdmin } from './nav-items';
   })],
   templateUrl: './app-shell.component.html',
 })
-export class AppShellComponent {
+export class AppShellComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly rrhh = inject(RrhhService);
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly destroyRef = inject(DestroyRef);
+  private urlFotoPerfil: string | null = null;
+  protected readonly fotoPerfil = signal<SafeResourceUrl | null>(null);
   protected readonly esAdmin = this.auth.hasAdminRole();
   protected readonly navegacion = obtenerNavegacion(this.esAdmin);
   protected readonly seccionesAdmin = this.esAdmin
@@ -55,6 +64,25 @@ export class AppShellComponent {
   @Input() items: NavItem[] = [];
   @Input() bottomItems: NavItem[] = [];
   @Input() bottomActive = '';
+
+  ngOnInit(): void {
+    const usuario = this.auth.getUsuario();
+    if (!usuario || usuario.role === 'CANDIDATE') return;
+
+    this.rrhh.descargarMiFoto().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (foto) => {
+        this.urlFotoPerfil = URL.createObjectURL(foto);
+        this.fotoPerfil.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.urlFotoPerfil));
+      },
+      error: (error: HttpErrorResponse) => {
+        if (error.status !== 404) console.error('No fue posible cargar la foto del perfil.', error);
+      },
+    });
+
+    this.destroyRef.onDestroy(() => {
+      if (this.urlFotoPerfil) URL.revokeObjectURL(this.urlFotoPerfil);
+    });
+  }
 
   protected salir(): void {
     this.auth.logout();

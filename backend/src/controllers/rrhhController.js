@@ -1031,19 +1031,35 @@ async function subirFotoEmpleado(req, res, next) {
   }
 }
 
+async function enviarFotoEmpleado(empleadoId, res) {
+  const [fichas] = await pool.execute(
+    `SELECT foto_contenido, foto_mime FROM empleados_ficha
+     WHERE empleado_id = ? AND foto_contenido IS NOT NULL LIMIT 1`,
+    [empleadoId]
+  );
+  if (!fichas[0]) return res.status(404).json({ mensaje: 'Este empleado aún no tiene foto.' });
+  res.setHeader('Content-Type', fichas[0].foto_mime || 'application/octet-stream');
+  res.setHeader('Cache-Control', 'private, no-cache');
+  return res.send(fichas[0].foto_contenido);
+}
+
 async function descargarFotoEmpleado(req, res, next) {
   const empleadoId = identificadorEmpleado(req);
   if (!empleadoId) return res.status(400).json({ mensaje: 'El identificador del empleado no es válido.' });
   try {
-    const [fichas] = await pool.execute(
-      `SELECT foto_contenido, foto_mime FROM empleados_ficha
-       WHERE empleado_id = ? AND foto_contenido IS NOT NULL LIMIT 1`,
-      [empleadoId]
-    );
-    if (!fichas[0]) return res.status(404).json({ mensaje: 'Este empleado aún no tiene foto.' });
-    res.setHeader('Content-Type', fichas[0].foto_mime || 'application/octet-stream');
-    res.setHeader('Cache-Control', 'private, max-age=300');
-    return res.send(fichas[0].foto_contenido);
+    return await enviarFotoEmpleado(empleadoId, res);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function descargarMiFotoEmpleado(req, res, next) {
+  const empleadoId = Number(req.usuario?.id);
+  if (!Number.isInteger(empleadoId) || empleadoId <= 0) {
+    return res.status(400).json({ mensaje: 'El identificador del empleado no es válido.' });
+  }
+  try {
+    return await enviarFotoEmpleado(empleadoId, res);
   } catch (error) {
     return next(error);
   }
@@ -1303,6 +1319,7 @@ module.exports = {
   actualizarFichaEmpleado,
   subirFotoEmpleado,
   descargarFotoEmpleado,
+  descargarMiFotoEmpleado,
   subirCurriculumEmpleado,
   descargarCurriculumEmpleado,
   obtenerAuditoriaFicha,

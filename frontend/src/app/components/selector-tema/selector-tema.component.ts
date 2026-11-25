@@ -1,4 +1,5 @@
 import { Component, ElementRef, HostListener, ViewChild, inject, input, signal } from '@angular/core';
+import { SafeResourceUrl } from '@angular/platform-browser';
 import { PreferenciaTema, TemaService } from '../../services/tema.service';
 
 @Component({
@@ -17,7 +18,13 @@ import { PreferenciaTema, TemaService } from '../../services/tema.service';
         @if (tipo() === 'logo') {
           <ng-content />
         } @else {
-          <span class="avatar" [class.avatar-admin]="admin()">{{ inicial() }}</span>
+          <span class="avatar" [class.avatar-admin]="admin()">
+            @if (foto(); as imagen) {
+              <img [src]="imagen" [alt]="'Foto de ' + nombre()">
+            } @else {
+              {{ inicial() }}
+            }
+          </span>
           <span class="theme-trigger-name">{{ nombre() }}</span>
         }
       </button>
@@ -38,6 +45,7 @@ export class SelectorTemaComponent {
   readonly tipo = input<'perfil' | 'logo'>('perfil');
   readonly nombre = input('');
   readonly inicial = input('U');
+  readonly foto = input<SafeResourceUrl | null>(null);
   readonly admin = input(false);
   protected readonly tema = inject(TemaService);
   protected readonly abierto = signal(false);

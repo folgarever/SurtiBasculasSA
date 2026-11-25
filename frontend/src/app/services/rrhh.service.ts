@@ -331,6 +331,10 @@ export class RrhhService {
     return this.http.get<ResumenMiFicha>(`${environment.apiUrl}/mi-ficha`);
   }
 
+  descargarMiFoto(): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/mi-ficha/foto`, { responseType: 'blob' });
+  }
+
   obtenerIncidencias(empleadoId: number): Observable<{ incidencias: IncidenciaRrhh[] }> {
     return this.http.get<{ incidencias: IncidenciaRrhh[] }>(`${this.baseUrl}/incidencias`, {
       params: new HttpParams().set('empleado_id', empleadoId),

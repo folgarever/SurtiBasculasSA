@@ -45,7 +45,7 @@
     <div class="topbar-title"><span class="admin-label">{{ topbarLabel }}</span><strong>{{ topbarTitle }}</strong></div>
     <div class="topbar-actions">
       <app-notificaciones />
-      <app-selector-tema [admin]="admin" [nombre]="nombre" [inicial]="inicial" />
+      <app-selector-tema [admin]="admin" [nombre]="nombre" [inicial]="inicial" [foto]="fotoPerfil()" />
       <button class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" (click)="salir()"><ng-icon name="lucideLogOut" size="17" /></button>
     </div>
   </header>

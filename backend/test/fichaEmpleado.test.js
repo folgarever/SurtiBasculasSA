@@ -5,6 +5,7 @@ const { validarFicha, calcularEdad, esPdf } = require('../src/utils/fichaEmplead
 const {
   actualizarFichaEmpleado,
   obtenerMiFicha,
+  descargarMiFotoEmpleado,
   exportarFichaEmpleado,
   subirCurriculumEmpleado
 } = require('../src/controllers/rrhhController');
@@ -147,6 +148,30 @@ test('obtenerMiFicha informa los datos faltantes sin exponer valores', async () 
     total: 7
   });
   assert.equal(JSON.stringify(res.cuerpo).includes('1234567890123'), false);
+});
+
+test('descargarMiFotoEmpleado solo consulta y devuelve la foto del usuario autenticado', async () => {
+  const foto = Buffer.from('imagen');
+  pool.execute = async (sql, parametros) => {
+    assert.match(sql, /WHERE empleado_id = \? AND foto_contenido IS NOT NULL/);
+    assert.deepEqual(parametros, [5]);
+    return [[{ foto_contenido: foto, foto_mime: 'image/jpeg' }]];
+  };
+  const res = {
+    codigo: 200,
+    cuerpo: null,
+    headers: {},
+    status(codigo) { this.codigo = codigo; return this; },
+    json(cuerpo) { this.cuerpo = cuerpo; return this; },
+    setHeader(clave, valor) { this.headers[clave] = valor; },
+    send(contenido) { this.cuerpo = contenido; return this; }
+  };
+
+  await descargarMiFotoEmpleado({ usuario: { id: 5 } }, res, assert.ifError);
+
+  assert.equal(res.cuerpo, foto);
+  assert.equal(res.headers['Content-Type'], 'image/jpeg');
+  assert.equal(res.headers['Cache-Control'], 'private, no-cache');
 });
 
 test('exportarFichaEmpleado genera el Excel y audita la exportación', async () => {
