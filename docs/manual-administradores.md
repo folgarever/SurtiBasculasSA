@@ -48,6 +48,7 @@ La barra lateral izquierda reúne los módulos disponibles para tu cuenta:
 | Módulo | Ruta | Uso principal |
 |---|---|---|
 | Dashboard | `/admin` | Indicadores del día y actividad reciente |
+| Mi jornada | `/dashboard` | Registro personal de entrada y salida para empleados y ADMIN, excepto `SUR-GG-001` |
 | Empleados | `/admin/empleados` | Directorio de personal, altas, ediciones, bajas y ficha integral |
 | Control de asistencia | `/rrhh` | Marcaciones, incidencias y reportes |
 | Solicitudes | `/solicitudes` | Bandeja compartida para aprobar o rechazar vacaciones y permisos |
@@ -587,6 +588,7 @@ La respuesta queda visible de inmediato para el empleado y se registra con tu us
 | Ruta | Módulo | Permiso |
 |---|---|---|
 | `/admin` | Dashboard | ADMIN |
+| `/dashboard` | Mi jornada | Empleados y ADMIN, excepto `SUR-GG-001` |
 | `/admin/empleados` | Empleados | ADMIN |
 | `/rrhh` | Control de asistencia | ADMIN o RRHH |
 | `/evaluaciones` | Evaluación de personal | Cuentas autorizadas |

@@ -12,7 +12,7 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 
 - Inicio de sesión corporativo y adaptable a móviles y equipos de escritorio, con el logo original de SURTIBÁSCULAS S.A. y favicon de marca.
 - Opción para mostrar u ocultar las contraseñas en el inicio de sesión y en los formularios administrativos que las solicitan.
-- Registro de entrada y salida e historial personal de marcaciones, con tolerancia de entrada de 08:00 a 08:15, justificación obligatoria desde las 18:00 y registro de horas extras completas.
+- Registro de entrada y salida e historial personal para todo el personal, incluidos los administradores; solo el Gerente General (`SUR-GG-001`) está exento. Mantiene tolerancia de entrada de 08:00 a 08:15, justificación obligatoria desde las 18:00 y registro de horas extras completas.
 - Panel de Recursos Humanos para consultar asistencias, corregir marcaciones y registrar incidencias.
 - Solicitudes de vacaciones y permisos desde el portal del empleado, con seguimiento y aprobación o rechazo disponible para cualquier cuenta ADMIN.
 - Exportación de reportes de asistencia e incidencias a Excel.

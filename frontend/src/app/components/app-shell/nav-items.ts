@@ -9,6 +9,7 @@ export interface NavItem {
 
 export const NAV_ADMIN: NavItem[] = [
   { label: 'Dashboard', route: '/admin', icon: 'lucideLayoutDashboard' },
+  { label: 'Mi jornada', route: '/dashboard', icon: 'lucideClipboardCheck' },
   { label: 'Empleados', route: '/admin/empleados', icon: 'lucideUsers' },
   { label: 'Control de asistencia', route: '/rrhh', icon: 'lucideClipboardCheck' },
   { label: 'Solicitudes', route: '/solicitudes', icon: 'lucideCalendarDays' },

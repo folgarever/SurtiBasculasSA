@@ -51,6 +51,7 @@ export class EmpleadoDashboardComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly usuario = this.auth.getUsuario();
+  protected readonly esGerenteGeneral = this.auth.esGerenteGeneral();
   protected readonly horaActual = signal('');
   protected readonly fechaActual = signal('');
   protected readonly historial = signal<Marcacion[]>([]);

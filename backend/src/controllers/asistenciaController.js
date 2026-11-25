@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { CODIGO_GERENTE_GENERAL } = require('../config/authorization');
 
 const ZONA_HORARIA = 'America/Guatemala';
 
@@ -72,6 +73,12 @@ function fechaHoraLocal() {
 }
 
 async function registrarMarcacion(req, res, next) {
+  if (req.usuario.codigo_empleado === CODIGO_GERENTE_GENERAL) {
+    return res.status(403).json({
+      mensaje: 'La cuenta del Gerente General está exenta de registrar asistencia.',
+    });
+  }
+
   const empleadoId = req.usuario.id;
   const ahora = fechaHoraLocal();
 

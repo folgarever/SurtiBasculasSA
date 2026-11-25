@@ -1,5 +1,5 @@
 const express = require('express');
-const { verificarToken } = require('../middlewares/authMiddleware');
+const { verificarToken, permitirRoles } = require('../middlewares/authMiddleware');
 const {
   registrarMarcacion,
   obtenerHistorialEmpleado
@@ -8,7 +8,7 @@ const {
 const router = express.Router();
 
 router.use(verificarToken);
-router.post('/marcar', registrarMarcacion);
-router.get('/mi-historial', obtenerHistorialEmpleado);
+router.post('/marcar', permitirRoles('EMPLOYEE', 'ADMIN'), registrarMarcacion);
+router.get('/mi-historial', permitirRoles('EMPLOYEE', 'ADMIN'), obtenerHistorialEmpleado);
 
 module.exports = router;
