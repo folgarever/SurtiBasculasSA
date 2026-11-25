@@ -21,7 +21,7 @@ import {
   lucideUsers,
   lucideX,
 } from '@ng-icons/lucide';
-import { distinctUntilChanged, map } from 'rxjs';
+import { distinctUntilChanged, firstValueFrom, map } from 'rxjs';
 import { AppShellComponent } from '../../components/app-shell/app-shell.component';
 import { NAV_ADMIN, SUGERENCIAS_ADMIN } from '../../components/app-shell/nav-items';
 import { AuthService } from '../../services/auth.service';
@@ -89,6 +89,7 @@ export class EmpleadoDetalleComponent implements OnInit {
   protected readonly cargando = signal(true);
   protected readonly error = signal('');
   protected readonly guardandoFicha = signal(false);
+  protected readonly exportandoPdf = signal(false);
   protected readonly subiendoCv = signal(false);
   protected readonly avisoFicha = signal<{ tipo: 'success' | 'error'; texto: string } | null>(null);
   protected readonly hoy = new Date().toLocaleDateString('en-CA');
@@ -285,7 +286,7 @@ export class EmpleadoDetalleComponent implements OnInit {
     if (registro.accion === 'foto_subida') return 'Actualizó la foto del empleado';
     if (registro.accion === 'cv_subida') return 'Cargó el currículum';
     if (registro.accion === 'cv_descarga') return 'Consultó o descargó el currículum';
-    if (registro.accion === 'ficha_exportada') return 'Exportó la ficha a Excel';
+    if (registro.accion === 'ficha_exportada') return registro.campos === 'pdf' ? 'Exportó la ficha a PDF' : 'Exportó la ficha a Excel';
     if (registro.accion === 'documento_subido') return `Subió un documento (${this.etiquetaTipo(registro.campos || '')})`;
     if (registro.accion === 'documento_descarga') return `Consultó un documento (${this.etiquetaTipo(registro.campos || '')})`;
     if (registro.accion === 'documento_eliminado') return `Eliminó un documento (${this.etiquetaTipo(registro.campos || '')})`;
@@ -433,6 +434,29 @@ export class EmpleadoDetalleComponent implements OnInit {
       },
       error: () => this.avisoFicha.set({ tipo: 'error', texto: 'No se pudo exportar la ficha.' }),
     });
+  }
+
+  protected async exportarFichaPdf(): Promise<void> {
+    const detalle = this.detalle();
+    if (!detalle || this.formularioFicha.dirty || this.guardandoFicha() || this.subiendoFoto() || this.exportandoPdf()) return;
+
+    this.exportandoPdf.set(true);
+    this.avisoFicha.set(null);
+    try {
+      const { generarFichaPdf } = await import('./ficha-pdf');
+      const foto = detalle.ficha.foto_nombre
+        ? await firstValueFrom(this.rrhh.descargarFotoEmpleado(detalle.empleado.id))
+        : null;
+      const archivo = await generarFichaPdf(detalle, foto);
+      await firstValueFrom(this.rrhh.registrarExportacionFichaPdf(detalle.empleado.id));
+      this.guardarArchivo(archivo, `ficha-${detalle.empleado.codigo_empleado}.pdf`);
+      this.cargarAuditoria(detalle.empleado.id);
+    } catch (error) {
+      console.error('No se pudo exportar la ficha a PDF.', error);
+      this.avisoFicha.set({ tipo: 'error', texto: 'No se pudo exportar la ficha a PDF. Inténtalo de nuevo.' });
+    } finally {
+      this.exportandoPdf.set(false);
+    }
   }
 
   private guardarArchivo(archivo: Blob, nombre: string): void {

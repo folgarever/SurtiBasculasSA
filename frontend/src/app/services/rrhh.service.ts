@@ -321,6 +321,12 @@ export class RrhhService {
     });
   }
 
+  registrarExportacionFichaPdf(id: number): Observable<{ mensaje: string }> {
+    return this.http.post<{ mensaje: string }>(
+      `${this.baseUrl}/administracion/empleados/${id}/ficha/exportar/pdf`, {}
+    );
+  }
+
   obtenerAuditoriaFicha(id: number): Observable<{ registros: RegistroAuditoriaFicha[] }> {
     return this.http.get<{ registros: RegistroAuditoriaFicha[] }>(
       `${this.baseUrl}/administracion/empleados/${id}/ficha/auditoria`

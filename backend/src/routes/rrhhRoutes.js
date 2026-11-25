@@ -23,6 +23,7 @@ const {
   descargarCurriculumEmpleado,
   obtenerAuditoriaFicha,
   exportarFichaEmpleado,
+  registrarExportacionFichaPdf,
   obtenerPuestos,
   registrarPuesto,
   actualizarPuesto,
@@ -87,6 +88,7 @@ router.put(
 router.get('/administracion/empleados/:id/curriculum', permitirRoles('ADMIN'), descargarCurriculumEmpleado);
 router.get('/administracion/empleados/:id/ficha/auditoria', permitirRoles('ADMIN'), obtenerAuditoriaFicha);
 router.get('/administracion/empleados/:id/ficha/exportar', permitirRoles('ADMIN'), exportarFichaEmpleado);
+router.post('/administracion/empleados/:id/ficha/exportar/pdf', permitirRoles('ADMIN'), registrarExportacionFichaPdf);
 router.get('/administracion/documentos/por-vencer', permitirRoles('ADMIN'), obtenerDocumentosPorVencer);
 router.get('/administracion/empleados/:id/documentos', permitirRoles('ADMIN'), listarDocumentosEmpleado);
 router.post(

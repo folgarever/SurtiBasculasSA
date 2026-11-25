@@ -1201,6 +1201,18 @@ const ETIQUETAS_FICHA = {
   correo: 'correo', telefono: 'teléfono', fecha_ingreso: 'fecha de ingreso', cv_nombre: 'currículum'
 };
 
+async function registrarExportacionFichaPdf(req, res, next) {
+  const empleadoId = identificadorEmpleado(req);
+  if (!empleadoId) return res.status(400).json({ mensaje: 'El identificador del empleado no es válido.' });
+  try {
+    if (!(await empleadoExiste(empleadoId))) return res.status(404).json({ mensaje: 'Empleado no encontrado.' });
+    await registrarAuditoriaFicha(empleadoId, req.usuario?.id, 'ficha_exportada', 'pdf');
+    return res.json({ mensaje: 'Exportación de ficha registrada.' });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 // Solo informa qué datos faltan; nunca devuelve los valores de la ficha.
 async function obtenerMiFicha(req, res, next) {
   try {
@@ -1325,6 +1337,7 @@ module.exports = {
   obtenerAuditoriaFicha,
   obtenerMiFicha,
   exportarFichaEmpleado,
+  registrarExportacionFichaPdf,
   registrarAuditoriaFicha,
   obtenerPuestos,
   registrarPuesto,

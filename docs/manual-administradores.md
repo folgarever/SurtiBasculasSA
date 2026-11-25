@@ -161,6 +161,7 @@ En la parte superior del detalle hay una tarjeta con los datos personales del em
 - **Guardar:** pulsa **Guardar datos**. Los errores aparecen junto a cada campo. Si sales con cambios sin guardar, el sistema te pedirá confirmación.
 - **Historial:** el bloque desplegable muestra los últimos 30 movimientos: quién modificó la ficha, qué campos cambió y quién subió o descargó el currículum. Solo se registran los nombres de los campos, nunca sus valores.
 - **Exportar a Excel:** el botón **Exportar a Excel** descarga la ficha del empleado en un archivo `.xlsx`. La exportación queda registrada en el historial.
+- **Exportar a PDF:** guarda primero los cambios pendientes y pulsa **Exportar a PDF** para descargar la ficha con la foto, los datos personales y la identidad visual de SURTIBÁSCULAS. Si no hay foto, aparece la inicial del empleado. La exportación queda registrada en el historial.
 
 #### Documentos del empleado
 

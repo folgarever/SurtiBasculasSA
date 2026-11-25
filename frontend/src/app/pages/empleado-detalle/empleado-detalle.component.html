@@ -105,7 +105,8 @@
         <div class="profile-actions">
           <button class="button button-accent" type="submit" [disabled]="guardandoFicha()"><ng-icon name="lucideSave" size="16" /> {{ guardandoFicha() ? 'Guardando…' : 'Guardar datos' }}</button>
           <button class="button button-outline" type="button" (click)="exportarFicha()"><ng-icon name="lucideDownload" size="16" /> Exportar a Excel</button>
-          @if (formularioFicha.dirty) { <span class="helper-text">Hay cambios sin guardar.</span> }
+          <button class="button button-outline" type="button" [disabled]="formularioFicha.dirty || guardandoFicha() || subiendoFoto() || exportandoPdf()" (click)="exportarFichaPdf()"><ng-icon name="lucideDownload" size="16" /> {{ exportandoPdf() ? 'Generando PDF…' : 'Exportar a PDF' }}</button>
+          @if (formularioFicha.dirty) { <span class="helper-text">Hay cambios sin guardar. Guarda los datos antes de exportar a PDF.</span> }
         </div>
       </form>
 

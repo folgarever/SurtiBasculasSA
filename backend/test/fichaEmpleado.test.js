@@ -7,6 +7,7 @@ const {
   obtenerMiFicha,
   descargarMiFotoEmpleado,
   exportarFichaEmpleado,
+  registrarExportacionFichaPdf,
   subirCurriculumEmpleado
 } = require('../src/controllers/rrhhController');
 
@@ -172,6 +173,39 @@ test('descargarMiFotoEmpleado solo consulta y devuelve la foto del usuario auten
   assert.equal(res.cuerpo, foto);
   assert.equal(res.headers['Content-Type'], 'image/jpeg');
   assert.equal(res.headers['Cache-Control'], 'private, no-cache');
+});
+
+test('registrarExportacionFichaPdf audita el PDF sin guardar datos personales', async () => {
+  const consultas = [];
+  pool.execute = async (sql, params) => {
+    consultas.push({ sql, params });
+    if (sql.includes('SELECT id FROM empleados')) return [[{ id: 5 }]];
+    return [[]];
+  };
+  const res = crearRespuesta();
+  await registrarExportacionFichaPdf({ params: { id: '5' }, usuario: { id: 1 } }, res, assert.ifError);
+  assert.equal(res.codigo, 200);
+  assert.deepEqual(consultas[1].params, [5, 1, 'ficha_exportada', 'pdf']);
+
+  pool.execute = async () => [[]];
+  const ausente = crearRespuesta();
+  await registrarExportacionFichaPdf({ params: { id: '9' }, usuario: { id: 1 } }, ausente, assert.ifError);
+  assert.equal(ausente.codigo, 404);
+});
+
+test('la ruta de registro de PDF solo permite administradores', () => {
+  const router = require('../src/routes/rrhhRoutes');
+  const ruta = router.stack.find((capa) => capa.route?.path === '/administracion/empleados/:id/ficha/exportar/pdf'
+    && capa.route.methods.post);
+  assert.ok(ruta);
+  const autorizar = ruta.route.stack[0].handle;
+  for (const [role, permitido] of [['ADMIN', true], ['EMPLOYEE', false]]) {
+    const res = crearRespuesta();
+    let autorizado = false;
+    autorizar({ usuario: { role } }, res, () => { autorizado = true; });
+    assert.equal(autorizado, permitido);
+    if (!permitido) assert.equal(res.codigo, 403);
+  }
 });
 
 test('exportarFichaEmpleado genera el Excel y audita la exportación', async () => {

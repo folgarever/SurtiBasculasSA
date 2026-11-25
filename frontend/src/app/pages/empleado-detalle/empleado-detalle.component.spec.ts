@@ -66,6 +66,9 @@ describe('EmpleadoDetalleComponent · ficha', () => {
     fixture.detectChanges();
     httpMock.expectOne('/api/mi-ficha/foto').flush(null, { status: 404, statusText: 'Not Found' });
     httpMock.expectOne(`${base}/detalle`).flush(detalle(ficha));
+    if (ficha['foto_nombre']) {
+      httpMock.expectOne(`${base}/foto`).flush(null, { status: 404, statusText: 'Not Found' });
+    }
     httpMock.expectOne(`${base}/ficha/auditoria`).flush({ registros });
     httpMock.expectOne(`${base}/documentos`).flush({ documentos: [] });
     fixture.detectChanges();
@@ -165,13 +168,83 @@ describe('EmpleadoDetalleComponent · ficha', () => {
 
   it('muestra el historial de cambios sin exponer valores', async () => {
     const fixture = await crear({}, [
+      { id: 3, accion: 'ficha_exportada', campos: 'pdf', creado_en: '2026-11-24 22:00:00', usuario: 'Admin' },
       { id: 2, accion: 'ficha', campos: 'dpi,correo', creado_en: '2026-11-24 21:00:00', usuario: 'Admin' },
       { id: 1, accion: 'cv_descarga', campos: 'cv', creado_en: '2026-11-24 20:00:00', usuario: null },
     ]);
     const texto = (fixture.nativeElement as HTMLElement).querySelector('.profile-audit')!.textContent!;
     expect(texto).toContain('Modificó: DPI, correo');
+    expect(texto).toContain('Exportó la ficha a PDF');
     expect(texto).toContain('Consultó o descargó el currículum');
     expect(texto).toContain('Usuario eliminado');
+  });
+
+  it('impide exportar a PDF mientras hay cambios sin guardar', async () => {
+    const fixture = await crear();
+    const root = fixture.nativeElement as HTMLElement;
+    const boton = Array.from(root.querySelectorAll<HTMLButtonElement>('.profile-actions button'))
+      .find((elemento) => elemento.textContent?.includes('Exportar a PDF'))!;
+    expect(boton.disabled).toBe(false);
+
+    escribir(root, 'ficha-nombre', 'Ana Pérez');
+    fixture.detectChanges();
+
+    expect(boton.disabled).toBe(true);
+    expect(root.querySelector('.profile-actions')?.textContent).toContain('Guarda los datos antes de exportar a PDF.');
+    httpMock.expectNone(`${base}/ficha/exportar/pdf`);
+  });
+
+  it('genera y descarga el PDF con los datos guardados y registra la exportación', async () => {
+    const fixture = await crear({
+      nombre_completo: 'Ana Perez', dpi: '0123456789012', fecha_nacimiento: '1990-05-10',
+      correo: 'ana@example.com', telefono: '55551234', fecha_ingreso: '2020-01-02',
+    });
+    const root = fixture.nativeElement as HTMLElement;
+    const crearUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:ficha');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const descargar = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    Array.from(root.querySelectorAll<HTMLButtonElement>('.profile-actions button'))
+      .find((elemento) => elemento.textContent?.includes('Exportar a PDF'))!.click();
+
+    const registro = await vi.waitFor(() => httpMock.expectOne(`${base}/ficha/exportar/pdf`), { timeout: 5000 });
+    expect(registro.request.method).toBe('POST');
+    registro.flush({ mensaje: 'Exportación de ficha registrada.' });
+    const auditoria = await vi.waitFor(() => httpMock.expectOne(`${base}/ficha/auditoria`));
+    auditoria.flush({ registros: [] });
+    expect(descargar).toHaveBeenCalledOnce();
+
+    const archivo = crearUrl.mock.calls[0][0] as Blob;
+    expect(archivo.type).toBe('application/pdf');
+    const contenido = await new Promise<string>((resolve, reject) => {
+      const lector = new FileReader();
+      lector.onload = () => resolve(String(lector.result));
+      lector.onerror = () => reject(lector.error);
+      lector.readAsText(archivo, 'iso-8859-1');
+    });
+    expect(contenido).toContain('%PDF-');
+    expect(contenido).toContain('Ana Perez');
+    expect(contenido).toContain('0123456789012');
+    expect(contenido).toContain('10/05/1990');
+    expect(contenido).toContain('ana@example.com');
+    expect(contenido).toContain('02/01/2020');
+    vi.restoreAllMocks();
+  });
+
+  it('informa el error si no se puede descargar la foto para el PDF', async () => {
+    const fixture = await crear({ foto_nombre: 'foto.webp' });
+    const root = fixture.nativeElement as HTMLElement;
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    Array.from(root.querySelectorAll<HTMLButtonElement>('.profile-actions button'))
+      .find((elemento) => elemento.textContent?.includes('Exportar a PDF'))!.click();
+
+    const foto = await vi.waitFor(() => httpMock.expectOne(`${base}/foto`), { timeout: 5000 });
+    foto.flush(null, { status: 500, statusText: 'Error' });
+    await vi.waitFor(() => expect(error).toHaveBeenCalledOnce());
+    fixture.detectChanges();
+
+    expect(root.querySelector('.alert-error')?.textContent).toContain('No se pudo exportar la ficha a PDF');
+    httpMock.expectNone(`${base}/ficha/exportar/pdf`);
+    vi.restoreAllMocks();
   });
 
   it('abre la vista previa del currículum y la cierra', async () => {
