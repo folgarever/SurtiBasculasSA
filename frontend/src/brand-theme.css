@@ -1602,7 +1602,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .attendance-justificacion textarea::placeholder { color: #c5cfdb; }
 .attendance-justificacion small { color: #c5cfdb; line-height: 1.4; }
-.attendance-rules { max-width: 420px; margin: 0 0 12px; line-height: 1.55; }
+.attendance-action .attendance-rules { max-width: 420px; margin: 0 0 12px; color: #d7e1ed; font-size: .75rem; font-weight: 400; line-height: 1.55; }
 .extra-cell { font-weight: 600; }
 .extra-cell.extra-active, .extra-note:not(:empty) { color: var(--color-ember, var(--red)); }
 .extra-note { max-width: 260px; white-space: pre-wrap; word-break: break-word; }

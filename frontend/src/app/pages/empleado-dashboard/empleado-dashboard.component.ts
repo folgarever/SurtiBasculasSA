@@ -8,7 +8,6 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideArrowRight,
   lucideCalendarDays,
-  lucideClipboardCheck,
   lucideLayoutDashboard,
   lucideLightbulb,
   lucideLogOut,
@@ -19,11 +18,6 @@ import {
 import { interval } from 'rxjs';
 import { AsistenciaService, Marcacion, ResultadoMarcacion } from '../../services/asistencia.service';
 import { AuthService } from '../../services/auth.service';
-import {
-  EvaluacionConocimiento,
-  EvaluacionesConocimientoService,
-  formatoPeriodoEvaluacion,
-} from '../../services/evaluaciones-conocimiento.service';
 import { contarRespuestasNuevas, leerRespuestasVistas, SugerenciasService } from '../../services/sugerencias.service';
 
 @Component({
@@ -33,7 +27,6 @@ import { contarRespuestasNuevas, leerRespuestasVistas, SugerenciasService } from
   providers: [provideIcons({
     lucideArrowRight,
     lucideCalendarDays,
-    lucideClipboardCheck,
     lucideLayoutDashboard,
     lucideLightbulb,
     lucideLogOut,
@@ -46,7 +39,6 @@ import { contarRespuestasNuevas, leerRespuestasVistas, SugerenciasService } from
 export class EmpleadoDashboardComponent implements OnInit {
   private readonly asistencia = inject(AsistenciaService);
   private readonly sugerencias = inject(SugerenciasService);
-  private readonly evaluaciones = inject(EvaluacionesConocimientoService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -59,8 +51,6 @@ export class EmpleadoDashboardComponent implements OnInit {
   protected readonly horaActual = signal('');
   protected readonly fechaActual = signal('');
   protected readonly historial = signal<Marcacion[]>([]);
-  protected readonly miEvaluacion = signal<EvaluacionConocimiento | null>(null);
-  protected readonly periodoEvaluacion = signal('');
   protected readonly cargando = signal(true);
   protected readonly respuestasNuevas = signal(0);
   protected readonly marcando = signal(false);
@@ -78,7 +68,6 @@ export class EmpleadoDashboardComponent implements OnInit {
     interval(1000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.actualizarReloj());
     this.cargarHistorial();
     if (!this.esAdmin) this.cargarRespuestasNuevas();
-    this.cargarMiEvaluacion();
   }
 
   protected registrar(): void {
@@ -140,10 +129,6 @@ export class EmpleadoDashboardComponent implements OnInit {
     return `${horas} ${horas === 1 ? 'hora' : 'horas'}`;
   }
 
-  protected formatoPeriodo(periodo: string): string {
-    return formatoPeriodoEvaluacion(periodo);
-  }
-
   protected etiquetaExtras(estado: string | undefined): string {
     const etiquetas: Record<string, string> = {
       sin_extras: 'Sin extras',
@@ -168,16 +153,6 @@ export class EmpleadoDashboardComponent implements OnInit {
         this.cargando.set(false);
       },
       error: () => this.cargando.set(false),
-    });
-  }
-
-  private cargarMiEvaluacion(): void {
-    this.evaluaciones.obtenerMiEvaluacion().subscribe({
-      next: ({ evaluacion_actual, periodo_actual }) => {
-        this.miEvaluacion.set(evaluacion_actual || null);
-        this.periodoEvaluacion.set(periodo_actual || '');
-      },
-      error: () => this.miEvaluacion.set(null),
     });
   }
 

@@ -59,21 +59,6 @@
         <ng-icon name="lucideArrowRight" size="17" />
       </a>
 
-      <a class="portal-card portal-card-evaluacion" routerLink="/evaluaciones-conocimiento">
-        <span class="tracker-icon"><ng-icon name="lucideClipboardCheck" size="22" /></span>
-        <span class="tracker-copy">
-          <span class="eyebrow">EVALUACIÓN DE CONOCIMIENTO</span>
-          @if (miEvaluacion(); as evaluacion) {
-            <strong>{{ evaluacion.estado === 'pendiente' ? 'Tienes una evaluación pendiente' : 'Tu evaluación está completada' }}</strong>
-            <small>Periodo: {{ formatoPeriodo(evaluacion.periodo) }}{{ evaluacion.porcentaje !== null ? ' · ' + evaluacion.porcentaje + '%' : '' }}</small>
-          } @else {
-            <strong>Consulta tus evaluaciones</strong>
-            <small>{{ periodoEvaluacion() ? 'Periodo actual: ' + formatoPeriodo(periodoEvaluacion()) : 'Revisa tu estado y resultados.' }}</small>
-          }
-        </span>
-        <ng-icon name="lucideArrowRight" size="17" />
-      </a>
-
       <section class="portal-card portal-card-extras">
         <span class="tracker-icon"><ng-icon name="lucideTrendingUp" size="22" /></span>
         <span class="tracker-copy">
