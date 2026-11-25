@@ -51,6 +51,9 @@ export interface FichaEmpleado {
   correo: string | null;
   telefono: string | null;
   fecha_ingreso: string | null;
+  foto_nombre: string | null;
+  foto_mime: string | null;
+  foto_actualizado_en: string | null;
   cv_nombre: string | null;
   cv_actualizado_en: string | null;
   actualizado_en: string | null;
@@ -89,7 +92,7 @@ export interface ResumenMiFicha {
 
 export interface RegistroAuditoriaFicha {
   id: number;
-  accion: 'ficha' | 'cv_subida' | 'cv_descarga' | 'ficha_exportada' | 'documento_subido' | 'documento_descarga' | 'documento_eliminado';
+  accion: 'ficha' | 'foto_subida' | 'cv_subida' | 'cv_descarga' | 'ficha_exportada' | 'documento_subido' | 'documento_descarga' | 'documento_eliminado';
   campos: string | null;
   creado_en: string;
   usuario: string | null;
@@ -243,6 +246,18 @@ export class RrhhService {
 
   obtenerDetalleEmpleado(id: number): Observable<DetalleEmpleado> {
     return this.http.get<DetalleEmpleado>(`${this.baseUrl}/administracion/empleados/${id}/detalle`);
+  }
+
+  subirFotoEmpleado(id: number, archivo: File): Observable<{ mensaje: string; foto_nombre: string }> {
+    const datos = new FormData();
+    datos.append('foto', archivo);
+    return this.http.put<{ mensaje: string; foto_nombre: string }>(
+      `${this.baseUrl}/administracion/empleados/${id}/foto`, datos
+    );
+  }
+
+  descargarFotoEmpleado(id: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/administracion/empleados/${id}/foto`, { responseType: 'blob' });
   }
 
   guardarFichaEmpleado(id: number, datos: DatosFicha): Observable<{ mensaje: string; ficha: DatosFicha }> {

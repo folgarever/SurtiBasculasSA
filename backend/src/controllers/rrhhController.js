@@ -2,7 +2,7 @@ const ExcelJS = require('exceljs');
 const bcrypt = require('bcrypt');
 const pool = require('../config/db');
 const { CODIGO_ADMIN_RRHH, CODIGO_GERENTE_GENERAL } = require('../config/authorization');
-const { validarFicha, esPdf, calcularEdad } = require('../utils/fichaEmpleado');
+const { validarFicha, esPdf, tipoImagen, calcularEdad } = require('../utils/fichaEmpleado');
 
 function filtrosReporte(query) {
   const condiciones = [];
@@ -820,6 +820,7 @@ async function obtenerDetalleEmpleado(req, res, next) {
       ),
       pool.execute(
         `SELECT nombre_completo, dpi, fecha_nacimiento, correo, telefono, fecha_ingreso,
+                foto_nombre, foto_mime, foto_actualizado_en,
                 cv_nombre, cv_actualizado_en, actualizado_en
          FROM empleados_ficha
          WHERE empleado_id = ?
@@ -864,6 +865,9 @@ function formatearFicha(ficha) {
     correo: ficha?.correo ?? null,
     telefono: ficha?.telefono ?? null,
     fecha_ingreso: ficha?.fecha_ingreso ?? null,
+    foto_nombre: ficha?.foto_nombre ?? null,
+    foto_mime: ficha?.foto_mime ?? null,
+    foto_actualizado_en: ficha?.foto_actualizado_en ?? null,
     cv_nombre: ficha?.cv_nombre ?? null,
     cv_actualizado_en: ficha?.cv_actualizado_en ?? null,
     actualizado_en: ficha?.actualizado_en ?? null
@@ -995,6 +999,51 @@ async function subirCurriculumEmpleado(req, res, next) {
     );
     await registrarAuditoriaFicha(empleadoId, req.usuario?.id, 'cv_subida', 'cv');
     return res.json({ mensaje: 'Currículum guardado correctamente.', cv_nombre: nombre });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function subirFotoEmpleado(req, res, next) {
+  const empleadoId = identificadorEmpleado(req);
+  if (!empleadoId) return res.status(400).json({ mensaje: 'El identificador del empleado no es válido.' });
+  const mime = tipoImagen(req.file?.buffer, req.file?.mimetype);
+  if (!req.file || !mime) return res.status(400).json({ mensaje: 'Adjunta una imagen JPG, PNG o WEBP.' });
+
+  const nombre = String(req.file.originalname || '')
+    .replace(/[\\/]/g, '')
+    .replace(/[\u0000-\u001f]/g, '')
+    .trim()
+    .slice(-150) || 'foto-empleado';
+  try {
+    if (!(await empleadoExiste(empleadoId))) return res.status(404).json({ mensaje: 'Empleado no encontrado.' });
+    await pool.execute('INSERT IGNORE INTO empleados_ficha (empleado_id) VALUES (?)', [empleadoId]);
+    await pool.execute(
+      `UPDATE empleados_ficha
+       SET foto_nombre = ?, foto_contenido = ?, foto_mime = ?, foto_actualizado_en = NOW(), actualizado_por = ?
+       WHERE empleado_id = ?`,
+      [nombre, req.file.buffer, mime, req.usuario?.id ?? null, empleadoId]
+    );
+    await registrarAuditoriaFicha(empleadoId, req.usuario?.id, 'foto_subida', 'foto');
+    return res.json({ mensaje: 'Foto del empleado guardada correctamente.', foto_nombre: nombre });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function descargarFotoEmpleado(req, res, next) {
+  const empleadoId = identificadorEmpleado(req);
+  if (!empleadoId) return res.status(400).json({ mensaje: 'El identificador del empleado no es válido.' });
+  try {
+    const [fichas] = await pool.execute(
+      `SELECT foto_contenido, foto_mime FROM empleados_ficha
+       WHERE empleado_id = ? AND foto_contenido IS NOT NULL LIMIT 1`,
+      [empleadoId]
+    );
+    if (!fichas[0]) return res.status(404).json({ mensaje: 'Este empleado aún no tiene foto.' });
+    res.setHeader('Content-Type', fichas[0].foto_mime || 'application/octet-stream');
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    return res.send(fichas[0].foto_contenido);
   } catch (error) {
     return next(error);
   }
@@ -1252,6 +1301,8 @@ module.exports = {
   obtenerEmpleadoAdministracion,
   obtenerDetalleEmpleado,
   actualizarFichaEmpleado,
+  subirFotoEmpleado,
+  descargarFotoEmpleado,
   subirCurriculumEmpleado,
   descargarCurriculumEmpleado,
   obtenerAuditoriaFicha,

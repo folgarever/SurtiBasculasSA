@@ -77,10 +77,13 @@ export class EmpleadoDetalleComponent implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly sanitizer = inject(DomSanitizer);
   private urlVistaPrevia: string | null = null;
+  private urlFoto: string | null = null;
 
   protected readonly usuario = this.auth.getUsuario();
   protected readonly auditoria = signal<RegistroAuditoriaFicha[]>([]);
   protected readonly vistaPreviaCv = signal<SafeResourceUrl | null>(null);
+  protected readonly fotoEmpleado = signal<SafeResourceUrl | null>(null);
+  protected readonly subiendoFoto = signal(false);
   protected readonly cargandoVistaPrevia = signal(false);
   protected readonly detalle = signal<DetalleEmpleado | null>(null);
   protected readonly cargando = signal(true);
@@ -107,7 +110,10 @@ export class EmpleadoDetalleComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.destroyRef.onDestroy(() => this.cerrarVistaPrevia());
+    this.destroyRef.onDestroy(() => {
+      this.cerrarVistaPrevia();
+      this.cerrarFoto();
+    });
     this.route.paramMap.pipe(
       map((params) => Number(params.get('id'))),
       distinctUntilChanged(),
@@ -164,6 +170,57 @@ export class EmpleadoDetalleComponent implements OnInit {
         this.guardandoFicha.set(false);
       },
     });
+  }
+
+  protected seleccionarFoto(event: Event): void {
+    const entrada = event.target as HTMLInputElement;
+    const archivo = entrada.files?.[0];
+    entrada.value = '';
+    const detalle = this.detalle();
+    if (!archivo || !detalle || this.subiendoFoto()) return;
+
+    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!tiposPermitidos.includes(archivo.type)) {
+      this.avisoFicha.set({ tipo: 'error', texto: 'La foto debe estar en formato JPG, PNG o WEBP.' });
+      return;
+    }
+    if (archivo.size > TAMANO_MAXIMO_CV) {
+      this.avisoFicha.set({ tipo: 'error', texto: 'La foto no puede superar 5 MB.' });
+      return;
+    }
+
+    this.subiendoFoto.set(true);
+    this.avisoFicha.set(null);
+    this.rrhh.subirFotoEmpleado(detalle.empleado.id, archivo).subscribe({
+      next: ({ mensaje, foto_nombre }) => {
+        this.actualizarFicha({ foto_nombre, foto_actualizado_en: new Date().toISOString() });
+        this.subiendoFoto.set(false);
+        this.avisoFicha.set({ tipo: 'success', texto: mensaje });
+        this.cargarFoto(detalle.empleado.id);
+        this.cargarAuditoria(detalle.empleado.id);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.subiendoFoto.set(false);
+        this.avisoFicha.set({ tipo: 'error', texto: error.error?.mensaje || 'No fue posible subir la foto.' });
+      },
+    });
+  }
+
+  private cargarFoto(id: number): void {
+    this.cerrarFoto();
+    this.rrhh.descargarFotoEmpleado(id).subscribe({
+      next: (archivo) => {
+        this.urlFoto = URL.createObjectURL(archivo);
+        this.fotoEmpleado.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.urlFoto));
+      },
+      error: () => this.fotoEmpleado.set(null),
+    });
+  }
+
+  private cerrarFoto(): void {
+    if (this.urlFoto) URL.revokeObjectURL(this.urlFoto);
+    this.urlFoto = null;
+    this.fotoEmpleado.set(null);
   }
 
   protected seleccionarCurriculum(event: Event): void {
@@ -225,6 +282,7 @@ export class EmpleadoDetalleComponent implements OnInit {
   }
 
   protected descripcionAuditoria(registro: RegistroAuditoriaFicha): string {
+    if (registro.accion === 'foto_subida') return 'Actualizó la foto del empleado';
     if (registro.accion === 'cv_subida') return 'Cargó el currículum';
     if (registro.accion === 'cv_descarga') return 'Consultó o descargó el currículum';
     if (registro.accion === 'ficha_exportada') return 'Exportó la ficha a Excel';
@@ -448,6 +506,7 @@ export class EmpleadoDetalleComponent implements OnInit {
         this.cerrarVistaPrevia();
         this.cargarAuditoria(id);
         this.cargarDocumentos(id);
+        if (detalle.ficha.foto_nombre) this.cargarFoto(id);
         this.cargando.set(false);
       },
       error: (error: { error?: { mensaje?: string } }) => {

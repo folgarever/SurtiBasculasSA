@@ -100,4 +100,12 @@ function esPdf(buffer) {
     && buffer.subarray(0, 5).toString('latin1') === '%PDF-';
 }
 
-module.exports = { validarFicha, calcularEdad, esPdf, hoyISO, fechaValida };
+function tipoImagen(buffer, mime) {
+  if (!Buffer.isBuffer(buffer)) return null;
+  if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) return 'image/png';
+  if (buffer.length >= 3 && buffer.subarray(0, 3).equals(Buffer.from([255,216,255]))) return 'image/jpeg';
+  if (buffer.length >= 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP') return 'image/webp';
+  return mime === 'image/png' || mime === 'image/jpeg' || mime === 'image/webp' ? null : null;
+}
+
+module.exports = { validarFicha, calcularEdad, esPdf, tipoImagen, hoyISO, fechaValida };

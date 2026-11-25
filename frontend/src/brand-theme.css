@@ -1618,6 +1618,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
+.detail-photo { position: relative; flex: 0 0 auto; }
+.detail-photo img, .detail-photo .detail-avatar { width: 76px; height: 76px; border-radius: 50%; }
+.detail-photo img { display: block; object-fit: cover; border: 3px solid var(--color-surface); box-shadow: 0 0 0 1px var(--color-border); }
+.detail-photo-upload { position: absolute; right: -4px; bottom: -2px; display: grid; width: 30px; height: 30px; place-items: center; border: 2px solid var(--color-surface); border-radius: 50%; background: var(--color-primary); color: #fff; cursor: pointer; }
+.detail-photo-upload.is-disabled { opacity: .6; pointer-events: none; }
 .detail-avatar {
   display: grid;
   flex: 0 0 auto;

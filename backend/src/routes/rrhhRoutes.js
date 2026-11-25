@@ -17,6 +17,8 @@ const {
   obtenerEmpleadoAdministracion,
   obtenerDetalleEmpleado,
   actualizarFichaEmpleado,
+  subirFotoEmpleado,
+  descargarFotoEmpleado,
   subirCurriculumEmpleado,
   descargarCurriculumEmpleado,
   obtenerAuditoriaFicha,
@@ -46,14 +48,14 @@ const cargarArchivo = (campo) => multer({
   limits: { fileSize: 5 * 1024 * 1024, files: 1 },
 }).single(campo);
 
-function validarCarga(campo, nombreArchivo) {
+function validarCarga(campo, nombreArchivo, tipoArchivo = 'PDF') {
   const cargar = cargarArchivo(campo);
   return (req, res, next) => {
     cargar(req, res, (error) => {
       if (error instanceof multer.MulterError) {
         const mensaje = error.code === 'LIMIT_FILE_SIZE'
           ? `${nombreArchivo} no puede superar 5 MB.`
-          : 'Adjunta un solo archivo PDF.';
+          : `Adjunta un solo archivo ${tipoArchivo}.`;
         return res.status(400).json({ mensaje });
       }
       if (error) return next(error);
@@ -64,6 +66,7 @@ function validarCarga(campo, nombreArchivo) {
 
 const validarCargaCurriculum = validarCarga('curriculum', 'El currículum');
 const validarCargaDocumento = validarCarga('documento', 'El documento');
+const validarCargaFoto = validarCarga('foto', 'La foto', 'de imagen');
 
 router.use(verificarToken, permitirRoles(2, 3, 'ADMIN'));
 router.get('/asistencias', obtenerTodasAsistencias);
@@ -74,6 +77,13 @@ router.get('/empleados', obtenerEmpleadosActivos);
 router.get('/administracion/empleados', permitirRoles('ADMIN'), obtenerEmpleadosAdministracion);
 router.get('/administracion/empleados/:id/detalle', permitirRoles('ADMIN'), obtenerDetalleEmpleado);
 router.put('/administracion/empleados/:id/ficha', permitirRoles('ADMIN'), actualizarFichaEmpleado);
+router.get('/administracion/empleados/:id/foto', permitirRoles('ADMIN'), descargarFotoEmpleado);
+router.put(
+  '/administracion/empleados/:id/foto',
+  permitirRoles('ADMIN'),
+  validarCargaFoto,
+  subirFotoEmpleado
+);
 router.get('/administracion/empleados/:id/curriculum', permitirRoles('ADMIN'), descargarCurriculumEmpleado);
 router.get('/administracion/empleados/:id/ficha/auditoria', permitirRoles('ADMIN'), obtenerAuditoriaFicha);
 router.get('/administracion/empleados/:id/ficha/exportar', permitirRoles('ADMIN'), exportarFichaEmpleado);
