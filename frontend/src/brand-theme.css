@@ -1682,6 +1682,43 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .profile-documents-upload { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
 .profile-documents-upload .profile-field { min-width: 170px; }
 .profile-documents-upload .profile-field select { width: 100%; min-height: 40px; padding: 0 12px; }
+.employee-workspace .summary-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  min-height: 88px;
+  margin: 22px 0 28px;
+}
+.employee-workspace .summary-metric {
+  justify-content: center;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 18px;
+  gap: 10px;
+}
+.employee-workspace .summary-metric:first-child { justify-content: flex-start; }
+.employee-workspace .summary-label { max-width: 125px; }
+.employee-workspace .section-heading {
+  margin: 24px 0 10px;
+}
+.employee-workspace .section-heading + .table-frame {
+  margin-bottom: 0;
+}
+.employee-workspace .table-frame th {
+  height: 44px;
+  padding: 0 14px;
+}
+.employee-workspace .table-frame td {
+  height: 54px;
+  padding: 8px 14px;
+}
+.employee-workspace .table-empty {
+  height: 82px;
+  padding: 24px 14px;
+}
+.employee-workspace .table-footer {
+  min-height: 38px;
+  padding: 10px 14px;
+}
 .profile-documents ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .profile-documents li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 10px; }
 .profile-document-info { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; min-width: 0; overflow-wrap: anywhere; }
@@ -2386,6 +2423,22 @@ th[aria-sort="ascending"] .sort-button span, th[aria-sort="descending"] .sort-bu
 .table-pagination .small-action:disabled { opacity: .4; cursor: not-allowed; }
 
 @media (max-width: 760px) {
+  .employee-workspace .summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 12px 10px;
+  }
+  .employee-workspace .summary-metric,
+  .employee-workspace .summary-metric:first-child {
+    justify-content: flex-start;
+    min-height: 56px;
+    padding: 8px 12px;
+  }
+  .employee-workspace .summary-metric:nth-child(3) {
+    border-left: 0;
+  }
+  .employee-workspace .summary-metric:nth-child(n + 3) {
+    border-top: 1px solid #e4e8ed;
+  }
   .employee-table-frame table { min-width: 0; }
   .employee-table-frame thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .employee-table-frame tbody, .employee-table-frame tr, .employee-table-frame td, .employee-table-frame th[scope="rowgroup"] { display: block; }
