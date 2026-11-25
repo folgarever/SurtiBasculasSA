@@ -116,5 +116,7 @@ test('obtenerResumenAdmin devuelve indicadores reales y actividad reciente', asy
     candidatos_nuevos: 2,
   });
   assert.match(consultasSql[3], /CASE WHEN s\.anonima = 1 THEN 'Anónimo' ELSE e\.nombre END/);
+  assert.equal((consultasSql[6].match(/GROUP BY DATE_FORMAT/g) || []).length, 4);
+  assert.match(consultasSql[6], /GROUP BY DATE_FORMAT\(fecha_realizacion, '%Y-%m'\)/);
   assert.equal(consultas.length, 0);
 });

@@ -166,12 +166,12 @@ async function obtenerResumenAdmin(req, res, next) {
       SELECT 'sugerencias' AS clave, DATE_FORMAT(creado_en, '%Y-%m-%d') AS fecha, COUNT(*) AS total
       FROM sugerencias
       WHERE creado_en >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-      GROUP BY fecha
+      GROUP BY DATE_FORMAT(creado_en, '%Y-%m-%d')
       UNION ALL
       SELECT 'evaluaciones' AS clave, DATE_FORMAT(fecha_realizacion, '%Y-%m-%d') AS fecha, COUNT(*) AS total
       FROM evaluaciones_conocimiento
       WHERE estado = 'completada' AND fecha_realizacion >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-      GROUP BY fecha
+      GROUP BY DATE_FORMAT(fecha_realizacion, '%Y-%m-%d')
       ORDER BY clave, fecha
     `);
 
@@ -181,24 +181,24 @@ async function obtenerResumenAdmin(req, res, next) {
       SELECT 'asistencias' AS clave, DATE_FORMAT(fecha, '%Y-%m') AS periodo, COUNT(*) AS total
       FROM marcaciones
       WHERE fecha >= ? AND fecha < DATE_ADD(?, INTERVAL 12 MONTH)
-      GROUP BY periodo
+      GROUP BY DATE_FORMAT(fecha, '%Y-%m')
       UNION ALL
       SELECT 'horas_extras' AS clave, DATE_FORMAT(fecha, '%Y-%m') AS periodo, SUM(horas_extras) AS total
       FROM marcaciones
       WHERE extras_estado = 'aprobada'
         AND fecha >= ? AND fecha < DATE_ADD(?, INTERVAL 12 MONTH)
-      GROUP BY periodo
+      GROUP BY DATE_FORMAT(fecha, '%Y-%m')
       UNION ALL
       SELECT 'evaluaciones' AS clave, DATE_FORMAT(fecha_realizacion, '%Y-%m') AS periodo, COUNT(*) AS total
       FROM evaluaciones_conocimiento
       WHERE estado = 'completada'
         AND fecha_realizacion >= ? AND fecha_realizacion < DATE_ADD(?, INTERVAL 12 MONTH)
-      GROUP BY periodo
+      GROUP BY DATE_FORMAT(fecha_realizacion, '%Y-%m')
       UNION ALL
       SELECT 'candidatos' AS clave, DATE_FORMAT(creado_en, '%Y-%m') AS periodo, COUNT(*) AS total
       FROM candidatos_seleccion_accesos
       WHERE creado_en >= ? AND creado_en < DATE_ADD(?, INTERVAL 12 MONTH)
-      GROUP BY periodo
+      GROUP BY DATE_FORMAT(creado_en, '%Y-%m')
       ORDER BY clave, periodo
     `, [
       fechaInicioTendencia, fechaInicioTendencia,
