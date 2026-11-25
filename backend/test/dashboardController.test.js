@@ -66,6 +66,12 @@ test('obtenerResumenAdmin devuelve indicadores reales y actividad reciente', asy
       { clave: 'sugerencias', fecha: '2026-11-18', total: 3 },
       { clave: 'evaluaciones', fecha: '2026-11-18', total: 2 },
     ]],
+    [[
+      { clave: 'asistencias', periodo: '2026-11', total: 30 },
+      { clave: 'horas_extras', periodo: '2026-10', total: 4 },
+      { clave: 'evaluaciones', periodo: '2026-11', total: 6 },
+      { clave: 'candidatos', periodo: '2026-11', total: 2 },
+    ]],
   ];
   const consultasSql = [];
   pool.execute = async (sql) => {
@@ -87,6 +93,28 @@ test('obtenerResumenAdmin devuelve indicadores reales y actividad reciente', asy
   assert.deepEqual(res.cuerpo.tendencias.asistencia, [8, 0, 0, 0, 0, 0, 10]);
   assert.deepEqual(res.cuerpo.tendencias.sugerencias, [0, 0, 0, 0, 0, 0, 3]);
   assert.deepEqual(res.cuerpo.tendencias.evaluaciones, [0, 0, 0, 0, 0, 0, 2]);
+  assert.equal(res.cuerpo.tendencias_mensuales.length, 12);
+  assert.deepEqual(res.cuerpo.tendencias_mensuales[0], {
+    periodo: '2025-12',
+    asistencias: 0,
+    horas_extras_aprobadas: 0,
+    evaluaciones_completadas: 0,
+    candidatos_nuevos: 0,
+  });
+  assert.deepEqual(res.cuerpo.tendencias_mensuales[10], {
+    periodo: '2026-10',
+    asistencias: 0,
+    horas_extras_aprobadas: 4,
+    evaluaciones_completadas: 0,
+    candidatos_nuevos: 0,
+  });
+  assert.deepEqual(res.cuerpo.tendencias_mensuales[11], {
+    periodo: '2026-11',
+    asistencias: 30,
+    horas_extras_aprobadas: 0,
+    evaluaciones_completadas: 6,
+    candidatos_nuevos: 2,
+  });
   assert.match(consultasSql[3], /CASE WHEN s\.anonima = 1 THEN 'Anónimo' ELSE e\.nombre END/);
   assert.equal(consultas.length, 0);
 });

@@ -1,3 +1,4 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { catchError, forkJoin, of } from 'rxjs';
 import { AuthService } from './auth.service';
@@ -20,6 +21,7 @@ import {
   marcadorRespuesta,
   sugerenciaRespondida,
 } from './sugerencias.service';
+import { environment } from '../../environments/environment';
 
 export type TipoNotificacion = 'sugerencia' | 'evaluacion' | 'seleccion' | 'empleado';
 
@@ -30,6 +32,10 @@ export interface NotificacionItem {
   ruta: string;
   marcador: string;
   tipo: TipoNotificacion;
+}
+
+interface RespuestaVistas {
+  vistas: Record<string, string>;
 }
 
 interface MiEvaluacionResumen {
@@ -134,6 +140,7 @@ const ETIQUETAS_DECISION: Record<NonNullable<RegistroCandidatoSeleccion['decisio
 
 @Injectable({ providedIn: 'root' })
 export class NotificacionesService {
+  private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   private readonly sugerencias = inject(SugerenciasService);
   private readonly conocimiento = inject(EvaluacionesConocimientoService);
@@ -147,26 +154,35 @@ export class NotificacionesService {
 
   private readonly _items = signal<NotificacionItem[]>([]);
   private readonly _cargando = signal(false);
+  private readonly _error = signal('');
 
   readonly items = this._items.asReadonly();
   readonly cargando = this._cargando.asReadonly();
+  readonly error = this._error.asReadonly();
   readonly total = computed(() => this._items().length);
   readonly noLeidos = computed(() => this._items().filter((item) => !this.estaLeido(item)).length);
 
   cargar(): void {
     this._cargando.set(true);
+    this._error.set('');
     this.respuestasVistas.set(leerRespuestasVistas());
 
     const usuario = this.auth.getUsuario();
     this.claveVistas = `surtibasculas_notificaciones_vistas:${usuario?.id ?? usuario?.codigo_empleado ?? 'anonimo'}`;
-    this.vistas.set(this.leerVistas());
+    const vistasLocales = this.leerVistas();
+    for (const [id, marcador] of Object.entries(this.respuestasVistas())) {
+      vistasLocales[`${PREFIJO_RESPUESTA}${id}`] ??= marcador;
+    }
+    this.vistas.set(vistasLocales);
 
     if (this.auth.isCandidate()) {
       this.seleccion.obtenerMiRegistroCandidato()
-        .pipe(catchError(() => of(null)))
+        .pipe(catchError(() => {
+          this.registrarError();
+          return of(null);
+        }))
         .subscribe((respuesta) => {
-          this._items.set(this.itemsCandidato(respuesta?.candidato ?? null));
-          this._cargando.set(false);
+          this.finalizarCarga(this.itemsCandidato(respuesta?.candidato ?? null));
         });
       return;
     }
@@ -174,26 +190,83 @@ export class NotificacionesService {
     if (this.auth.hasAdminRole()) {
       forkJoin({
         sugerencias: this.sugerencias.obtenerTodas()
-          .pipe(catchError(() => of({ sugerencias: [] as Sugerencia[] }))),
-        resumen: this.dashboard.obtenerResumenAdmin().pipe(catchError(() => of(null))),
-        empleados: this.rrhh.obtenerEmpleadosAdministracion().pipe(catchError(() => of(null))),
-        documentos: this.rrhh.obtenerDocumentosPorVencer().pipe(catchError(() => of(null))),
+          .pipe(catchError(() => {
+            this.registrarError();
+            return of({ sugerencias: [] as Sugerencia[] });
+          })),
+        resumen: this.dashboard.obtenerResumenAdmin().pipe(catchError(() => {
+          this.registrarError();
+          return of(null);
+        })),
+        empleados: this.rrhh.obtenerEmpleadosAdministracion().pipe(catchError(() => {
+          this.registrarError();
+          return of(null);
+        })),
+        documentos: this.rrhh.obtenerDocumentosPorVencer().pipe(catchError(() => {
+          this.registrarError();
+          return of(null);
+        })),
       }).subscribe(({ sugerencias, resumen, empleados, documentos }) => {
-        this._items.set(this.itemsAdmin(sugerencias?.sugerencias ?? [], resumen, empleados?.empleados ?? [], documentos?.documentos ?? []));
-        this._cargando.set(false);
+        this.finalizarCarga(
+          this.itemsAdmin(
+            sugerencias?.sugerencias ?? [],
+            resumen,
+            empleados?.empleados ?? [],
+            documentos?.documentos ?? [],
+          ),
+        );
       });
       return;
     }
 
     forkJoin({
       propias: this.sugerencias.obtenerMisSugerencias()
-        .pipe(catchError(() => of({ sugerencias: [] as Sugerencia[] }))),
-      evaluacion: this.conocimiento.obtenerMiEvaluacion()
-        .pipe(catchError(() => of(null))),
-      ficha: this.rrhh.obtenerMiFicha().pipe(catchError(() => of(null))),
+        .pipe(catchError(() => {
+          this.registrarError();
+          return of({ sugerencias: [] as Sugerencia[] });
+        })),
+      evaluacion: this.conocimiento.obtenerMiEvaluacion().pipe(catchError(() => {
+        this.registrarError();
+        return of(null);
+      })),
+      ficha: this.rrhh.obtenerMiFicha().pipe(catchError(() => {
+        this.registrarError();
+        return of(null);
+      })),
     }).subscribe(({ propias, evaluacion, ficha }) => {
-      this._items.set([...this.itemsEmpleado(propias.sugerencias, evaluacion), ...this.itemsMiFicha(ficha)]);
-      this._cargando.set(false);
+      this.finalizarCarga([
+        ...this.itemsEmpleado(propias.sugerencias, evaluacion),
+        ...this.itemsMiFicha(ficha),
+      ]);
+    });
+  }
+
+  private finalizarCarga(items: NotificacionItem[]): void {
+    this._items.set(items);
+    this.http.get<RespuestaVistas>(`${environment.apiUrl}/notificaciones/vistas`).subscribe({
+      next: ({ vistas: vistasServidor }) => {
+        const vistasLocales = this.vistas();
+        const combinadas = { ...vistasServidor };
+        const pendientesDeSincronizar: Array<{ id: string; marcador: string }> = [];
+        for (const item of items) {
+          if (vistasServidor[item.id] === item.marcador) {
+            combinadas[item.id] = item.marcador;
+          } else if (vistasLocales[item.id] === item.marcador) {
+            combinadas[item.id] = item.marcador;
+            pendientesDeSincronizar.push({ id: item.id, marcador: item.marcador });
+          }
+        }
+        this.guardarVistas(combinadas);
+        if (pendientesDeSincronizar.length) {
+          this.persistirVistas(pendientesDeSincronizar, () => this._cargando.set(false));
+        } else {
+          this._cargando.set(false);
+        }
+      },
+      error: () => {
+        this.registrarError();
+        this._cargando.set(false);
+      },
     });
   }
 
@@ -210,10 +283,6 @@ export class NotificacionesService {
   }
 
   estaLeido(item: NotificacionItem): boolean {
-    if (item.id.startsWith(PREFIJO_RESPUESTA)) {
-      const id = Number(item.id.slice(PREFIJO_RESPUESTA.length));
-      return this.respuestasVistas()[id] === item.marcador;
-    }
     return this.vistas()[item.id] === item.marcador;
   }
 
@@ -223,15 +292,27 @@ export class NotificacionesService {
       const vistas = { ...this.respuestasVistas(), [id]: item.marcador };
       guardarRespuestasVistas(vistas);
       this.respuestasVistas.set(vistas);
-      return;
     }
     this.guardarVistas({ ...this.vistas(), [item.id]: item.marcador });
+    this.persistirVistas([{ id: item.id, marcador: item.marcador }]);
   }
 
   marcarTodos(): void {
-    for (const item of this._items()) {
-      if (!this.estaLeido(item)) this.marcarLeido(item);
+    const pendientes = this._items().filter((item) => !this.estaLeido(item));
+    if (!pendientes.length) return;
+
+    const vistas = { ...this.vistas() };
+    const respuestas = { ...this.respuestasVistas() };
+    for (const item of pendientes) {
+      vistas[item.id] = item.marcador;
+      if (item.id.startsWith(PREFIJO_RESPUESTA)) {
+        respuestas[Number(item.id.slice(PREFIJO_RESPUESTA.length))] = item.marcador;
+      }
     }
+    this.guardarVistas(vistas);
+    this.respuestasVistas.set(respuestas);
+    guardarRespuestasVistas(respuestas);
+    this.persistirVistas(pendientes.map(({ id, marcador }) => ({ id, marcador })));
   }
 
   private itemsEmpleado(sugerencias: Sugerencia[], evaluacion: MiEvaluacionResumen | null): NotificacionItem[] {
@@ -411,5 +492,22 @@ export class NotificacionesService {
       // Las notificaciones son solo una ayuda visual; no bloquean el flujo.
     }
     this.vistas.set(vistas);
+  }
+
+  private persistirVistas(
+    vistas: Array<{ id: string; marcador: string }>,
+    alCompletar?: () => void,
+  ): void {
+    this.http.put(`${environment.apiUrl}/notificaciones/vistas`, { vistas }).subscribe({
+      next: () => alCompletar?.(),
+      error: () => {
+        this.registrarError();
+        alCompletar?.();
+      },
+    });
+  }
+
+  private registrarError(): void {
+    this._error.set('No se pudieron cargar o sincronizar todas las notificaciones. Comprueba tu conexión e inténtalo de nuevo.');
   }
 }

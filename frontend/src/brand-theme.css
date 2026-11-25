@@ -1783,6 +1783,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   border-bottom: 1px solid var(--color-hairline);
 }
 .notificaciones-head strong { font-size: .82rem; }
+.notificaciones-error {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  color: var(--color-danger, #9f1239);
+  font-size: .75rem;
+}
+.notificaciones-error button {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
 .notificaciones-leidas {
   border: 0;
   background: transparent;

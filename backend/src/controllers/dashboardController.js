@@ -24,6 +24,41 @@ function serie7Dias(filas, campo = 'total') {
   });
 }
 
+function desplazarMes(periodo, desplazamiento) {
+  const [anio, mes] = periodo.split('-').map(Number);
+  const fecha = new Date(Date.UTC(anio, mes - 1 + desplazamiento, 1));
+  return `${fecha.getUTCFullYear()}-${String(fecha.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function mesActualGuatemala(fecha = new Date()) {
+  const partes = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Guatemala',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(fecha);
+  const valores = Object.fromEntries(partes.map(({ type, value }) => [type, value]));
+  return `${valores.year}-${valores.month}`;
+}
+
+function serie12Meses(filas, mesActual = mesActualGuatemala()) {
+  const valores = new Map(filas.map((fila) => [
+    `${fila.clave}:${String(fila.periodo).slice(0, 7)}`,
+    numero(fila.total),
+  ]));
+  const primerMes = desplazarMes(mesActual, -11);
+  return Array.from({ length: 12 }, (_, indice) => {
+    const periodo = desplazarMes(primerMes, indice);
+    const valor = (clave) => valores.get(`${clave}:${periodo}`) ?? 0;
+    return {
+      periodo,
+      asistencias: valor('asistencias'),
+      horas_extras_aprobadas: valor('horas_extras'),
+      evaluaciones_completadas: valor('evaluaciones'),
+      candidatos_nuevos: valor('candidatos'),
+    };
+  });
+}
+
 async function obtenerResumenAdmin(req, res, next) {
   try {
     const [indicadores] = await pool.execute(`
@@ -140,6 +175,38 @@ async function obtenerResumenAdmin(req, res, next) {
       ORDER BY clave, fecha
     `);
 
+    const mesActual = mesActualGuatemala();
+    const fechaInicioTendencia = `${desplazarMes(mesActual, -11)}-01`;
+    const [tendenciasMensuales] = await pool.execute(`
+      SELECT 'asistencias' AS clave, DATE_FORMAT(fecha, '%Y-%m') AS periodo, COUNT(*) AS total
+      FROM marcaciones
+      WHERE fecha >= ? AND fecha < DATE_ADD(?, INTERVAL 12 MONTH)
+      GROUP BY periodo
+      UNION ALL
+      SELECT 'horas_extras' AS clave, DATE_FORMAT(fecha, '%Y-%m') AS periodo, SUM(horas_extras) AS total
+      FROM marcaciones
+      WHERE extras_estado = 'aprobada'
+        AND fecha >= ? AND fecha < DATE_ADD(?, INTERVAL 12 MONTH)
+      GROUP BY periodo
+      UNION ALL
+      SELECT 'evaluaciones' AS clave, DATE_FORMAT(fecha_realizacion, '%Y-%m') AS periodo, COUNT(*) AS total
+      FROM evaluaciones_conocimiento
+      WHERE estado = 'completada'
+        AND fecha_realizacion >= ? AND fecha_realizacion < DATE_ADD(?, INTERVAL 12 MONTH)
+      GROUP BY periodo
+      UNION ALL
+      SELECT 'candidatos' AS clave, DATE_FORMAT(creado_en, '%Y-%m') AS periodo, COUNT(*) AS total
+      FROM candidatos_seleccion_accesos
+      WHERE creado_en >= ? AND creado_en < DATE_ADD(?, INTERVAL 12 MONTH)
+      GROUP BY periodo
+      ORDER BY clave, periodo
+    `, [
+      fechaInicioTendencia, fechaInicioTendencia,
+      fechaInicioTendencia, fechaInicioTendencia,
+      fechaInicioTendencia, fechaInicioTendencia,
+      fechaInicioTendencia, fechaInicioTendencia,
+    ]);
+
     const fila = indicadores[0] || {};
     const marcacionesHoy = numero(fila.marcaciones_hoy);
     const llegadasTarde = numero(fila.llegadas_tarde_hoy);
@@ -206,10 +273,11 @@ async function obtenerResumenAdmin(req, res, next) {
         sugerencias: serie7Dias(tendencias.filter((fila) => fila.clave === 'sugerencias')),
         evaluaciones: serie7Dias(tendencias.filter((fila) => fila.clave === 'evaluaciones')),
       },
+      tendencias_mensuales: serie12Meses(tendenciasMensuales, mesActual),
     });
   } catch (error) {
     return next(error);
   }
 }
 
-module.exports = { obtenerResumenAdmin };
+module.exports = { obtenerResumenAdmin, serie12Meses, desplazarMes, mesActualGuatemala };

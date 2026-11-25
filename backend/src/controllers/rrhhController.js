@@ -610,6 +610,7 @@ async function actualizarEmpleado(req, res, next) {
     if (actualizarPassword) {
       asignaciones.push('password_hash = ?');
       valores.push(await bcrypt.hash(password, 10));
+      asignaciones.push('session_version = session_version + 1');
     }
 
     await connection.execute(

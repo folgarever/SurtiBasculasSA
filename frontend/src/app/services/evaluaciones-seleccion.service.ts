@@ -201,10 +201,20 @@ export class EvaluacionesSeleccionService {
     return this.http.get<{ candidato: RegistroCandidatoSeleccion | null }>(`${this.baseUrl}/candidato/mi`);
   }
 
-  registrarCandidatoAdmin(puesto_id: number): Observable<{ cuenta: CuentaCandidato }> {
+  registrarCandidatoAdmin(puesto_id: number, contrasena_admin: string): Observable<{ cuenta: CuentaCandidato }> {
     return this.http.post<{ cuenta: CuentaCandidato }>(
       `${this.baseUrl}/admin/candidatos`,
-      { puesto_id },
+      { puesto_id, contrasena_admin },
+    );
+  }
+
+  restablecerContrasenaCandidatoAdmin(
+    accesoId: number,
+    contrasena_admin: string,
+  ): Observable<{ cuenta: CuentaCandidato }> {
+    return this.http.post<{ cuenta: CuentaCandidato }>(
+      `${this.baseUrl}/admin/candidatos/acceso/${accesoId}/restablecer-contrasena`,
+      { contrasena_admin },
     );
   }
 

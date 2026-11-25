@@ -54,6 +54,18 @@ describe('EvaluacionesSeleccionService', () => {
   });
 
   it('envía el perfil editado y las acciones de cuenta como ADMIN', () => {
+    servicio.registrarCandidatoAdmin(3, 'admin-password').subscribe();
+    const creacion = httpMock.expectOne(`${baseUrl}/admin/candidatos`);
+    expect(creacion.request.method).toBe('POST');
+    expect(creacion.request.body).toEqual({ puesto_id: 3, contrasena_admin: 'admin-password' });
+
+    servicio.restablecerContrasenaCandidatoAdmin(9, 'admin-password').subscribe();
+    const restablecimiento = httpMock.expectOne(
+      `${baseUrl}/admin/candidatos/acceso/9/restablecer-contrasena`,
+    );
+    expect(restablecimiento.request.method).toBe('POST');
+    expect(restablecimiento.request.body).toEqual({ contrasena_admin: 'admin-password' });
+
     const curriculum = new File(['%PDF-1.4'], 'cv.pdf', { type: 'application/pdf' });
     servicio.actualizarPerfilCandidato(5, {
       nombres: 'Ana',
@@ -75,6 +87,6 @@ describe('EvaluacionesSeleccionService', () => {
     servicio.eliminarCuenta(9).subscribe();
     expect(httpMock.expectOne(`${baseUrl}/admin/candidatos/acceso/9`).request.method).toBe('DELETE');
 
-    httpMock.match(() => true).forEach((peticion) => peticion.flush({ mensaje: 'OK', candidato: {} }));
+    httpMock.match(() => true).forEach((peticion) => peticion.flush({ mensaje: 'OK', candidato: {}, cuenta: {} }));
   });
 });

@@ -12,6 +12,7 @@ const sugerenciasRoutes = require('./src/routes/sugerenciasRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
 const miFichaRoutes = require('./src/routes/miFichaRoutes');
 const solicitudesRoutes = require('./src/routes/solicitudesRoutes');
+const notificacionesRoutes = require('./src/routes/notificacionesRoutes');
 const pool = require('./src/config/db');
 
 const app = express();
@@ -43,6 +44,7 @@ app.use('/api/sugerencias', sugerenciasRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/mi-ficha', miFichaRoutes);
 app.use('/api/solicitudes', solicitudesRoutes);
+app.use('/api/notificaciones', notificacionesRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ mensaje: 'Ruta no encontrada.' });

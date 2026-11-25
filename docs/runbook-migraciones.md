@@ -18,7 +18,27 @@ Aplica este procedimiento solo sobre la base de producción `defaultdb` y única
 
 Ejecuta solo `database/schema.sql`. No ejecutes las migraciones después.
 
-## Base existente
+## Base existente (ejecutor recomendado)
+
+El ejecutor registra checksums y estado por migración y detiene la secuencia si una migración falla o cambia después de registrarse. Configura primero `backend/.env` para que apunte a la base correcta. Desde la raíz del repositorio:
+
+```powershell
+npm --prefix backend run db:migrate -- --status
+npm --prefix backend run db:migrate -- --apply
+```
+
+Para una base instalada que todavía no tiene `schema_migrations`, inspecciona el esquema real y registra como línea base la última migración que esté **completamente aplicada**; el comando no inspecciona ni modifica el esquema:
+
+```powershell
+npm --prefix backend run db:migrate -- --baseline 2026-11-24-solicitudes-ausencias.sql
+npm --prefix backend run db:migrate -- --apply
+```
+
+No uses esa línea base si la base no incluye todas las migraciones anteriores. Si la instalación ya contiene todas las tablas y columnas de `database/schema.sql`, registra la última migración de la lista, `2026-11-25-version-sesion.sql`, sin ejecutar los SQL de migración. No mezcles el ejecutor con la aplicación manual de una misma migración. Revisa `--status` después de aplicar y antes de desplegar la API.
+
+## Base existente (aplicación manual excepcional)
+
+Usa esta lista solo si no es posible ejecutar el runner. Antes de cada archivo, verifica con `SHOW TABLES;` y `SHOW COLUMNS FROM <tabla>;` si ya fue aplicado. Varias migraciones usan `CREATE TABLE` o `ALTER TABLE` directos y no son idempotentes.
 
 Ejecuta **una sola vez**, en este orden, las migraciones que falten:
 
@@ -44,6 +64,9 @@ Ejecuta **una sola vez**, en este orden, las migraciones que falten:
 20. `2026-11-24-documentos-empleados.sql`
 21. `2026-11-24-ficha-empleados.sql`
 22. `2026-11-24-solicitudes-ausencias.sql`
+23. `2026-11-25-indices-tendencias.sql`
+24. `2026-11-25-notificaciones-leidas.sql`
+25. `2026-11-25-version-sesion.sql`
 
 La migración 12 crea `seleccion_plantillas` con la definición vigente en `definicion`, agrega `definicion_snapshot` a `candidatos_seleccion_intentos` y elimina cualquier esquema de versiones anterior. También agrega `activo` a las cuentas de candidato y los campos de archivado/auditoría a `candidatos_seleccion`. Los intentos ya entregados conservan en `definicion_snapshot` la prueba exacta con la que se calificaron. Las cuentas existentes quedan activas. Después de aplicarla, las plantillas se generan desde el config actual la primera vez que se editan desde Administración; no hay que cargarlas a mano. Esta migración es idempotente: puede ejecutarse aunque el esquema anterior de versiones ya exista.
 
@@ -61,7 +84,7 @@ La migración 18 agrega a `marcaciones` el estado de aprobación de horas extras
 
 Las migraciones 19 a 21 crean la auditoría de la ficha, los documentos adicionales y la ficha del empleado; aplica solo las que aún falten. La migración 22 crea `solicitudes_ausencias`, donde se registran las solicitudes de vacaciones y permisos, su estado y quién las resolvió. Es idempotente. Las solicitudes aprobadas también se registran en `incidencias_permisos` para que aparezcan en los reportes existentes; las rechazadas no crean incidencias. Cualquier cuenta con rol `ADMIN` puede aprobar o rechazar; el rechazo requiere un motivo.
 
-Antes de cada una, comprueba con `SHOW TABLES;` y `SHOW COLUMNS FROM <tabla>;` si ya fue aplicada. Varias migraciones usan `CREATE TABLE` o `ALTER TABLE` directos y no son idempotentes.
+La migración 23 agrega índices por fecha para las tendencias del panel mensual. La migración 24 crea `notificaciones_leidas`, con una relación exclusiva por empleado o candidato y borrado en cascada. La migración 25 agrega `session_version` a las cuentas de empleado y candidato; el cambio de contraseña incrementa esa versión e invalida sus tokens existentes. Estas tres migraciones no son idempotentes: aplícalas una sola vez.
 
 ## Si falla la migración del 2026-11-12 con error 1050
 
@@ -77,8 +100,8 @@ SHOW CREATE TABLE candidatos_seleccion;
 
 ## Después de migrar
 
-1. Verifica tablas y columnas nuevas con `SHOW CREATE TABLE`. Para la migración 16 confirma `SHOW COLUMNS FROM marcaciones` e incluye `horas_extras`, `justificacion_horas_extras` y el valor `tolerancia` en `estado_entrada`. Para la migración 17 confirma `SHOW COLUMNS FROM puestos` e incluye `es_admin`. Para la migración 18 confirma `SHOW COLUMNS FROM marcaciones` e incluye `extras_estado`, `extras_aprobado_por`, `extras_aprobado_en` y `extras_rechazo_motivo`. Para la migración 22 confirma `SHOW CREATE TABLE solicitudes_ausencias`.
-2. Reinicia la API para descartar cachés de conexión.
+1. Verifica tablas y columnas nuevas con `SHOW CREATE TABLE`. Para la migración 16 confirma `SHOW COLUMNS FROM marcaciones` e incluye `horas_extras`, `justificacion_horas_extras` y el valor `tolerancia` en `estado_entrada`. Para la migración 17 confirma `SHOW COLUMNS FROM puestos` e incluye `es_admin`. Para la migración 18 confirma `SHOW COLUMNS FROM marcaciones` e incluye `extras_estado`, `extras_aprobado_por`, `extras_aprobado_en` y `extras_rechazo_motivo`. Para la migración 22 confirma `SHOW CREATE TABLE solicitudes_ausencias`; para la 24, `SHOW CREATE TABLE notificaciones_leidas`; para la 25, `session_version` en ambas tablas de cuentas.
+2. Reinicia la API para descartar cachés de conexión. Tras la migración 25, los usuarios deberán iniciar sesión de nuevo si la versión de su token no coincide con la almacenada.
 3. Los administradores (`SUR-GG-001`, `SUR-AC-002` y cualquier cuenta cuyo puesto tenga `es_admin = 1`) deben iniciar sesión de nuevo para recibir el rol actualizado en el JWT.
 4. Ejecuta `npm --prefix frontend run build`, `npm --prefix frontend test -- --watch=false` y `npm --prefix backend test`.
 5. Registra en el historial de despliegues el commit aplicado y la fecha del backup.

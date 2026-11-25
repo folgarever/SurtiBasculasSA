@@ -140,16 +140,22 @@ describe('NotificacionesService', () => {
       .flush(evaluacionPendiente);
     httpMock.expectOne((peticion) => peticion.url.endsWith('/mi-ficha'))
       .flush({ faltantes: [], completos: 7, total: 7 });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/notificaciones/vistas'))
+      .flush({ vistas: {} });
 
     expect(servicio.items().map((item) => item.id)).toEqual(['respuesta-3', 'evaluacion-21']);
     expect(servicio.noLeidos()).toBe(2);
 
     servicio.marcarLeido(servicio.items()[0]);
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/notificaciones/vistas'))
+      .flush({ guardadas: 1 });
     expect(servicio.noLeidos()).toBe(1);
     expect(JSON.parse(localStorage.getItem('surtibasculas_sugerencias_respuestas_vistas') ?? '{}')['3'])
       .toBe('2026-11-18 14:00:00::Se instalarán mesas.');
 
     servicio.marcarTodos();
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/notificaciones/vistas'))
+      .flush({ guardadas: 1 });
     expect(servicio.noLeidos()).toBe(0);
     const guardado = JSON.parse(localStorage.getItem('surtibasculas_notificaciones_vistas:7') ?? '{}');
     expect(guardado['evaluacion-21']).toBe('2026-11:21');
@@ -174,6 +180,8 @@ describe('NotificacionesService', () => {
       .flush({ empleados: [] });
     httpMock.expectOne((peticion) => peticion.url.endsWith('/documentos/por-vencer'))
       .flush({ documentos: [{ id: 3, empleado_id: 4, empleado: 'Ana', tipo: 'dpi', fecha_vencimiento: '2026-12-01', dias: 5 }] });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/notificaciones/vistas'))
+      .flush({ vistas: {} });
 
     expect(servicio.items().map((item) => item.id)).toEqual([
       'documentos-por-vencer',
@@ -187,6 +195,8 @@ describe('NotificacionesService', () => {
     expect(servicio.noLeidos()).toBe(5);
 
     servicio.marcarTodos();
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/notificaciones/vistas'))
+      .flush({ guardadas: 5 });
     expect(servicio.noLeidos()).toBe(0);
   });
 
@@ -208,6 +218,8 @@ describe('NotificacionesService', () => {
       ],
     });
     httpMock.expectOne((peticion) => peticion.url.endsWith('/documentos/por-vencer')).flush({ documentos: [] });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/notificaciones/vistas'))
+      .flush({ vistas: {} });
 
     expect(servicio.items()).toHaveLength(1);
     expect(servicio.items()[0]).toMatchObject({
@@ -226,9 +238,12 @@ describe('NotificacionesService', () => {
     httpMock.expectOne((peticion) => peticion.url.endsWith('/dashboard/admin')).flush(null);
     httpMock.expectOne((peticion) => peticion.url.endsWith('/rrhh/administracion/empleados')).flush({});
     httpMock.expectOne((peticion) => peticion.url.endsWith('/documentos/por-vencer')).flush({});
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/notificaciones/vistas'))
+      .flush({ vistas: {} });
 
     expect(servicio.items()).toEqual([]);
     expect(servicio.cargando()).toBe(false);
+    expect(servicio.error()).toBe('');
   });
 
   it('muestra el resultado de selección al candidato', () => {
@@ -238,6 +253,8 @@ describe('NotificacionesService', () => {
 
     httpMock.expectOne((peticion) => peticion.url.endsWith('/evaluaciones-seleccion/candidato/mi'))
       .flush({ candidato: { id: 9, estado: 'evaluada', decision: 'recomendable', numero_intento: 1 } });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/notificaciones/vistas'))
+      .flush({ vistas: {} });
 
     expect(servicio.items()).toHaveLength(1);
     expect(servicio.items()[0].titulo).toBe('Resultado de tu evaluación');
@@ -252,6 +269,8 @@ describe('NotificacionesService', () => {
     httpMock.expectOne((peticion) => peticion.url.endsWith('/evaluaciones-conocimiento/mi')).flush(null);
     httpMock.expectOne((peticion) => peticion.url.endsWith('/mi-ficha'))
       .flush({ faltantes: ['DPI', 'currículum'], completos: 5, total: 7 });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/notificaciones/vistas'))
+      .flush({ vistas: {} });
 
     const [aviso] = servicio.items();
     expect(aviso.id).toBe('mi-ficha-incompleta');
@@ -277,7 +296,35 @@ describe('NotificacionesService', () => {
     httpMock.expectOne((peticion) => peticion.url.endsWith('/rrhh/administracion/empleados'))
       .flush({ empleados: [] });
     httpMock.expectOne((peticion) => peticion.url.endsWith('/documentos/por-vencer')).flush({ documentos: [] });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/notificaciones/vistas'))
+      .flush({ vistas: { 'sugerencias-pendientes': '4' } });
 
     expect(servicio.noLeidos()).toBe(0);
+  });
+
+  it('sincroniza los marcadores leídos y mantiene visible un error de carga', () => {
+    servicio.cargar();
+
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/sugerencias/mis-sugerencias'))
+      .flush({ sugerencias: [] });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/evaluaciones-conocimiento/mi'))
+      .flush(evaluacionPendiente);
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/mi-ficha'))
+      .flush({ faltantes: [], completos: 7, total: 7 });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/notificaciones/vistas'))
+      .flush({ vistas: { 'evaluacion-21': '2026-11:21' } });
+    expect(servicio.noLeidos()).toBe(0);
+
+    servicio.cargar();
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/sugerencias/mis-sugerencias'))
+      .flush({ sugerencias: [] });
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/evaluaciones-conocimiento/mi'))
+      .flush(evaluacionPendiente);
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/mi-ficha')).error(new ProgressEvent('error'));
+    httpMock.expectOne((peticion) => peticion.url.endsWith('/notificaciones/vistas'))
+      .flush({ vistas: { 'evaluacion-21': '2026-11:21' } });
+
+    expect(servicio.error()).toContain('No se pudieron cargar');
+    expect(servicio.cargando()).toBe(false);
   });
 });

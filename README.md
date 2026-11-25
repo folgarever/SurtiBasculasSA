@@ -16,7 +16,7 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 - Panel de Recursos Humanos para consultar asistencias, corregir marcaciones y registrar incidencias.
 - Solicitudes de vacaciones y permisos desde el portal del empleado, con seguimiento y aprobación o rechazo disponible para cualquier cuenta ADMIN.
 - Exportación de reportes de asistencia e incidencias a Excel.
-- Administración del directorio de empleados, incluidas altas, ediciones, bajas lógicas y una ficha integral por empleado con asistencia, evaluaciones e incidencias. El Gerente General puede editar y dar de baja cualquier otra cuenta ADMIN; al cambiarla a un puesto sin permiso ADMIN, también retira ese rol.
+- Administración del directorio de empleados, incluidas altas, ediciones, bajas lógicas y una ficha integral por empleado con asistencia, evaluaciones e incidencias. Los cambios de contraseña se limitan a administración y requieren confirmar la contraseña administrativa. El Gerente General puede editar y dar de baja cualquier otra cuenta ADMIN; al cambiarla a un puesto sin permiso ADMIN, también retira ese rol.
 - Gestión de puestos y permisos desde el directorio de empleados: solo `SUR-GG-001` ve el botón **Puestos y permisos**, puede crear o editar puestos y decidir cuáles otorgan acceso `ADMIN`, siempre con confirmación de contraseña. El cambio se propaga a los empleados activos del puesto sin afectar las cuentas protegidas `SUR-GG-001` ni `SUR-AC-002`.
 - Evaluación periódica del personal, con cinco competencias generales y escala de 1 a 5.
 - Evaluación técnica y psicométrica adicional para el Jefe de Mantenimiento.
@@ -24,6 +24,9 @@ Plataforma corporativa para gestionar procesos internos de SURTIBÁSCULAS S.A., 
 - Pruebas de selección independientes de las evaluaciones de conocimiento, con cuadernillo por puesto, rúbrica, puntajes y resultados consultables.
 - Envío de sugerencias o quejas por parte del personal, opcionalmente anónimas, con folio de seguimiento, estado Enviada → En revisión → Respondida, aviso de respuestas nuevas y foro administrativo con respuestas visibles para el autor.
 - Campana de notificaciones in-app con contador de no leídos para respuestas de sugerencias, evaluaciones pendientes y resultados de selección.
+- Estado de notificaciones leídas sincronizado con el servidor entre dispositivos, con respaldo local y aviso visible si falla la sincronización.
+- Restablecimiento de credenciales de candidatos solo por administradores autorizados y tras confirmar la contraseña administrativa; la clave temporal se muestra una sola vez y revoca sesiones anteriores.
+- Panel administrativo con tendencias mensuales de asistencia, horas extra aprobadas, evaluaciones completadas y candidatos nuevos.
 - Acceso a evaluaciones limitado a Héctor Ortiz (`SUR-GG-001`) y Mafer García (`SUR-AC-002`).
 - El acceso a administración general lo determina el rol `ADMIN` del empleado; al dar de alta personal, el rol se deriva del indicador `ADMIN` del puesto. Las evaluaciones siguen restringidas a las dos cuentas autorizadas aunque un puesto nuevo tenga ese indicador.
 
@@ -43,7 +46,7 @@ El selector de apariencia permite usar el tema claro, oscuro o el del dispositiv
 ## Configuración
 
 1. Crea la base de datos `defaultdb` en MySQL y ejecuta [`database/schema.sql`](database/schema.sql) para una instalación nueva.
-2. Para una base existente, ejecuta una sola vez las migraciones pendientes en el orden indicado en [el runbook](docs/runbook-migraciones.md), incluida [`database/migrations/2026-11-24-solicitudes-ausencias.sql`](database/migrations/2026-11-24-solicitudes-ausencias.sql). No vuelvas a ejecutar `schema.sql` en una base existente. Para una instalación nueva basta con ejecutar `schema.sql`.
+2. Para una base existente, sigue el procedimiento seguro y usa el ejecutor de migraciones descrito en [el runbook](docs/runbook-migraciones.md). No vuelvas a ejecutar `schema.sql` en una base existente. Para una instalación nueva basta con ejecutar `schema.sql` y registrar una línea base después de verificar que el esquema incluye todas las migraciones.
 
    Si la migración del 2026-11-12 se interrumpe con el error 1050 porque `candidatos_seleccion_intentos` ya existe, no borres la tabla ni vuelvas a crearla. Compara `SHOW CREATE TABLE candidatos_seleccion_intentos` y `SHOW CREATE TABLE candidatos_seleccion` con el esquema y la migración. Si la tabla de intentos coincide y en `candidatos_seleccion` faltan ambas columnas de reintento y su clave foránea, ejecuta únicamente el `ALTER TABLE` de esa migración. Si ya existen o el esquema difiere, revisa las diferencias antes de modificarlo.
 3. Copia `backend/.env.example` como `backend/.env` y configura la conexión a MySQL y un secreto JWT largo y aleatorio. El nombre de base de datos debe coincidir con `defaultdb`. Configura también `CORS_ORIGINS` con los dominios autorizados. SSL de MySQL está activo por defecto en hosts remotos y desactivado en `localhost`; usa `DB_SSL` para forzarlo y `DB_SSL_REJECT_UNAUTHORIZED=false` únicamente si el certificado es autofirmado.
@@ -71,9 +74,9 @@ El frontend usa `/api` bajo el mismo origen. En desarrollo lo resuelve `frontend
 
 El backend restringe CORS a `CORS_ORIGINS` (lista separada por comas). Si no se define, permite `http://localhost:4200` y cualquier dominio `*.vercel.app`, incluidas las URLs de preview. El inicio de sesión tiene límite de 10 intentos por IP cada 15 minutos; el contador es por instancia, por lo que en arquitecturas serverless no sustituye un limite distribuido.
 
-Las peticiones autenticadas verifican el JWT y **refrescan el perfil desde la base de datos**: una cuenta dada de baja, un cambio de rol o una cuenta de candidato eliminada dejan de tener acceso de inmediato, aunque el token siga vigente.
+Las peticiones autenticadas verifican el JWT y **refrescan el perfil desde la base de datos**: una cuenta dada de baja, un cambio de rol o una cuenta de candidato eliminada dejan de tener acceso de inmediato, aunque el token siga vigente. Al cambiar una contraseña se incrementa la versión de sesión de la cuenta y se invalidan sus tokens existentes.
 
-El panel de administración (`/admin`) consume `GET /api/dashboard/admin`, disponible solo para `ADMIN`. El endpoint devuelve en una sola respuesta los indicadores del día, la serie de asistencia de los últimos siete días, la distribución por puesto y la actividad reciente.
+El panel de administración (`/admin`) consume `GET /api/dashboard/admin`, disponible solo para `ADMIN`. El endpoint devuelve en una sola respuesta los indicadores del día, la serie de asistencia de los últimos siete días, la distribución por puesto, la actividad reciente y las tendencias mensuales de los últimos 12 meses.
 El panel agrupa el resumen diario, los pendientes y el detalle de asistencia; el gráfico incluye un detalle textual accesible de cada día. Los accesos a evaluaciones siguen sujetos a los permisos existentes.
 
 `GET /api/health` verifica la conexión a MySQL y responde `{ "estado": "ok", "base_de_datos": "ok" }`. Si la base de datos falla, devuelve `500` con `estado: "error"`; es el primer endpoint a revisar cuando el login responde «Error interno del servidor».
@@ -132,7 +135,7 @@ El panel `/admin/evaluaciones-conocimiento`, restringido a las cuentas administr
 
 ## Pruebas de selección
 
-El panel `/admin/evaluaciones-seleccion`, restringido a las cuentas administradoras autorizadas, está organizado en este orden: crear cuenta y asignar puesto, seguimiento de cuentas y pruebas pendientes, historial de resultados automáticos y cuadernillo con guía interna por puesto. Cada cuenta recibe un usuario secuencial `CANDIDATO-AAAA-NNN` y una contraseña aleatoria que se muestra una sola vez. El candidato completa sus datos y adjunta su currículum PDF; el puesto ya asignado no se puede cambiar desde el portal. El servidor calcula y almacena puntaje, porcentaje correcto y decisión al entregar; el historial conserva los intentos y permite a Administración autorizar otro con motivo registrado. La impresión del cuadernillo incluye las opciones, pero excluye la guía de calificación. Los currículums y perfiles completos solo son visibles para Administración. Las evaluaciones de conocimiento siguen en su módulo y no comparten registros con selección.
+El panel `/admin/evaluaciones-seleccion`, restringido a las cuentas administradoras autorizadas, está organizado en este orden: crear cuenta y asignar puesto, seguimiento de cuentas y pruebas pendientes, historial de resultados automáticos y cuadernillo con guía interna por puesto. Crear una cuenta o restablecer su contraseña requiere confirmar la contraseña administrativa. Cada cuenta recibe un usuario secuencial `CANDIDATO-AAAA-NNN` y una contraseña aleatoria que se muestra una sola vez; la contraseña restablecida también se muestra una sola vez y revoca las sesiones anteriores del candidato. El candidato completa sus datos y adjunta su currículum PDF; el puesto ya asignado no se puede cambiar desde el portal. El servidor calcula y almacena puntaje, porcentaje correcto y decisión al entregar; el historial conserva los intentos y permite a Administración autorizar otro con motivo registrado. La impresión del cuadernillo incluye las opciones, pero excluye la guía de calificación. Los currículums y perfiles completos solo son visibles para Administración. Las evaluaciones de conocimiento siguen en su módulo y no comparten registros con selección.
 
 Administración asigna el puesto y entrega a cada aspirante su usuario y contraseña individuales. Después de iniciar sesión en la opción **Candidato**, el aspirante registra nombres, apellidos y fecha de nacimiento, adjunta su currículum PDF (máximo 5 MB) y responde la evaluación de su puesto en la misma página. El sistema calcula la edad, baraja las opciones, bloquea las respuestas después de entregarlas, califica automáticamente y guarda el resultado sin captura manual. Administración puede consultar los resultados anteriores y autorizar un nuevo intento con justificación.
 
@@ -142,7 +145,8 @@ Hay evaluaciones de selección para los 11 puestos del catálogo, incluyendo Asi
 |---|---|---|---|
 | `GET` | `/api/evaluaciones-seleccion/plantillas` | Administrador autorizado | Obtener las plantillas y rúbricas habilitadas por puesto |
 | `GET` | `/api/evaluaciones-seleccion/resultados?puesto_id=<id>` | Administrador autorizado | Consultar resultados de selección, con filtro de puesto opcional |
-| `POST` | `/api/evaluaciones-seleccion/admin/candidatos` | Administrador autorizado | Crear una cuenta y asignar un puesto al candidato |
+| `POST` | `/api/evaluaciones-seleccion/admin/candidatos` | Administrador autorizado + contraseña administrativa | Crear una cuenta y asignar un puesto al candidato |
+| `POST` | `/api/evaluaciones-seleccion/admin/candidatos/acceso/<id>/restablecer-contrasena` | Administrador autorizado + contraseña administrativa | Restablecer la clave y mostrar la contraseña temporal una sola vez |
 | `GET` | `/api/evaluaciones-seleccion/admin/candidatos/<id>/curriculum` | Administrador autorizado | Descargar el currículum PDF del candidato |
 | `POST` | `/api/evaluaciones-seleccion/admin/candidatos/<id>/reintentar` | Administrador autorizado | Autorizar un nuevo intento conservando el historial y registrando el motivo |
 | `POST` | `/api/auth/login-candidato` | Usuario y contraseña individuales | Iniciar sesión en el portal de aspirantes |
@@ -204,7 +208,7 @@ La campana de la barra superior (y del portal del candidato) muestra un contador
 - **Administrador:** sugerencias sin responder, evaluaciones pendientes, candidatos en registro y resultados de selección disponibles.
 - **Candidato:** resultado de su evaluación o aviso de prueba enviada.
 
-Las notificaciones se derivan de los endpoints existentes, así que no requieren migración ni cambios en la base de datos. El estado de “leído” se guarda en `localStorage` con una clave por usuario (`surtibasculas_notificaciones_vistas:<id>`); las respuestas de sugerencias comparten el marcador ya usado por `/sugerencias`, por lo que **Marcar como leídas** y la campana permanecen sincronizadas. Al abrir un aviso se marca como leído y se navega a la ruta correspondiente.
+Las notificaciones se derivan de los endpoints existentes. El estado de “leído” se conserva en `localStorage` como respaldo y se sincroniza con el servidor mediante `GET /api/notificaciones/vistas` y `PUT /api/notificaciones/vistas`; cada usuario solo puede consultar o cambiar sus propias marcas. La tabla `notificaciones_leidas` se crea con la migración correspondiente. Las respuestas de sugerencias comparten el marcador ya usado por `/sugerencias`, por lo que **Marcar como leídas** y la campana permanecen sincronizadas. Al abrir un aviso se marca como leído y se navega a la ruta correspondiente; los errores de sincronización se presentan y permiten reintentar.
 
 ## Validación
 

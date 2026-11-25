@@ -207,6 +207,10 @@
       <section class="knowledge-panel selection-candidate-registration selection-admin-only-panel">
         <div class="section-heading"><div><p class="eyebrow">2. ACCESO DE ASPIRANTES</p><h2>Crear cuenta de candidato</h2><p class="subheading">Asigna el puesto al crear la cuenta. El candidato ingresará para completar sus datos y realizar únicamente la evaluación correspondiente.</p></div></div>
         <label class="selection-position-picker"><span>Puesto al que aspira</span><select [value]="puestoParaCuenta()" (change)="seleccionarPuestoCuenta($event)">@for (plantilla of plantillas(); track plantilla.id) { <option [value]="plantilla.id">{{ plantilla.nombre_puesto }}</option> }</select></label>
+        <label class="selection-position-picker">
+          <span>Confirma tu contraseña de administrador para crear y mostrar las credenciales</span>
+          <input type="password" autocomplete="current-password" [value]="contrasenaAdminCuenta()" (input)="actualizarContrasenaAdminCuenta($event)">
+        </label>
         <button class="button button-accent" type="button" [disabled]="guardando()" (click)="registrarCandidato()">{{ guardando() ? 'Generando cuenta…' : 'Crear cuenta y contraseña' }}</button>
         @if (cuentaCreada(); as cuenta) {
           <div class="selection-access-code selection-internal-note" role="status">
@@ -214,6 +218,7 @@
             <p>Usuario: <code>{{ cuenta.usuario }}</code></p>
             <p>Contraseña: <code>{{ cuenta.password }}</code></p>
             <button class="details-button" type="button" (click)="copiarCredenciales()">Copiar credenciales</button>
+            <button class="details-button" type="button" (click)="cuentaCreada.set(null)">Ocultar credenciales</button>
           </div>
         }
       </section>
@@ -244,6 +249,9 @@
                       }
                       @if (candidato.curriculum_nombre) { <button class="details-button" type="button" (click)="descargarCurriculum(candidato)">CV</button> }
                       @if (candidato.acceso_id !== undefined) {
+                        @if (candidato.activo !== false) {
+                          <button class="details-button" type="button" [disabled]="guardando()" (click)="solicitarRestablecimiento(candidato)">Restablecer contraseña</button>
+                        }
                         <button class="details-button" type="button" [disabled]="guardando()" (click)="cambiarActivoCuenta(candidato)">{{ candidato.activo === false ? 'Reactivar' : 'Dar de baja' }}</button>
                         <button class="details-button details-button-danger" type="button" [disabled]="guardando()" (click)="eliminarCuenta(candidato)">Eliminar</button>
                       }
@@ -253,6 +261,29 @@
               </tbody>
             </table>
           </div>
+
+          @if (restablecimiento(); as objetivo) {
+            <div class="selection-inline-form">
+              <h3>Restablecer contraseña · {{ objetivo.usuario }}</h3>
+              <p>La contraseña anterior dejará de funcionar. La nueva se mostrará una sola vez.</p>
+              @if (cuentaRestablecida(); as cuenta) {
+                <div class="selection-access-code selection-internal-note" role="status">
+                  <p>Usuario: <code>{{ cuenta.usuario }}</code></p>
+                  <p>Nueva contraseña: <code>{{ cuenta.password }}</code></p>
+                  <button class="details-button" type="button" (click)="copiarCredenciales(cuenta)">Copiar credenciales</button>
+                  <button class="details-button" type="button" (click)="cancelarRestablecimiento()">Ocultar y cerrar</button>
+                </div>
+              } @else {
+                <label><span>Confirma tu contraseña de administrador para restablecer y mostrar la clave</span>
+                  <input type="password" autocomplete="current-password" [value]="contrasenaAdminRestablecimiento()" (input)="actualizarContrasenaAdminRestablecimiento($event)">
+                </label>
+                <div class="selection-template-actions">
+                  <button class="button button-accent" type="button" [disabled]="guardando()" (click)="confirmarRestablecimiento()">Restablecer y mostrar</button>
+                  <button class="details-button" type="button" (click)="cancelarRestablecimiento()">Cancelar</button>
+                </div>
+              }
+            </div>
+          }
 
           @if (reintentoCandidatoId() !== null) {
             <div class="selection-inline-form">

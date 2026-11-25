@@ -69,6 +69,10 @@ export class EvaluacionesSeleccionComponent implements OnInit {
   protected readonly resultados = signal<ResultadoSeleccion[]>([]);
   protected readonly candidatosPendientes = signal<RegistroCandidatoSeleccion[]>([]);
   protected readonly cuentaCreada = signal<CuentaCandidato | null>(null);
+  protected readonly contrasenaAdminCuenta = signal('');
+  protected readonly restablecimiento = signal<{ accesoId: number; usuario: string } | null>(null);
+  protected readonly contrasenaAdminRestablecimiento = signal('');
+  protected readonly cuentaRestablecida = signal<CuentaCandidato | null>(null);
   protected readonly cargando = signal(true);
   protected readonly guardando = signal(false);
   protected readonly mostrarGuia = signal(false);
@@ -140,25 +144,82 @@ export class EvaluacionesSeleccionComponent implements OnInit {
       this.error.set('Selecciona el puesto al que aspira el candidato.');
       return;
     }
+    if (!this.contrasenaAdminCuenta()) {
+      this.error.set('Confirma tu contraseña de administrador para crear y visualizar las credenciales.');
+      return;
+    }
     this.guardando.set(true);
-    this.servicio.registrarCandidatoAdmin(Number(this.puestoParaCuenta())).subscribe({
+    this.servicio.registrarCandidatoAdmin(
+      Number(this.puestoParaCuenta()),
+      this.contrasenaAdminCuenta(),
+    ).subscribe({
       next: ({ cuenta }) => {
         this.cuentaCreada.set(cuenta);
+        this.contrasenaAdminCuenta.set('');
         this.aviso.set('Cuenta generada. Comparte las credenciales con el candidato por un canal privado.');
         this.guardando.set(false);
         this.cargarCandidatos();
       },
-      error: (error: HttpErrorResponse) => this.fallar(error, 'No se pudo crear la cuenta de candidato.'),
+      error: (error: HttpErrorResponse) => {
+        this.contrasenaAdminCuenta.set('');
+        this.fallar(error, 'No se pudo crear la cuenta de candidato.');
+      },
     });
   }
 
-  protected copiarCredenciales(): void {
-    const cuenta = this.cuentaCreada();
+  protected copiarCredenciales(cuenta = this.cuentaCreada()): void {
     if (!cuenta) return;
     navigator.clipboard.writeText(`Usuario: ${cuenta.usuario}\nContraseña: ${cuenta.password}`).then(
       () => this.aviso.set('Credenciales copiadas. Entrégalas al candidato por un canal privado.'),
       () => this.error.set('No se pudieron copiar las credenciales. Cópialas manualmente.'),
     );
+  }
+
+  protected solicitarRestablecimiento(candidato: RegistroCandidatoSeleccion): void {
+    if (candidato.acceso_id === undefined || !candidato.usuario) return;
+    this.limpiarMensajes();
+    this.cuentaRestablecida.set(null);
+    this.contrasenaAdminRestablecimiento.set('');
+    this.restablecimiento.set({ accesoId: candidato.acceso_id, usuario: candidato.usuario });
+  }
+
+  protected cancelarRestablecimiento(): void {
+    this.restablecimiento.set(null);
+    this.contrasenaAdminRestablecimiento.set('');
+    this.cuentaRestablecida.set(null);
+  }
+
+  protected confirmarRestablecimiento(): void {
+    const objetivo = this.restablecimiento();
+    const contrasena = this.contrasenaAdminRestablecimiento();
+    if (!objetivo) return;
+    if (!contrasena) {
+      this.error.set('Confirma tu contraseña de administrador para restablecer y visualizar la nueva clave.');
+      return;
+    }
+
+    this.limpiarMensajes();
+    this.guardando.set(true);
+    this.servicio.restablecerContrasenaCandidatoAdmin(objetivo.accesoId, contrasena).subscribe({
+      next: ({ cuenta }) => {
+        this.cuentaRestablecida.set(cuenta);
+        this.contrasenaAdminRestablecimiento.set('');
+        this.aviso.set('Contraseña restablecida. Compártela de forma privada; solo se mostrará esta vez.');
+        this.guardando.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.contrasenaAdminRestablecimiento.set('');
+        this.fallar(error, 'No se pudo restablecer la contraseña del candidato.');
+      },
+    });
+  }
+
+  protected actualizarContrasenaAdminCuenta(event: Event): void {
+    this.contrasenaAdminCuenta.set((event.target as HTMLInputElement).value);
+  }
+
+  protected actualizarContrasenaAdminRestablecimiento(event: Event): void {
+    this.contrasenaAdminRestablecimiento.set((event.target as HTMLInputElement).value);
   }
 
   protected solicitarReintento(candidatoId: number, nombre: string): void {

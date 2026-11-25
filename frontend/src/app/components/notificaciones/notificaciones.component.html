@@ -18,11 +18,17 @@
           <button type="button" class="notificaciones-leidas" (click)="marcarTodas()">Marcar todas como leídas</button>
         }
       </div>
+      @if (servicio.error()) {
+        <div class="notificaciones-error" role="alert">
+          <span>{{ servicio.error() }}</span>
+          <button type="button" (click)="reintentar()">Reintentar</button>
+        </div>
+      }
       @if (servicio.cargando()) {
         <p class="notificaciones-vacio">Cargando notificaciones…</p>
-      } @else if (!servicio.total()) {
+      } @else if (!servicio.total() && !servicio.error()) {
         <p class="notificaciones-vacio">No tienes notificaciones por ahora.</p>
-      } @else {
+      } @else if (servicio.total()) {
         <ul class="notificaciones-lista">
           @for (item of servicio.items(); track item.id) {
             <li>

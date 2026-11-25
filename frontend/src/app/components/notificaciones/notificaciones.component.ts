@@ -37,6 +37,10 @@ export class NotificacionesComponent implements OnInit {
     this.servicio.marcarTodos();
   }
 
+  protected reintentar(): void {
+    this.servicio.cargar();
+  }
+
   protected cerrar(enfocar = false): void {
     if (!this.abierto()) return;
     this.abierto.set(false);

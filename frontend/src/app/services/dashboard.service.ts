@@ -57,6 +57,14 @@ export interface TendenciasDashboard {
   evaluaciones: number[];
 }
 
+export interface TendenciaMensualDashboard {
+  periodo: string;
+  asistencias: number;
+  horas_extras_aprobadas: number;
+  evaluaciones_completadas: number;
+  candidatos_nuevos: number;
+}
+
 export interface DashboardAdmin {
   actualizado_en: string;
   periodo: string;
@@ -67,6 +75,7 @@ export interface DashboardAdmin {
   actividad_reciente: ActividadDashboard[];
   comparativo?: ComparativoDashboard;
   tendencias?: TendenciasDashboard;
+  tendencias_mensuales?: TendenciaMensualDashboard[];
 }
 
 @Injectable({ providedIn: 'root' })

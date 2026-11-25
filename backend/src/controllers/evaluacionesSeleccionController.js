@@ -258,6 +258,39 @@ async function registrarCandidatoAdmin(req, res, next) {
   }
 }
 
+async function restablecerContrasenaCandidatoAdmin(req, res, next) {
+  const accesoId = Number(req.params.accesoId);
+  if (!Number.isInteger(accesoId) || accesoId < 1) {
+    return res.status(400).json({ mensaje: 'La cuenta de candidato no es válida.' });
+  }
+
+  try {
+    const [accesos] = await pool.execute(
+      'SELECT usuario FROM candidatos_seleccion_accesos WHERE id = ? AND activo = 1 LIMIT 1',
+      [accesoId]
+    );
+    if (!accesos[0]) {
+      return res.status(404).json({ mensaje: 'La cuenta activa del candidato no existe.' });
+    }
+
+    const password = crypto.randomBytes(12).toString('hex');
+    const passwordHash = await bcrypt.hash(password, 12);
+    const [actualizacion] = await pool.execute(
+      `UPDATE candidatos_seleccion_accesos
+       SET password_hash = ?, session_version = session_version + 1
+       WHERE id = ? AND activo = 1`,
+      [passwordHash, accesoId]
+    );
+    if (!actualizacion.affectedRows) {
+      return res.status(404).json({ mensaje: 'La cuenta activa del candidato no existe.' });
+    }
+
+    return res.json({ cuenta: { usuario: accesos[0].usuario, password } });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function registrarPerfilCandidato(req, res, next) {
   const { nombres, apellidos, fecha_nacimiento: fechaNacimiento, puesto_id: puestoId } = req.body || {};
   const hoy = new Date();
@@ -957,6 +990,7 @@ module.exports = {
   obtenerPlantillasCandidato,
   obtenerMiRegistroCandidato,
   registrarCandidatoAdmin,
+  restablecerContrasenaCandidatoAdmin,
   registrarPerfilCandidato,
   descargarCurriculumCandidato,
   entregarPruebaCandidato,

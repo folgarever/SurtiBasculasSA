@@ -27,11 +27,14 @@ async function verificarToken(req, res, next) {
   try {
     if (claims.role === 'CANDIDATE') {
       const [cuentas] = await pool.execute(
-        'SELECT id, activo FROM candidatos_seleccion_accesos WHERE id = ? LIMIT 1',
+        'SELECT id, activo, session_version FROM candidatos_seleccion_accesos WHERE id = ? LIMIT 1',
         [claims.candidato_acceso_id]
       );
       if (!cuentas[0] || cuentas[0].activo === 0) {
         return res.status(401).json({ mensaje: 'La cuenta de candidato ya no está disponible.' });
+      }
+      if (Number(cuentas[0].session_version || 0) !== Number(claims.session_version || 0)) {
+        return res.status(401).json({ mensaje: 'La sesión terminó porque cambió la contraseña de la cuenta.' });
       }
       req.usuario = claims;
       return next();
@@ -39,7 +42,7 @@ async function verificarToken(req, res, next) {
 
     if (claims.id) {
       const [empleados] = await pool.execute(
-        `SELECT e.id, e.codigo_empleado, e.nombre, e.rol_id,
+        `SELECT e.id, e.codigo_empleado, e.nombre, e.rol_id, e.session_version,
                 p.nombre_puesto, p.es_admin, r.nombre AS nombre_rol
          FROM empleados e
          INNER JOIN puestos p ON p.id = e.puesto_id
@@ -51,6 +54,9 @@ async function verificarToken(req, res, next) {
       const empleado = empleados[0];
       if (!empleado) {
         return res.status(401).json({ mensaje: 'La cuenta ya no está activa.' });
+      }
+      if (Number(empleado.session_version || 0) !== Number(claims.session_version || 0)) {
+        return res.status(401).json({ mensaje: 'La sesión terminó porque cambió la contraseña de la cuenta.' });
       }
 
       const esAdministrador = empleado.nombre_rol === 'ADMIN'

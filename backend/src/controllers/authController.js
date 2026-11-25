@@ -18,7 +18,7 @@ async function login(req, res, next) {
 
   try {
     const [empleados] = await pool.execute(
-      `SELECT e.id, e.codigo_empleado, e.nombre, e.password_hash, e.rol_id,
+      `SELECT e.id, e.codigo_empleado, e.nombre, e.password_hash, e.rol_id, e.session_version,
               p.nombre_puesto, p.es_admin, r.nombre AS nombre_rol
        FROM empleados e
        INNER JOIN puestos p ON p.id = e.puesto_id
@@ -51,7 +51,11 @@ async function login(req, res, next) {
         Number(empleado.es_admin) === 1 || codigoAdministrador
       ) ? 'ADMIN' : 'EMPLOYEE'
     };
-    const token = jwt.sign(perfil, process.env.JWT_SECRET, { expiresIn: '8h' });
+    const token = jwt.sign(
+      { ...perfil, session_version: Number(empleado.session_version || 0) },
+      process.env.JWT_SECRET,
+      { expiresIn: '8h' },
+    );
 
     return res.json({ token, usuario: perfil });
   } catch (error) {
@@ -75,7 +79,7 @@ async function loginCandidato(req, res, next) {
 
   try {
     const [cuentas] = await pool.execute(
-      `SELECT id, usuario, password_hash, activo
+      `SELECT id, usuario, password_hash, activo, session_version
        FROM candidatos_seleccion_accesos
        WHERE usuario = ?
        LIMIT 1`,
@@ -99,7 +103,11 @@ async function loginCandidato(req, res, next) {
       rol_id: 0,
       role: 'CANDIDATE',
     };
-    const token = jwt.sign(perfil, process.env.JWT_SECRET, { expiresIn: '8h' });
+    const token = jwt.sign(
+      { ...perfil, session_version: Number(cuenta.session_version || 0) },
+      process.env.JWT_SECRET,
+      { expiresIn: '8h' },
+    );
     return res.json({ token, usuario: perfil });
   } catch (error) {
     return next(error);

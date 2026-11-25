@@ -1,16 +1,19 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const pool = require('../src/config/db');
 const {
   verificarToken,
   permitirEvaluaciones,
   permitirGerenteGeneral,
-  permitirRrhhOGerente
+  permitirRrhhOGerente,
+  verificarContrasenaAdmin,
 } = require('../src/middlewares/authMiddleware');
 
 const verificarOriginal = jwt.verify;
 const ejecutarOriginal = pool.execute;
+const compararOriginal = bcrypt.compare;
 
 function crearRespuesta() {
   return {
@@ -30,6 +33,7 @@ function crearRespuesta() {
 test.afterEach(() => {
   jwt.verify = verificarOriginal;
   pool.execute = ejecutarOriginal;
+  bcrypt.compare = compararOriginal;
 });
 
 test('verificarToken refresca el rol y el código desde la base de datos', async () => {
@@ -173,6 +177,80 @@ test('verificarToken rechaza cuentas de candidato dadas de baja', async () => {
 
   assert.equal(paso, false);
   assert.equal(res.codigo, 401);
+});
+
+test('verificarToken invalida sesiones de candidato al restablecer la contraseña', async () => {
+  jwt.verify = () => ({
+    id: 21,
+    candidato_acceso_id: 21,
+    role: 'CANDIDATE',
+    session_version: 0,
+  });
+  pool.execute = async () => [[{ id: 21, activo: 1, session_version: 1 }]];
+  const res = crearRespuesta();
+  let paso = false;
+
+  await verificarToken(
+    { headers: { authorization: 'Bearer token' } },
+    res,
+    () => { paso = true; },
+  );
+
+  assert.equal(paso, false);
+  assert.equal(res.codigo, 401);
+  assert.match(res.cuerpo.mensaje, /cambió la contraseña/);
+});
+
+test('verificarToken invalida sesiones de empleados al cambiar la contraseña', async () => {
+  jwt.verify = () => ({ id: 8, role: 'EMPLOYEE', session_version: 0 });
+  pool.execute = async () => [[{
+    id: 8,
+    codigo_empleado: 'SUR-VEN-003',
+    nombre: 'Vendedor',
+    rol_id: 1,
+    session_version: 1,
+    nombre_puesto: 'Vendedor',
+    nombre_rol: 'Empleado',
+  }]];
+  const res = crearRespuesta();
+  let paso = false;
+
+  await verificarToken(
+    { headers: { authorization: 'Bearer token' } },
+    res,
+    () => { paso = true; },
+  );
+
+  assert.equal(paso, false);
+  assert.equal(res.codigo, 401);
+  assert.match(res.cuerpo.mensaje, /cambió la contraseña/);
+});
+
+test('verificarContrasenaAdmin exige la credencial actual antes de continuar', async () => {
+  const res = crearRespuesta();
+  let paso = false;
+  await verificarContrasenaAdmin({ body: {}, usuario: { id: 1 } }, res, () => { paso = true; });
+  assert.equal(res.codigo, 400);
+  assert.equal(paso, false);
+
+  pool.execute = async () => [[{ password_hash: 'hash-actual' }]];
+  bcrypt.compare = async (password, hash) => password === 'actual' && hash === 'hash-actual';
+  const incorrecta = crearRespuesta();
+  await verificarContrasenaAdmin(
+    { body: { contrasena_admin: 'incorrecta' }, usuario: { id: 1 } },
+    incorrecta,
+    () => { paso = true; },
+  );
+  assert.equal(incorrecta.codigo, 401);
+  assert.equal(paso, false);
+
+  const correcta = crearRespuesta();
+  await verificarContrasenaAdmin(
+    { body: { contrasena_admin: 'actual' }, usuario: { id: 1 } },
+    correcta,
+    () => { paso = true; },
+  );
+  assert.equal(paso, true);
 });
 
 test('permitirEvaluaciones exige ADMIN y código autorizado', () => {

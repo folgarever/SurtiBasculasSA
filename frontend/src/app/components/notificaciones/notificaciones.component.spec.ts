@@ -22,6 +22,7 @@ describe('NotificacionesComponent', () => {
     noLeidos: signal(1),
     total: signal(1),
     cargando: signal(false),
+    error: signal(''),
     estaLeido: vi.fn(() => false),
     marcarLeido: vi.fn(),
     marcarTodos: vi.fn(),
@@ -32,6 +33,7 @@ describe('NotificacionesComponent', () => {
     servicio.items.set([item]);
     servicio.noLeidos.set(1);
     servicio.total.set(1);
+    servicio.error.set('');
     await TestBed.configureTestingModule({
       imports: [NotificacionesComponent],
       providers: [

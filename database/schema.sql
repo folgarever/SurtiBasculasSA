@@ -49,6 +49,7 @@ CREATE TABLE empleados (
     codigo_empleado VARCHAR(20) NOT NULL UNIQUE,
     nombre VARCHAR(100) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    session_version INT UNSIGNED NOT NULL DEFAULT 0,
     rol_id INT NOT NULL,
     puesto_id INT NOT NULL,
     horario_id INT NOT NULL,
@@ -139,6 +140,7 @@ CREATE TABLE marcaciones (
     FOREIGN KEY (empleado_id) REFERENCES empleados(id),
     FOREIGN KEY (extras_aprobado_por) REFERENCES empleados(id),
     INDEX idx_marcaciones_extras_estado (extras_estado, fecha),
+    INDEX idx_marcaciones_fecha (fecha),
     CONSTRAINT uq_empleado_fecha UNIQUE (empleado_id, fecha)
 ) ENGINE=InnoDB;
 
@@ -258,6 +260,7 @@ CREATE TABLE evaluaciones_conocimiento (
     CONSTRAINT uq_eval_conocimiento_empleado_periodo UNIQUE (empleado_id, periodo),
     INDEX idx_eval_conocimiento_periodo_estado (periodo, estado),
     INDEX idx_eval_conocimiento_puesto_periodo (puesto_id, periodo),
+    INDEX idx_eval_conocimiento_realizacion (fecha_realizacion),
     FOREIGN KEY (empleado_id) REFERENCES empleados(id),
     FOREIGN KEY (puesto_id) REFERENCES puestos(id)
 ) ENGINE=InnoDB;
@@ -288,10 +291,12 @@ CREATE TABLE candidatos_seleccion_accesos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario VARCHAR(32) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
+    session_version INT UNSIGNED NOT NULL DEFAULT 0,
     anio SMALLINT UNSIGNED NOT NULL,
     secuencia SMALLINT UNSIGNED NOT NULL,
     activo TINYINT(1) NOT NULL DEFAULT 1,
     creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_candidato_acceso_creado (creado_en),
     UNIQUE INDEX uq_candidatos_acceso_anio_secuencia (anio, secuencia)
 ) ENGINE=InnoDB;
 
@@ -368,6 +373,23 @@ CREATE TABLE candidatos_seleccion_intentos (
     FOREIGN KEY (candidato_id) REFERENCES candidatos_seleccion(id),
     FOREIGN KEY (puesto_id) REFERENCES puestos(id),
     FOREIGN KEY (reintento_autorizado_por) REFERENCES empleados(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE notificaciones_leidas (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    empleado_id INT NULL,
+    candidato_acceso_id INT NULL,
+    notificacion_id VARCHAR(120) NOT NULL,
+    marcador VARCHAR(4096) NOT NULL,
+    actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_notificacion_leida_empleado (empleado_id, notificacion_id),
+    UNIQUE KEY uq_notificacion_leida_candidato (candidato_acceso_id, notificacion_id),
+    CONSTRAINT chk_notificacion_leida_usuario
+        CHECK ((empleado_id IS NULL) <> (candidato_acceso_id IS NULL)),
+    CONSTRAINT fk_notificacion_leida_empleado
+        FOREIGN KEY (empleado_id) REFERENCES empleados(id) ON DELETE CASCADE,
+    CONSTRAINT fk_notificacion_leida_candidato
+        FOREIGN KEY (candidato_acceso_id) REFERENCES candidatos_seleccion_accesos(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE evaluaciones_seleccion (

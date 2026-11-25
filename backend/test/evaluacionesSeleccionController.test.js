@@ -1,8 +1,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const bcrypt = require('bcrypt');
 const pool = require('../src/config/db');
 const { evaluacionAsistente, puestoCodigo } = require('../src/config/evaluacionesSeleccion');
-const { entregarPruebaCandidato } = require('../src/controllers/evaluacionesSeleccionController');
+const {
+  entregarPruebaCandidato,
+  restablecerContrasenaCandidatoAdmin,
+} = require('../src/controllers/evaluacionesSeleccionController');
 
 for (const reintento of [false, true]) {
   test(`entrega la prueba y guarda el motivo de reintento: ${reintento}`, async () => {
@@ -32,6 +36,7 @@ for (const reintento of [false, true]) {
           if (!sql.includes('c.reintento_motivo')) delete perfil.reintento_motivo;
           return [[perfil]];
         }
+
         if (sql.includes('FROM seleccion_plantillas')) return [[]];
         if (sql.includes('SELECT numero_intento')) return [reintento ? [{ numero_intento: 1 }] : []];
         if (sql.includes('INSERT INTO candidatos_seleccion_intentos')) {
@@ -66,3 +71,30 @@ for (const reintento of [false, true]) {
     }
   });
 }
+
+test('restablece la contraseña de un candidato activo y devuelve la temporal una sola vez', async () => {
+  const ejecutarOriginal = pool.execute;
+  const consultas = [];
+  pool.execute = async (sql, valores) => {
+    consultas.push({ sql, valores });
+    if (sql.startsWith('SELECT usuario')) return [[{ usuario: 'CANDIDATO-2026-001' }]];
+    if (sql.startsWith('UPDATE candidatos_seleccion_accesos')) return [{ affectedRows: 1 }];
+    throw new Error(`Consulta inesperada: ${sql}`);
+  };
+  let respuesta;
+  try {
+    await restablecerContrasenaCandidatoAdmin(
+      { params: { accesoId: '4' } },
+      { json(valor) { respuesta = valor; return valor; } },
+      (error) => { throw error; },
+    );
+  } finally {
+    pool.execute = ejecutarOriginal;
+  }
+
+  assert.equal(consultas.length, 2);
+  assert.match(respuesta.cuenta.password, /^[a-f0-9]{24}$/);
+  assert.equal(respuesta.cuenta.usuario, 'CANDIDATO-2026-001');
+  assert.equal(await bcrypt.compare(respuesta.cuenta.password, consultas[1].valores[0]), true);
+  assert.deepEqual(consultas[1].valores.slice(1), [4]);
+});

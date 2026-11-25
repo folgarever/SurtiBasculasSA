@@ -48,6 +48,13 @@ describe('AdminDashboardComponent', () => {
       sugerencias: [0, 1, 0, 2, 1, 0, 2],
       evaluaciones: [1, 0, 1, 0, 2, 0, 1],
     },
+    tendencias_mensuales: [{
+      periodo: '2026-11',
+      asistencias: 30,
+      horas_extras_aprobadas: 4,
+      evaluaciones_completadas: 6,
+      candidatos_nuevos: 2,
+    }],
   };
 
   beforeEach(async () => {
@@ -72,6 +79,7 @@ describe('AdminDashboardComponent', () => {
             noLeidos: signal(0),
             total: signal(0),
             cargando: signal(false),
+            error: signal(''),
             estaLeido: () => false,
             marcarLeido: vi.fn(),
             marcarTodos: vi.fn(),
@@ -104,6 +112,10 @@ describe('AdminDashboardComponent', () => {
     expect(fixture.nativeElement.querySelector('.sparkline polyline')?.getAttribute('points')).toContain(',');
     expect(fixture.nativeElement.querySelector('.module-grid a[href="/solicitudes"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.module-grid a[href="/admin/sugerencias"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.panel-trend-monthly')?.textContent)
+      .toContain('Horas extra aprobadas');
+    expect(fixture.nativeElement.querySelector('.panel-trend-monthly')?.textContent)
+      .toContain('Candidatos nuevos');
     expect(fixture.componentInstance.resumen()?.puntualidad_hoy).toBe(80);
   });
 

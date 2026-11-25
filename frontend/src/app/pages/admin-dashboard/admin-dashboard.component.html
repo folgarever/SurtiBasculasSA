@@ -214,6 +214,33 @@
       </article>
     </section>
 
+    <section class="panel-card panel-trend-monthly">
+      <header class="panel-header">
+        <div class="panel-title-group">
+          <span class="panel-icon"><ng-icon name="lucideTrendingUp" size="17" /></span>
+          <div><p class="eyebrow">TENDENCIA OPERATIVA</p><h2>Últimos 12 meses</h2></div>
+        </div>
+      </header>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th scope="col">Mes</th><th scope="col">Asistencias</th><th scope="col">Horas extra aprobadas</th><th scope="col">Evaluaciones</th><th scope="col">Candidatos nuevos</th></tr>
+          </thead>
+          <tbody>
+            @for (mes of tendenciasMensuales; track mes.periodo) {
+              <tr>
+                <th scope="row">{{ etiquetaMes(mes.periodo) }}</th>
+                <td>{{ mes.asistencias }}</td>
+                <td>{{ mes.horas_extras_aprobadas }}</td>
+                <td>{{ mes.evaluaciones_completadas }}</td>
+                <td>{{ mes.candidatos_nuevos }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <section class="panel-card panel-modulos">
       <header class="panel-header">
         <div class="panel-title-group">

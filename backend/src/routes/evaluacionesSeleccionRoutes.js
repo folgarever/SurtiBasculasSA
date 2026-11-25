@@ -4,12 +4,14 @@ const {
   verificarToken,
   permitirEvaluaciones,
   permitirCandidato,
+  verificarContrasenaAdmin,
 } = require('../middlewares/authMiddleware');
 const {
   obtenerPlantillas,
   obtenerPlantillasCandidato,
   obtenerMiRegistroCandidato,
   registrarCandidatoAdmin,
+  restablecerContrasenaCandidatoAdmin,
   registrarPerfilCandidato,
   descargarCurriculumCandidato,
   entregarPruebaCandidato,
@@ -51,7 +53,13 @@ router.get('/candidato/mi', permitirCandidato, obtenerMiRegistroCandidato);
 router.post('/candidato/perfil', permitirCandidato, validarCargaCurriculum, registrarPerfilCandidato);
 router.post('/candidato/entregar', permitirCandidato, entregarPruebaCandidato);
 router.get('/admin/candidatos', permitirEvaluaciones, listarCandidatosPendientes);
-router.post('/admin/candidatos', permitirEvaluaciones, registrarCandidatoAdmin);
+router.post('/admin/candidatos', permitirEvaluaciones, verificarContrasenaAdmin, registrarCandidatoAdmin);
+router.post(
+  '/admin/candidatos/acceso/:accesoId/restablecer-contrasena',
+  permitirEvaluaciones,
+  verificarContrasenaAdmin,
+  restablecerContrasenaCandidatoAdmin
+);
 router.get('/admin/candidatos/:id/curriculum', permitirEvaluaciones, descargarCurriculumCandidato);
 router.post('/admin/candidatos/:id/reintentar', permitirEvaluaciones, autorizarReintentoCandidato);
 router.put('/admin/candidatos/:id/perfil', permitirEvaluaciones, validarCargaCurriculum, actualizarPerfilCandidatoAdmin);

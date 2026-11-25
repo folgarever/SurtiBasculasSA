@@ -26,6 +26,7 @@ import {
   ComparativoDashboard,
   DashboardAdmin,
   DashboardService,
+  TendenciaMensualDashboard,
   TendenciasDashboard,
 } from '../../services/dashboard.service';
 
@@ -159,6 +160,19 @@ export class AdminDashboardComponent implements OnInit {
       sugerencias: Array(7).fill(0),
       evaluaciones: Array(7).fill(0),
     };
+  }
+
+  protected get tendenciasMensuales(): TendenciaMensualDashboard[] {
+    return this.datos()?.tendencias_mensuales ?? [];
+  }
+
+  protected etiquetaMes(periodo: string): string {
+    const [anio, mes] = periodo.split('-').map(Number);
+    return new Intl.DateTimeFormat('es-GT', {
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(Date.UTC(anio, mes - 1, 1)));
   }
 
   protected variacion(actual: number | undefined, anterior: number | undefined): number | null {
