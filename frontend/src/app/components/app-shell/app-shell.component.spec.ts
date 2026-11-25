@@ -90,6 +90,33 @@ describe('AppShellComponent', () => {
     expect(menu).not.toContain('Empleados');
   });
 
+  it('agrupa los accesos del empleado y no muestra secciones sin permisos', () => {
+    const root = crear().nativeElement as HTMLElement;
+    const secciones = Array.from(root.querySelectorAll('.sidebar-section'))
+      .map((seccion) => seccion.getAttribute('aria-label'));
+
+    expect(secciones).toEqual(['Mi espacio', 'Comunicación']);
+    expect(root.querySelector('[aria-label="Mi espacio"] [href="/dashboard"]')).not.toBeNull();
+    expect(root.querySelector('[aria-label="Mi espacio"] [href="/evaluaciones-conocimiento"]')).not.toBeNull();
+    expect(root.querySelector('[aria-label="Comunicación"] [href="/sugerencias"]')).not.toBeNull();
+    expect(root.querySelector('[href="/rrhh"]')).toBeNull();
+  });
+
+  it('incluye la gestión de personal en su sección para empleados autorizados', () => {
+    auth.hasRrhhRole.mockReturnValue(true);
+    const root = crear().nativeElement as HTMLElement;
+
+    expect(root.querySelector('[aria-label="Gestión de personal"] [href="/rrhh"]')).not.toBeNull();
+    expect(root.querySelector('[href="/admin"]')).toBeNull();
+  });
+
+  it('mantiene activo el enlace de sugerencias del empleado dentro de su sección', () => {
+    vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/sugerencias');
+    const root = crear().nativeElement as HTMLElement;
+
+    expect(root.querySelector('[aria-label="Comunicación"] [href="/sugerencias"]')?.getAttribute('aria-current')).toBe('page');
+  });
+
   it('oculta los módulos de evaluación cuando el rol no los permite', () => {
     auth.hasEvaluationRole.mockReturnValue(true);
     expect(enlaces(crear())).toContain('Evaluaciones');

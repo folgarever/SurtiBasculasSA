@@ -64,6 +64,7 @@ describe('EmpleadoDetalleComponent · ficha', () => {
     httpMock = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(EmpleadoDetalleComponent);
     fixture.detectChanges();
+    httpMock.expectOne('/api/mi-ficha/foto').flush(null, { status: 404, statusText: 'Not Found' });
     httpMock.expectOne(`${base}/detalle`).flush(detalle(ficha));
     httpMock.expectOne(`${base}/ficha/auditoria`).flush({ registros });
     httpMock.expectOne(`${base}/documentos`).flush({ documentos: [] });

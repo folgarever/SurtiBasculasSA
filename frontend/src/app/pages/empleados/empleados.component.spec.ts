@@ -58,6 +58,7 @@ describe('EmpleadosComponent · puestos y permisos', () => {
     httpMock = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(EmpleadosComponent);
     fixture.detectChanges();
+    httpMock.expectOne('/api/mi-ficha/foto').flush(null, { status: 404, statusText: 'Not Found' });
     httpMock.expectOne(empleadosUrl).flush({ empleados });
     httpMock.expectOne(puestosUrl).flush({
       puestos: [

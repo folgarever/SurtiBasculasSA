@@ -63,3 +63,13 @@ export function obtenerSeccionesAdmin(_esGerenteGeneral: boolean): NavSection[] 
 
   return [modulos, gestion, personal, evaluaciones, comunicacion];
 }
+
+export function obtenerSeccionesEmpleado(): NavSection[] {
+  const porRuta = (rutas: string[]) => NAV_EMPLEADO.filter((item) => rutas.includes(item.route));
+  return [
+    { label: 'Mi espacio', items: porRuta(['/dashboard', '/evaluaciones-conocimiento']) },
+    { label: 'Gestión de personal', items: porRuta(['/rrhh', '/admin']) },
+    { label: 'Evaluación y selección', items: porRuta(['/evaluaciones', '/admin/evaluaciones-seleccion']) },
+    { label: 'Comunicación', items: [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO] },
+  ];
+}

@@ -96,6 +96,7 @@ describe('AdminDashboardComponent', () => {
   it('carga los indicadores reales del panel', () => {
     const fixture = TestBed.createComponent(AdminDashboardComponent);
     fixture.detectChanges();
+    httpMock.expectOne('/api/mi-ficha/foto').flush(null, { status: 404, statusText: 'Not Found' });
 
     const peticion = httpMock.expectOne((req) => req.url.endsWith('/dashboard/admin'));
     expect(peticion.request.method).toBe('GET');
@@ -122,6 +123,7 @@ describe('AdminDashboardComponent', () => {
   it('presenta los pendientes junto a la asistencia y describe los días sin marcaciones', () => {
     const fixture = TestBed.createComponent(AdminDashboardComponent);
     fixture.detectChanges();
+    httpMock.expectOne('/api/mi-ficha/foto').flush(null, { status: 404, statusText: 'Not Found' });
     httpMock.expectOne((req) => req.url.endsWith('/dashboard/admin')).flush(respuesta);
     fixture.detectChanges();
 
@@ -136,6 +138,7 @@ describe('AdminDashboardComponent', () => {
   it('muestra un error y permite reintentar si falla la carga', () => {
     const fixture = TestBed.createComponent(AdminDashboardComponent);
     fixture.detectChanges();
+    httpMock.expectOne('/api/mi-ficha/foto').flush(null, { status: 404, statusText: 'Not Found' });
 
     httpMock.expectOne((req) => req.url.endsWith('/dashboard/admin')).flush('error', { status: 500, statusText: 'Error' });
     fixture.detectChanges();

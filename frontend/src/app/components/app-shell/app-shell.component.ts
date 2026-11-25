@@ -19,7 +19,7 @@ import { AuthService } from '../../services/auth.service';
 import { RrhhService } from '../../services/rrhh.service';
 import { NotificacionesComponent } from '../notificaciones/notificaciones.component';
 import { SelectorTemaComponent } from '../selector-tema/selector-tema.component';
-import { NavItem, obtenerNavegacion, obtenerSeccionesAdmin } from './nav-items';
+import { NavItem, obtenerSeccionesAdmin, obtenerSeccionesEmpleado } from './nav-items';
 
 @Component({
   selector: 'app-shell',
@@ -46,12 +46,11 @@ export class AppShellComponent implements OnInit {
   private urlFotoPerfil: string | null = null;
   protected readonly fotoPerfil = signal<SafeResourceUrl | null>(null);
   protected readonly esAdmin = this.auth.hasAdminRole();
-  protected readonly navegacion = obtenerNavegacion(this.esAdmin);
-  protected readonly seccionesAdmin = this.esAdmin
+  protected readonly secciones = (this.esAdmin
     ? obtenerSeccionesAdmin(this.auth.esGerenteGeneral())
-        .map((seccion) => ({ ...seccion, items: seccion.items.filter((item) => this.visible(item)) }))
-        .filter((seccion) => seccion.items.length > 0)
-    : [];
+    : obtenerSeccionesEmpleado())
+    .map((seccion) => ({ ...seccion, items: seccion.items.filter((item) => this.visible(item)) }))
+    .filter((seccion) => seccion.items.length > 0);
 
   @Input() inicio = '/dashboard';
   @Input() caption = 'ESPACIO DE TRABAJO';

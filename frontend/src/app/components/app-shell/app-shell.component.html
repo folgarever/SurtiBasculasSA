@@ -2,43 +2,19 @@
   <a class="skip-link" href="#contenido-principal" (click)="saltarAlContenido($event)">Saltar al contenido</a>
   <aside class="app-sidebar">
     <a class="sidebar-brand" [routerLink]="esAdmin ? '/admin' : inicio"><span class="brand-logo-frame"><img class="brand-logo" src="/surtibasculas-logo.png" alt="SURTIBÁSCULAS S.A."></span><span>SURTIBÁSCULAS S.A.<small>Plataforma de gestión</small></span></a>
-    @if (!esAdmin) {
-      <span class="sidebar-caption">{{ caption }}</span>
-    }
     <nav class="sidebar-nav" aria-label="Navegación principal">
-      @if (esAdmin) {
-        @for (seccion of seccionesAdmin; track seccion.label) {
-          <div class="sidebar-section" role="group" [attr.aria-label]="seccion.label">
-            <span class="sidebar-section-title">{{ seccion.label }}</span>
-            @for (item of seccion.items; track item.route) {
-              <a class="sidebar-link" [class.is-active]="esActivo(item.route)" [attr.aria-current]="esActivo(item.route) ? 'page' : null" [routerLink]="item.route">
-                @if (item.icon) { <ng-icon [name]="item.icon" size="18" /> }
-                {{ item.label }}
-              </a>
-            }
-          </div>
-        }
-      } @else {
-        @for (item of navegacion.items; track item.route) {
-          @if (visible(item)) {
+      @for (seccion of secciones; track seccion.label) {
+        <div class="sidebar-section" role="group" [attr.aria-label]="seccion.label">
+          <span class="sidebar-section-title">{{ seccion.label }}</span>
+          @for (item of seccion.items; track item.route) {
             <a class="sidebar-link" [class.is-active]="esActivo(item.route)" [attr.aria-current]="esActivo(item.route) ? 'page' : null" [routerLink]="item.route">
               @if (item.icon) { <ng-icon [name]="item.icon" size="18" /> }
               {{ item.label }}
             </a>
           }
-        }
+        </div>
       }
     </nav>
-    @if (!esAdmin) {
-      @for (item of navegacion.bottomItems; track item.route) {
-        @if (visible(item)) {
-          <a class="sidebar-link sidebar-bottom-link" [class.is-active]="esActivo(item.route)" [attr.aria-current]="esActivo(item.route) ? 'page' : null" [routerLink]="item.route">
-            @if (item.icon) { <ng-icon [name]="item.icon" size="18" /> }
-            {{ item.label }}
-          </a>
-        }
-      }
-    }
     <div class="sidebar-footer"><span class="status-dot"></span><span>Sistema activo<small>Gestión de personal</small></span></div>
   </aside>
   <header class="topbar">
