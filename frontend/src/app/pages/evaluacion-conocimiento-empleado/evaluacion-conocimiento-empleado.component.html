@@ -4,14 +4,14 @@
   topbarLabel="PORTAL DEL PERSONAL"
   topbarTitle="Evaluación de conocimientos y desempeño"
   workspaceClass="knowledge-workspace"
-  [admin]="false"
+  [admin]="esAdmin"
   [nombre]="usuario?.nombre || ''"
   [inicial]="usuario?.nombre?.slice(0, 1) || 'U'"
   footerTitulo="Portal activo"
   footerDetalle="Desarrollo del personal"
   [items]="navItems"
   [bottomItems]="bottomItems"
-  bottomActive="/sugerencias"
+  [bottomActive]="esAdmin ? '/admin/sugerencias' : '/sugerencias'"
 >
     <div class="page-heading">
       <div><p class="eyebrow">PORTAL DEL EMPLEADO / DESARROLLO</p><h1>Evaluación de conocimientos y desempeño</h1><p class="subheading">Prueba de frecuencia {{ etiquetaFrecuencia() }} según tu puesto: {{ puesto() || usuario?.puesto }}.</p></div>

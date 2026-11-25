@@ -1,6 +1,6 @@
 import { AppShellComponent } from '../../components/app-shell/app-shell.component';
 import { ModalFocoDirective } from '../../directives/modal-foco.directive';
-import { NAV_ADMIN, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from '../../components/app-shell/nav-items';
+import { obtenerNavegacion } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -50,14 +50,15 @@ interface EmpleadoOpcion {
   templateUrl: './rrhh-dashboard.component.html',
 })
 export class RrhhDashboardComponent implements OnInit {
-  protected readonly navItems = NAV_ADMIN;
-  protected readonly bottomItems = [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO];
   private readonly formBuilder = inject(FormBuilder);
   private readonly rrhh = inject(RrhhService);
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
   protected readonly esAdmin = this.auth.hasAdminRole();
+  protected readonly navegacion = obtenerNavegacion(this.esAdmin);
+  protected readonly navItems = this.navegacion.items;
+  protected readonly bottomItems = this.navegacion.bottomItems;
   protected readonly asistencias = signal<Marcacion[]>([]);
   protected readonly empleados = signal<EmpleadoRrhh[]>([]);
   protected readonly horasExtras = signal<Marcacion[]>([]);

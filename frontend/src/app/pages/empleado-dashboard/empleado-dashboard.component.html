@@ -4,14 +4,14 @@
   topbarLabel="PORTAL DEL PERSONAL"
   topbarTitle="Mi jornada"
   workspaceClass="employee-workspace"
-  [admin]="false"
+  [admin]="esAdmin"
   [nombre]="usuario?.nombre || ''"
   [inicial]="usuario?.nombre?.slice(0, 1) || 'U'"
   footerTitulo="Portal activo"
   footerDetalle="Registro de asistencia"
   [items]="navItems"
   [bottomItems]="bottomItems"
-  bottomActive="/sugerencias"
+  [bottomActive]="esAdmin ? '/admin/sugerencias' : '/sugerencias'"
 >
     <div class="page-heading">
       <div><p class="eyebrow">PORTAL DEL EMPLEADO</p><h1>Mi jornada</h1><p class="subheading">Hola, {{ usuario?.nombre }}. Aquí tienes el estado de tu asistencia.</p></div>

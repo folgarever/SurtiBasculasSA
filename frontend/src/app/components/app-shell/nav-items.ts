@@ -41,3 +41,9 @@ export const SUGERENCIAS_EMPLEADO: NavItem = {
   icon: 'lucideLightbulb',
   visible: 'employee',
 };
+
+export function obtenerNavegacion(esAdmin: boolean): { items: NavItem[]; bottomItems: NavItem[] } {
+  return esAdmin
+    ? { items: NAV_ADMIN, bottomItems: [SUGERENCIAS_ADMIN] }
+    : { items: NAV_EMPLEADO, bottomItems: [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO] };
+}

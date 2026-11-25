@@ -1,5 +1,5 @@
 import { AppShellComponent } from '../../components/app-shell/app-shell.component';
-import { NAV_EMPLEADO, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from '../../components/app-shell/nav-items';
+import { obtenerNavegacion } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -42,8 +42,6 @@ import { contarRespuestasNuevas, leerRespuestasVistas, SugerenciasService } from
   templateUrl: './empleado-dashboard.component.html',
 })
 export class EmpleadoDashboardComponent implements OnInit {
-  protected readonly navItems = NAV_EMPLEADO;
-  protected readonly bottomItems = [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO];
   private readonly asistencia = inject(AsistenciaService);
   private readonly sugerencias = inject(SugerenciasService);
   private readonly evaluaciones = inject(EvaluacionesConocimientoService);
@@ -51,6 +49,10 @@ export class EmpleadoDashboardComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly usuario = this.auth.getUsuario();
+  protected readonly esAdmin = this.auth.hasAdminRole();
+  protected readonly navegacion = obtenerNavegacion(this.esAdmin);
+  protected readonly navItems = this.navegacion.items;
+  protected readonly bottomItems = this.navegacion.bottomItems;
   protected readonly esGerenteGeneral = this.auth.esGerenteGeneral();
   protected readonly horaActual = signal('');
   protected readonly fechaActual = signal('');

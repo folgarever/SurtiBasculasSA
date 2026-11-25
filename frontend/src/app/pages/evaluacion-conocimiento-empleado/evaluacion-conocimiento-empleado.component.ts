@@ -1,5 +1,5 @@
 import { AppShellComponent } from '../../components/app-shell/app-shell.component';
-import { NAV_EMPLEADO, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from '../../components/app-shell/nav-items';
+import { obtenerNavegacion } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -19,12 +19,14 @@ import {
   templateUrl: './evaluacion-conocimiento-empleado.component.html',
 })
 export class EvaluacionConocimientoEmpleadoComponent implements OnInit {
-  protected readonly navItems = NAV_EMPLEADO;
-  protected readonly bottomItems = [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO];
   private readonly servicio = inject(EvaluacionesConocimientoService);
   private readonly auth = inject(AuthService);
 
   protected readonly usuario = this.auth.getUsuario();
+  protected readonly esAdmin = this.auth.hasAdminRole();
+  protected readonly navegacion = obtenerNavegacion(this.esAdmin);
+  protected readonly navItems = this.navegacion.items;
+  protected readonly bottomItems = this.navegacion.bottomItems;
   protected readonly evaluacion = signal<EvaluacionConocimiento | null>(null);
   protected readonly historial = signal<EvaluacionConocimiento[]>([]);
   protected readonly puesto = signal('');

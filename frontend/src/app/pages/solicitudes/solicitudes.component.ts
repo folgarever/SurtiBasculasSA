@@ -1,5 +1,5 @@
 import { AppShellComponent } from '../../components/app-shell/app-shell.component';
-import { NAV_ADMIN, NAV_EMPLEADO, SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO } from '../../components/app-shell/nav-items';
+import { obtenerNavegacion } from '../../components/app-shell/nav-items';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
@@ -36,10 +36,9 @@ export class SolicitudesComponent implements OnInit {
 
   protected readonly usuario = this.auth.getUsuario();
   protected readonly esAdmin = this.auth.hasAdminRole();
-  protected readonly navItems = this.esAdmin ? NAV_ADMIN : NAV_EMPLEADO;
-  protected readonly bottomItems = this.esAdmin
-    ? [SUGERENCIAS_ADMIN]
-    : [SUGERENCIAS_ADMIN, SUGERENCIAS_EMPLEADO];
+  protected readonly navegacion = obtenerNavegacion(this.esAdmin);
+  protected readonly navItems = this.navegacion.items;
+  protected readonly bottomItems = this.navegacion.bottomItems;
   protected readonly propias = signal<SolicitudAusencia[]>([]);
   protected readonly solicitudesAdmin = signal<SolicitudAusencia[]>([]);
   protected readonly cargando = signal(true);
