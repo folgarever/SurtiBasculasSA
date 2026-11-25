@@ -42,6 +42,7 @@ test('subirDocumentoEmpleado valida tipo, fecha y PDF antes de tocar la base', a
   for (const extra of [
     { body: { tipo: 'otra-cosa' } },
     { body: { tipo: 'dpi', fecha_vencimiento: '2027-02-31' } },
+    { body: { tipo: 'otro', nombre: '' } },
     { file: { originalname: 'x.pdf', buffer: Buffer.from('no es pdf') } },
     { file: undefined }
   ]) {
@@ -69,6 +70,24 @@ test('subirDocumentoEmpleado guarda el documento y audita sin valores', async ()
   assert.equal(insercion.parametros[4], '2027-01-31');
   const auditoria = consultas.find((c) => c.sql.includes('INTO empleados_ficha_auditoria'));
   assert.deepEqual(auditoria.parametros, [5, 1, 'documento_subido', 'contrato']);
+});
+
+test('subirDocumentoEmpleado usa el nombre personalizado para documentos tipo otro', async () => {
+  const consultas = [];
+  pool.execute = async (sql, parametros) => {
+    consultas.push({ sql, parametros });
+    if (sql.includes('SELECT id FROM empleados')) return [[{ id: 5 }]];
+    if (sql.includes('INTO empleados_documentos')) return [{ insertId: 12 }];
+    return [{ insertId: 1 }];
+  };
+  const res = crearRespuesta();
+  await subirDocumentoEmpleado(peticion({
+    body: { tipo: 'otro', nombre: 'Constancia médica', fecha_vencimiento: '' },
+  }), res, assert.ifError);
+
+  assert.equal(res.codigo, 201);
+  const insercion = consultas.find((c) => c.sql.includes('INTO empleados_documentos'));
+  assert.deepEqual(insercion.parametros.slice(0, 3), [5, 'otro', 'Constancia médica.pdf']);
 });
 
 test('descargarDocumentoEmpleado y eliminarDocumentoEmpleado responden 404 si no pertenece al empleado', async () => {

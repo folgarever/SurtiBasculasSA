@@ -260,12 +260,13 @@ export class RrhhService {
   }
 
   subirDocumentoEmpleado(
-    id: number, archivo: File, tipo: TipoDocumento, fechaVencimiento: string,
+    id: number, archivo: File, tipo: TipoDocumento, fechaVencimiento: string, nombreOtro: string,
   ): Observable<{ mensaje: string; id: number }> {
     const datos = new FormData();
     datos.append('documento', archivo);
     datos.append('tipo', tipo);
     if (fechaVencimiento) datos.append('fecha_vencimiento', fechaVencimiento);
+    if (tipo === 'otro' && nombreOtro.trim()) datos.append('nombre', nombreOtro.trim());
     return this.http.post<{ mensaje: string; id: number }>(
       `${this.baseUrl}/administracion/empleados/${id}/documentos`, datos
     );

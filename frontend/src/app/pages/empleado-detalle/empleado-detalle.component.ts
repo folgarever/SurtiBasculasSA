@@ -252,6 +252,7 @@ export class EmpleadoDetalleComponent implements OnInit {
   ];
   protected readonly documentos = signal<DocumentoEmpleado[]>([]);
   protected readonly tipoDocumento = signal<TipoDocumento>('contrato');
+  protected readonly nombreDocumentoOtro = signal('');
   protected readonly vencimientoDocumento = signal('');
   protected readonly subiendoDocumento = signal(false);
 
@@ -274,6 +275,10 @@ export class EmpleadoDetalleComponent implements OnInit {
     const detalle = this.detalle();
     if (!archivo || !detalle || this.subiendoDocumento()) return;
 
+    if (this.tipoDocumento() === 'otro' && !this.nombreDocumentoOtro().trim()) {
+      this.avisoFicha.set({ tipo: 'error', texto: 'Escribe el nombre del documento cuando selecciones “Otro”.' });
+      return;
+    }
     if (archivo.type !== 'application/pdf' && !archivo.name.toLowerCase().endsWith('.pdf')) {
       this.avisoFicha.set({ tipo: 'error', texto: 'El documento debe estar en formato PDF.' });
       return;
@@ -285,11 +290,18 @@ export class EmpleadoDetalleComponent implements OnInit {
 
     this.avisoFicha.set(null);
     this.subiendoDocumento.set(true);
-    this.rrhh.subirDocumentoEmpleado(detalle.empleado.id, archivo, this.tipoDocumento(), this.vencimientoDocumento())
+    this.rrhh.subirDocumentoEmpleado(
+      detalle.empleado.id,
+      archivo,
+      this.tipoDocumento(),
+      this.vencimientoDocumento(),
+      this.nombreDocumentoOtro(),
+    )
       .subscribe({
         next: ({ mensaje }) => {
           this.avisoFicha.set({ tipo: 'success', texto: mensaje });
           this.subiendoDocumento.set(false);
+          this.nombreDocumentoOtro.set('');
           this.vencimientoDocumento.set('');
           this.cargarDocumentos(detalle.empleado.id);
           this.cargarAuditoria(detalle.empleado.id);

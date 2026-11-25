@@ -90,6 +90,18 @@ describe('EmpleadoDetalleComponent · ficha', () => {
     expect(root.querySelector('.profile-cv')?.textContent).toContain('cv.pdf');
   });
 
+  it('muestra un campo para nombrar los documentos tipo otro', async () => {
+    const fixture = await crear();
+    const root = fixture.nativeElement as HTMLElement;
+    const tipo = root.querySelector<HTMLSelectElement>('select[aria-label="Tipo de documento"]')!;
+
+    tipo.value = 'otro';
+    tipo.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(root.querySelector<HTMLInputElement>('input[aria-label="Nombre del documento"]')).not.toBeNull();
+  });
+
   it('calcula la edad con la fecha de nacimiento', async () => {
     const fixture = await crear();
     const root = fixture.nativeElement as HTMLElement;

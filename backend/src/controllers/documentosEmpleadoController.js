@@ -40,15 +40,30 @@ async function subirDocumentoEmpleado(req, res, next) {
   if (vencimiento && !fechaValida(vencimiento)) {
     return res.status(400).json({ mensaje: 'La fecha de vencimiento no es válida.' });
   }
+  if (tipo === 'otro') {
+    const nombrePersonalizado = String(req.body?.nombre || '').trim();
+    if (!nombrePersonalizado) {
+      return res.status(400).json({ mensaje: 'Escribe el nombre del documento cuando selecciones “Otro”.' });
+    }
+  }
   if (!req.file || !esPdf(req.file.buffer)) {
     return res.status(400).json({ mensaje: 'Adjunta el documento en formato PDF.' });
   }
 
-  const nombre = String(req.file.originalname || '')
+  const nombrePersonalizado = tipo === 'otro'
+    ? String(req.body?.nombre || '').trim()
+    : '';
+  const nombreDesdeArchivo = String(req.file.originalname || '')
     .replace(/[\\/]/g, '')
     .replace(/[\u0000-\u001f]/g, '')
     .trim()
     .slice(-150) || 'documento.pdf';
+  const nombreBase = nombrePersonalizado
+    ? nombrePersonalizado.replace(/[\\/]/g, '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 150)
+    : nombreDesdeArchivo;
+  const nombre = nombreBase
+    ? (nombreBase.toLowerCase().endsWith('.pdf') ? nombreBase : `${nombreBase}.pdf`)
+    : 'documento.pdf';
 
   try {
     const [empleados] = await pool.execute('SELECT id FROM empleados WHERE id = ? LIMIT 1', [empleadoId]);

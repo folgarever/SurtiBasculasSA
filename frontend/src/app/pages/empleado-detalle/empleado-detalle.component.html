@@ -140,8 +140,18 @@
             <select aria-label="Tipo de documento" [value]="tipoDocumento()" (change)="tipoDocumento.set($any($event.target).value)">
               @for (tipo of tiposDocumento; track tipo.valor) { <option [value]="tipo.valor">{{ tipo.etiqueta }}</option> }
             </select>
+            @if (tipoDocumento() === 'otro') {
+              <input
+                type="text"
+                aria-label="Nombre del documento"
+                placeholder="Nombre del documento"
+                maxlength="150"
+                [value]="nombreDocumentoOtro()"
+                (input)="nombreDocumentoOtro.set($any($event.target).value)"
+              >
+            }
             <input type="date" aria-label="Fecha de vencimiento (opcional)" [value]="vencimientoDocumento()" (input)="vencimientoDocumento.set($any($event.target).value)">
-            <label class="button button-outline profile-upload" [class.is-disabled]="subiendoDocumento()" for="documento-archivo">
+            <label class="button button-outline profile-upload" [class.is-disabled]="subiendoDocumento() || (tipoDocumento() === 'otro' && !nombreDocumentoOtro().trim())" for="documento-archivo">
               <ng-icon name="lucideUpload" size="16" /> {{ subiendoDocumento() ? 'Subiendo…' : 'Subir documento' }}
             </label>
             <input id="documento-archivo" class="profile-file-input" type="file" accept="application/pdf,.pdf" [disabled]="subiendoDocumento()" (change)="seleccionarDocumento($event)">
